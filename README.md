@@ -137,6 +137,31 @@ The dev site, browser tests and deployment setup live in
 [nascencestudio/tapestry-playground](https://github.com/nascencestudio/tapestry-playground).
 See [Contributing and development](docs/guides/development.md).
 
+## How Tapestry is built
+
+Tapestry is developed with an AI coding assistant (Anthropic's Claude), directed by its
+maintainer at Nascence Studio, who sets the requirements, makes the decisions and checks the
+results. Commits written with its help say so (`Co-Authored-By`).
+
+What keeps that accountable:
+
+- **Decisions are written down.** Every significant choice has a decision record in
+  [docs/decisions](docs/decisions/), with the alternatives considered and why they lost.
+  A [devlog](https://github.com/nascencestudio/tapestry-playground/blob/main/docs/devlog.md)
+  records each working session, mistakes included.
+- **Behaviour is tested.** Unit tests cover the plugin's logic, with adversarial cases for
+  everything that handles untrusted input (validation, URLs, rich text). Browser tests drive
+  the real editor in Chrome, including drag and drop, publishing and an accessibility audit in
+  both dashboard themes; they live in
+  [tapestry-playground](https://github.com/nascencestudio/tapestry-playground).
+- **Security is designed in.** Page content is treated as untrusted input from start to finish,
+  and the threat model is in [docs/security.md](docs/security.md). Dependencies are minimal,
+  pinned and reviewed before they're added; pnpm's supply-chain checks run on every install.
+- **Releases are traceable.** Versions are published from GitHub Actions with npm provenance,
+  and each one is approved by a person with two-factor authentication.
+
+Found a problem? Please [open an issue](https://github.com/nascencestudio/tapestry/issues).
+
 ## License
 
 MIT © Nascence Studio

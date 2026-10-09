@@ -56,7 +56,7 @@
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "4.0.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "3.0.0",
-    "@preact/signals": "2.11.2",
+    "@preact/signals": "2.11.3",
     "preact": "10.29.8",
     "prosemirror-commands": "1.7.2",
     "prosemirror-history": "1.5.1",
@@ -68,7 +68,7 @@
     "prosemirror-view": "1.42.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.14",
+    "@biomejs/biome": "2.5.15",
     "@libsql/client": "0.18.0",
     "@nascencestudio/medialibrary": "0.1.1",
     "@types/node": "22.20.4",

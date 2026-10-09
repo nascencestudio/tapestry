@@ -392,7 +392,11 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 - Editor layout: the purple `tp-actionbar` (undo/redo | language, History, JSON) sits above the canvas
   bar (viewports + full screen, reload + View page); Save draft, Schedule…, Publish are at the right
   of the canvas's bottom bar. `App.tsx` builds these and passes them to `Canvas` (`toolbar`,
-  `afterViewports`, `afterReload`, `footerEnd`); the JSON view renders the same pieces around itself.
+  `afterViewports`, `afterReload`, `footerEnd`).
+- History, Compare (opened from History; closing returns to it) and JSON open in `Modal` (native
+  `<dialog>`, `showModal()`): the page behind is inert. Restore/Discard close History. Unreadable
+  content opens the JSON modal undismissable until valid JSON is applied. In a11y tests, audit the
+  dialog, not `.tp-editor` (axe blends the backdrop into backgrounds behind it).
   Bar styles target the bar's own buttons (`> .tp-button`), not those inside its popovers.
 - Translations are separate pages (rows `{ lang, source }` in plugin data). Anything that lists
   or links translations for visitors must check visibility (published, not a StudioCMS draft) like

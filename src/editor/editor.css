@@ -1633,10 +1633,49 @@
 	align-items: center;
 	gap: 0.5rem;
 }
-.tp-json-wrap {
+/* Modals (history, version comparison, JSON): native <dialog>, above full screen. The dialog
+   itself has no padding, so a click on it (not its body) is a click on the backdrop. */
+.tp-modal {
+	max-width: calc(100vw - 2rem);
+	max-height: calc(100vh - 2rem);
 	padding: 0;
-	gap: 0;
-	overflow: hidden;
+	color: var(--tp-text);
+	background: var(--tp-surface);
+	border: 1px solid var(--tp-border);
+	border-radius: var(--tp-radius);
+	box-shadow: 0 16px 48px rgb(0 0 0 / 0.4);
+}
+.tp-modal--medium {
+	width: 44rem;
+}
+.tp-modal--large {
+	width: 76rem;
+}
+.tp-modal::backdrop {
+	background: rgb(0 0 0 / 0.55);
+}
+.tp-modal__body {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	max-height: calc(100vh - 2rem);
+	padding: 1rem 1.25rem;
+	overflow: auto;
+}
+.tp-modal__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+.tp-modal__title {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+}
+.tp-modal .tp-input--code {
+	width: 100%;
+	min-height: min(28rem, 55vh);
 }
 
 /* Library: the Components panel stands out in StudioCMS's dark purple, white text. */

@@ -10,6 +10,7 @@ import { UI_ICONS } from './icons.js';
 import { JsonView } from './JsonView.js';
 import { Layers } from './Layers.js';
 import { Library } from './Library.js';
+import { Modal } from './Modal.js';
 import { PropsPanel } from './PropsPanel.js';
 import type { Publishing } from './publishing.js';
 import { formatWhen, SchedulePanel } from './SchedulePanel.js';
@@ -377,34 +378,59 @@ export function App({
 				/>
 			)}
 
-			{showHistory.value && (
-				<HistoryPanel
-					publishing={publishing}
-					announce={announce}
+			{showHistory.value && compareIndex.value === null && (
+				<Modal
+					title="Versions"
+					id="tp-history-heading"
 					onClose={() => {
 						showHistory.value = false;
 					}}
-					onCompare={(index) => {
-						compareIndex.value = index;
-					}}
-				/>
+					data={{ 'data-tapestry-history-modal': '' }}
+				>
+					<HistoryPanel
+						publishing={publishing}
+						announce={announce}
+						onCompare={(index) => {
+							compareIndex.value = index;
+						}}
+						onDone={() => {
+							showHistory.value = false;
+						}}
+					/>
+				</Modal>
 			)}
 
+			{/* Opened from History; closing it goes back to History. */}
 			{compareIndex.value !== null && (
-				<ComparePanel
-					store={store}
-					publishing={publishing}
-					index={compareIndex.value}
-					pageUrl={pageUrl?.value ?? null}
+				<Modal
+					title="Compare versions"
+					id="tp-compare-heading"
+					size="large"
 					onClose={() => {
 						compareIndex.value = null;
 					}}
-				/>
+					data={{ 'data-tapestry-compare-modal': '' }}
+				>
+					<ComparePanel
+						store={store}
+						publishing={publishing}
+						index={compareIndex.value}
+						pageUrl={pageUrl?.value ?? null}
+					/>
+				</Modal>
 			)}
 
-			{showJson.value ? (
-				<div class="tp-panel tp-json-wrap">
-					{editingTools}
+			{showJson.value && (
+				<Modal
+					title="Page JSON"
+					id="tp-json-heading"
+					size="large"
+					dismissable={!locked.value}
+					onClose={() => {
+						showJson.value = false;
+					}}
+					data={{ 'data-tapestry-json-modal': '' }}
+				>
 					<JsonView
 						store={store}
 						initialText={locked.value ? unreadableContent : undefined}
@@ -414,35 +440,29 @@ export function App({
 							showJson.value = false;
 						}}
 					/>
-					{saveActions && (
-						<div class="tp-canvas__footer">
-							<span class="tp-toolbar__spacer" />
-							{saveActions}
-						</div>
-					)}
-				</div>
-			) : (
-				<div class="tp-workspace">
-					<div class="tp-grid">
-						<div class="tp-side">
-							<Library store={store} announce={announce} />
-							<Layers store={store} announce={announce} />
-						</div>
-						<Canvas
-							store={store}
-							pageUrl={pageUrl}
-							renderUrl={renderUrl}
-							announce={announce}
-							onKeyDown={handleShortcut}
-							toolbar={editingTools}
-							afterViewports={fullscreenButton}
-							afterReload={viewPage}
-							footerEnd={saveActions || undefined}
-						/>
-						<PropsPanel store={store} />
-					</div>
-				</div>
+				</Modal>
 			)}
+
+			<div class="tp-workspace">
+				<div class="tp-grid">
+					<div class="tp-side">
+						<Library store={store} announce={announce} />
+						<Layers store={store} announce={announce} />
+					</div>
+					<Canvas
+						store={store}
+						pageUrl={pageUrl}
+						renderUrl={renderUrl}
+						announce={announce}
+						onKeyDown={handleShortcut}
+						toolbar={editingTools}
+						afterViewports={fullscreenButton}
+						afterReload={viewPage}
+						footerEnd={saveActions || undefined}
+					/>
+					<PropsPanel store={store} />
+				</div>
+			</div>
 
 			{lockedNotice.value && (
 				<p class="tp-locked-notice" data-tapestry-locked-notice>

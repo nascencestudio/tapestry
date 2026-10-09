@@ -16,7 +16,6 @@ interface Props {
 	index: number;
 	/** The page's public path, or null if it has no slug yet. */
 	pageUrl: string | null;
-	onClose: () => void;
 }
 
 const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : 'unknown date');
@@ -36,7 +35,7 @@ function Where({ node }: { node: NodeRef }) {
 	);
 }
 
-export function ComparePanel({ store, publishing, index, pageUrl, onClose }: Props) {
+export function ComparePanel({ store, publishing, index, pageUrl }: Props) {
 	const against = useSignal<'published' | 'draft'>('published');
 	const page = publishing.stored.value;
 	const entry = page.history[index];
@@ -47,15 +46,7 @@ export function ComparePanel({ store, publishing, index, pageUrl, onClose }: Pro
 	const hasDraft = Boolean(page.draft);
 
 	return (
-		<section class="tp-panel tp-compare" aria-labelledby="tp-compare-heading" data-tapestry-compare>
-			<div class="tp-panel__header">
-				<h3 id="tp-compare-heading" class="tp-panel__title">
-					Compare versions
-				</h3>
-				<button type="button" class="tp-button" onClick={onClose} data-tapestry-compare-close>
-					Close
-				</button>
-			</div>
+		<div class="tp-compare" data-tapestry-compare>
 			<div class="tp-compare__choice">
 				<span>
 					<strong>Earlier version {index + 1}</strong>
@@ -160,6 +151,6 @@ export function ComparePanel({ store, publishing, index, pageUrl, onClose }: Pro
 			<p class="tp-hint">
 				Unsaved edits aren't included. Use "Restore to draft" in the version list to bring an earlier version back.
 			</p>
-		</section>
+		</div>
 	);
 }

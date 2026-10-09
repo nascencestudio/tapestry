@@ -54,6 +54,7 @@ and the performance budget are described in the playground's README.
      Canvas-style workspace. The purple bar above the canvas holds undo/redo, the language
      menu, **History** and **JSON**; the canvas bar has reload and **View page**; the bar under
      the canvas has the keyboard help and **Save draft** (or Ctrl/⌘+S), **Schedule…**, **Publish**.
+     **History** and **JSON** open in a dialog (Escape or ✕ closes it).
    - **Add**: click a component in the library (it goes inside the selected
      container, after the selected component, or at the end), or drag it into the
      page structure.

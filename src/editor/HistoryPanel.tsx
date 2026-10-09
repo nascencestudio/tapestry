@@ -4,9 +4,10 @@ import type { Publishing } from './publishing.js';
 interface Props {
 	publishing: Publishing;
 	announce: (message: string) => void;
-	onClose: () => void;
 	/** Open the comparison of an earlier version with the live one. */
 	onCompare?: (index: number) => void;
+	/** After a restore or discard: the modal closes, so the result is in view. */
+	onDone?: () => void;
 }
 
 const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : 'unknown date');
@@ -22,22 +23,13 @@ const countNodes = (doc: TapestryDocument) => {
 	return n;
 };
 
-/** The live version, earlier published versions, and actions to restore or discard. */
-export function HistoryPanel({ publishing, announce, onClose, onCompare }: Props) {
+/** The live version, earlier published versions, and actions to restore or discard (shown in a modal). */
+export function HistoryPanel({ publishing, announce, onCompare, onDone }: Props) {
 	const { stored, status } = publishing;
 	const page = stored.value;
 
 	return (
-		<section class="tp-panel tp-history" aria-labelledby="tp-history-heading" data-tapestry-history>
-			<div class="tp-history__header">
-				<h3 id="tp-history-heading" class="tp-panel__title">
-					Versions
-				</h3>
-				<button type="button" class="tp-button" onClick={onClose}>
-					Close
-				</button>
-			</div>
-
+		<div class="tp-history" data-tapestry-history>
 			<ol class="tp-history__list">
 				<li class="tp-history__item" data-current>
 					<div>
@@ -54,7 +46,10 @@ export function HistoryPanel({ publishing, announce, onClose, onCompare }: Props
 							class="tp-button"
 							data-tapestry-discard
 							onClick={() => {
-								if (publishing.discard()) announce('Unpublished changes discarded. Undo with Ctrl/⌘+Z.');
+								if (publishing.discard()) {
+									announce('Unpublished changes discarded. Undo with Ctrl/⌘+Z.');
+									onDone?.();
+								}
 							}}
 						>
 							Discard unpublished changes
@@ -82,6 +77,7 @@ export function HistoryPanel({ publishing, announce, onClose, onCompare }: Props
 								onClick={() => {
 									if (publishing.restore(index)) {
 										announce('Version restored into the draft. Publish to make it live; undo with Ctrl/⌘+Z.');
+										onDone?.();
 									}
 								}}
 							>
@@ -95,6 +91,6 @@ export function HistoryPanel({ publishing, announce, onClose, onCompare }: Props
 				Up to {publishing.historyLimit} earlier published versions are kept. Restoring puts a version into the draft;
 				the live site doesn't change until you publish.
 			</p>
-		</section>
+		</div>
 	);
 }

@@ -71,7 +71,7 @@
     "@biomejs/biome": "2.5.14",
     "@libsql/client": "0.18.0",
     "@nascencestudio/medialibrary": "0.2.0",
-    "@types/node": "22.20.4",
+    "@types/node": "26.6.3",
     "astro": "7.3.5",
     "studiocms": "0.6.1",
     "typescript": "6.0.3",

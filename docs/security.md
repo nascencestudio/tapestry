@@ -119,10 +119,14 @@ in the system, so they get several independent layers:
   `foreignObject`, animations, links, embedded images, DOCTYPE/entities (no XXE);
   references only within the file (`#id`, `url(#id)`); CSS kept only without
   external references. Tested with 18 known attack patterns.
-- **Where:** stored under random ids (`YYYY/MM/m_<16 chars>.<ext>`); every storage
-  path is checked against that exact pattern and must stay inside the storage
-  directory (no path traversal); the original name is only a label.
-- **Serving:** `/files/…` serves only that key pattern, with the type from the
+- **Where:** stored under random ids (`m_<16 chars>[-<suffix>].<ext>`) in the directory of
+  the item's folder ([medialibrary ADR 0100](https://github.com/nascencestudio/medialibrary/blob/main/docs/decisions/0100-folders.md)). Folder directory names are derived from
+  the display name and reduced to `[a-z0-9-]` (never `..`, hidden, reserved or
+  case-colliding names); every path is built from validated parts and must stay inside the
+  storage directory (no path traversal); the original file name is only a label.
+- **Serving:** `/files/<file name>` (and links from before folders, `/files/YYYY/MM/<file name>`)
+  serves only a name that is one of its item's stored files, found through the database,
+  never a path from the request; folder names never appear in URLs. The type comes from the
   extension, `X-Content-Type-Options: nosniff` and
   `Content-Security-Policy: default-src 'none'; …; sandbox`, so an SVG or PDF opened
   directly can't run script on the site's origin. Office and text files download

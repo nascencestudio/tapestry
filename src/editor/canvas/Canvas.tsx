@@ -1,7 +1,9 @@
 import { type ReadonlySignal, useSignal } from '@preact/signals';
+import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { CANVAS_PARAM } from '../../runtime/canvas-mode.js';
 import { InfoPopover, type Shortcut, ShortcutList, shortcutText } from '../InfoPopover.js';
+import { UI_ICONS } from '../icons.js';
 import type { EditorStore } from '../store.js';
 import { type CanvasController, type CanvasState, createCanvasController } from './controller.js';
 
@@ -20,6 +22,14 @@ interface Props {
 	renderUrl: string;
 	announce: (message: string) => void;
 	onKeyDown: (event: KeyboardEvent) => boolean;
+	/** The editor's tool bar, above the canvas bar. */
+	toolbar?: ComponentChildren;
+	/** After the preview widths (full screen). */
+	afterViewports?: ComponentChildren;
+	/** After the reload button (View page). */
+	afterReload?: ComponentChildren;
+	/** The bottom bar's right end (saving and publishing). */
+	footerEnd?: ComponentChildren;
 }
 
 function canvasUrl(pageUrl: string): string {
@@ -43,7 +53,17 @@ const CANVAS_SHORTCUTS: readonly Shortcut[] = [
 	{ keys: 'Esc', action: 'deselect' },
 ];
 
-export function Canvas({ store, pageUrl, renderUrl, announce, onKeyDown }: Props) {
+export function Canvas({
+	store,
+	pageUrl,
+	renderUrl,
+	announce,
+	onKeyDown,
+	toolbar,
+	afterViewports,
+	afterReload,
+	footerEnd,
+}: Props) {
 	const viewport = useSignal<Viewport>('desktop');
 	const status = useSignal<{ state: CanvasState; message?: string }>({ state: 'loading' });
 	const iframe = useRef<HTMLIFrameElement>(null);
@@ -72,6 +92,7 @@ export function Canvas({ store, pageUrl, renderUrl, announce, onKeyDown }: Props
 
 	return (
 		<section class="tp-panel tp-canvas" aria-labelledby="tp-canvas-heading">
+			{toolbar}
 			<div class="tp-canvas__bar">
 				<h3 id="tp-canvas-heading" class="tp-panel__title">
 					Canvas
@@ -93,6 +114,7 @@ export function Canvas({ store, pageUrl, renderUrl, announce, onKeyDown }: Props
 						</button>
 					))}
 				</div>
+				{afterViewports}
 				<span class="tp-canvas__status" data-state={status.value.state} aria-live="polite">
 					{status.value.state === 'loading' ? 'Loading…' : status.value.state === 'ready' ? '' : status.value.message}
 				</span>
@@ -107,9 +129,10 @@ export function Canvas({ store, pageUrl, renderUrl, announce, onKeyDown }: Props
 							iframe.current?.contentWindow?.location.reload();
 						}}
 					>
-						↻
+						{UI_ICONS.reload}
 					</button>
 				)}
+				{afterReload}
 			</div>
 			<div class="tp-canvas__stage">
 				{url ? (
@@ -126,20 +149,26 @@ export function Canvas({ store, pageUrl, renderUrl, announce, onKeyDown }: Props
 					<p class="tp-muted tp-canvas__empty">Give the page a slug (Basic Information tab) to see the canvas.</p>
 				)}
 			</div>
-			{url && (
-				// A bottom toolbar for the canvas (for now just the keyboard help).
-				<div class="tp-canvas__footer" role="toolbar" aria-label="Canvas tools">
-					<InfoPopover
-						id="tp-canvas-help"
-						label="Keyboard shortcuts for the canvas"
-						title="Canvas keys"
-						placement="above"
-					>
-						<ShortcutList shortcuts={CANVAS_SHORTCUTS} />
-					</InfoPopover>
-					<p id="tp-canvas-keys" class="tp-sr-only">
-						{shortcutText(CANVAS_SHORTCUTS)}
-					</p>
+			{(url || footerEnd) && (
+				// The bottom bar: keyboard help on the left, saving and publishing on the right.
+				<div class="tp-canvas__footer" role="toolbar" aria-label="Canvas help and saving">
+					{url && (
+						<>
+							<InfoPopover
+								id="tp-canvas-help"
+								label="Keyboard shortcuts for the canvas"
+								title="Canvas keys"
+								placement="above"
+							>
+								<ShortcutList shortcuts={CANVAS_SHORTCUTS} />
+							</InfoPopover>
+							<p id="tp-canvas-keys" class="tp-sr-only">
+								{shortcutText(CANVAS_SHORTCUTS)}
+							</p>
+						</>
+					)}
+					<span class="tp-toolbar__spacer" />
+					{footerEnd}
 				</div>
 			)}
 		</section>

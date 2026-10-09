@@ -289,7 +289,8 @@ the `languages` option) and is its group's source. [ADR 0032](decisions/0032-tra
 
 Stored in the `NascenceMediaItems` table ([ADR 0016](decisions/0016-media-library.md)):
 `id`, `kind` (`image` | `video` | `audio` | `document` | `remoteVideo`), `name`, `alt`,
-`mime`, `size`, `width`, `height`, `storageKey` (`YYYY/MM/<id>[-<suffix>].<ext>`, uploads),
+`mime`, `size`, `width`, `height`, `storageKey` (the file name `<id>[-<suffix>].<ext>`, uploads;
+`YYYY/MM/<file name>` before 0.2.0, migrated automatically),
 `provider` + `providerId` (remote videos), `thumbnailUrl`, `createdAt`, `updatedAt`,
 `createdBy`, and ([ADR 0019](decisions/0019-media-editing-extras.md), added to older
 tables on first use):
@@ -299,6 +300,13 @@ tables on first use):
 - `tracks`: JSON `[{ id: "t_<8>", kind: "subtitles"|"captions", srclang, label, storageKey }]`
   (uploaded videos; the files are cleaned WebVTT).
 - `variants`: JSON `[{ width, height, mime: "image/webp", storageKey }]` (resized copies).
+- `folderId` (0.2.0): the item's folder (`f_<16>`), or null for the top level.
+
+Folders (0.2.0, [medialibrary ADR 0100](https://github.com/nascencestudio/medialibrary/blob/main/docs/decisions/0100-folders.md)) are in `NascenceMediaFolders`: `id` (`f_<16>`),
+`parentId` (null: top level), `name` (display, unique among siblings regardless of case),
+`slug` (its directory name: `[a-z0-9-]`, unique among siblings), `createdAt`, `updatedAt`.
+On disk, a file lives at `<storage dir>/<folder slugs…>/<file name>`; its URL is
+`/files/<file name>` wherever it lives.
 
 Storage keys of replacement files, variants and caption files carry a random suffix
 (`m_…-<token>.<ext>`), so their URLs are new: files are served as immutable.

@@ -36,16 +36,16 @@ pnpm add @nascencestudio/tapestry
 
 ```js
 // src/tapestry.config.mjs
-import { defineComponent } from '@nascencestudio/tapestry';
+import { defineComponent } from "@nascencestudio/tapestry";
 
 export const components = [
   defineComponent({
-    type: 'hero',
-    label: 'Hero',
-    component: './src/components/Hero.astro',
+    type: "hero",
+    label: "Hero",
+    component: "./src/components/Hero.astro",
     props: {
-      heading: { type: 'text', label: 'Heading', required: true },
-      link: { type: 'link', label: 'Button link' },
+      heading: { type: "text", label: "Heading", required: true },
+      link: { type: "link", label: "Button link" },
     },
   }),
 ];
@@ -56,9 +56,9 @@ plugins can't add those themselves):
 
 ```js
 // studiocms.config.mjs
-import tapestry, { tapestryComponentRegistry } from '@nascencestudio/tapestry';
-import { defineStudioCMSConfig } from 'studiocms/config';
-import { components } from './src/tapestry.config.mjs';
+import tapestry, { tapestryComponentRegistry } from "@nascencestudio/tapestry";
+import { defineStudioCMSConfig } from "studiocms/config";
+import { components } from "./src/tapestry.config.mjs";
 
 export default defineStudioCMSConfig({
   componentRegistry: { ...tapestryComponentRegistry() },
@@ -161,6 +161,8 @@ What keeps that accountable:
   and each one is approved by a person with two-factor authentication.
 
 Found a problem? Please [open an issue](https://github.com/nascencestudio/tapestry/issues).
+
+**NOTE**: This is mostly an expirement of co-authoring something with AI. If you find it useful, awesome.
 
 ## License
 

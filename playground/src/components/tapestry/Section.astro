@@ -1,0 +1,38 @@
+---
+interface Props {
+	background?: 'none' | 'muted' | 'brand';
+	width?: 'narrow' | 'wide';
+}
+const { background = 'none', width = 'wide' } = Astro.props;
+---
+
+<section class:list={['section', `section--${background}`]}>
+	<div class:list={['section__inner', `section__inner--${width}`]}>
+		<slot />
+	</div>
+</section>
+
+<style>
+	.section {
+		padding: 3rem 1rem;
+	}
+	.section--muted {
+		background: var(--site-surface-muted);
+	}
+	.section--brand {
+		background: var(--site-brand);
+		color: var(--site-on-brand);
+	}
+	.section__inner {
+		margin-inline: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.section__inner--narrow {
+		max-width: 42rem;
+	}
+	.section__inner--wide {
+		max-width: 72rem;
+	}
+</style>

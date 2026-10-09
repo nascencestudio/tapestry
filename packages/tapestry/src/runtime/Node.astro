@@ -1,0 +1,133 @@
+---
+/**
+ * Renders one Tapestry node. StudioCMS's component registry swaps every
+ * `<tapestry-node id="…" type="…" props="…">` produced by the renderer for
+ * this component, passing child nodes (already rendered) as the default slot.
+ *
+ * In canvas mode (editor preview only) the output is wrapped in an invisible
+ * `display: contents` element carrying the node id, so the editor can map
+ * clicks, hovers and drops back to the document. Empty containers get a visible
+ * drop zone as their content there, so they can be found and dropped into.
+ */
+/// <reference path="../virtual.d.ts" />
+import components from 'virtual:tapestry/components';
+import manifest from 'virtual:tapestry/manifest';
+import { getMediaItems } from 'virtual:tapestry/media';
+import { decodeProps, splitSlots } from '../render.js';
+import { collectRefs } from '../resolve.js';
+import { isCanvasMode, NODE_ATTR, registerPropOwner, SLOT_ATTR, SLOT_OF_ATTR } from './canvas-mode.js';
+import { localizeFor } from './languages.js';
+import { draftAccessFor, resolveLinks } from './links.js';
+
+interface Props {
+	id?: string;
+	type?: string;
+	props?: string;
+}
+
+const { id = '', type, props: encoded = '' } = Astro.props;
+
+let Component = type && Object.hasOwn(components, type) ? components[type] : undefined;
+let props: Record<string, unknown> = {};
+
+if (Component && encoded) {
+	try {
+		props = decodeProps(encoded);
+	} catch {
+		console.warn(`[tapestry] could not decode props for "${type}"; skipping node`);
+		Component = undefined;
+	}
+}
+
+// `media` and `link` values (props, or fields of objects and list items) are stored as ids and
+// link values; components get the media item and a resolved link (or null if gone).
+const defs = (type && manifest[type]?.props) || undefined;
+if (Component && defs) {
+	const collected = collectRefs(defs, props);
+	props = collected.props;
+	const media = collected.refs.filter((ref) => ref.kind === 'media');
+	const links = collected.refs.filter((ref) => ref.kind === 'link');
+	if (media.length > 0) {
+		const items = await getMediaItems(media.map((ref) => ref.value));
+		for (const ref of media) ref.set(typeof ref.value === 'string' ? (items.get(ref.value) ?? null) : null);
+	}
+	if (links.length > 0) {
+		const resolved = await resolveLinks(
+			links.map((ref) => ref.value),
+			Astro.url.host,
+			draftAccessFor(Astro),
+			localizeFor(Astro.locals),
+		);
+		for (const [index, ref] of links.entries()) ref.set(resolved[index] ?? null);
+	}
+}
+
+const children = Astro.slots.has('default') ? await Astro.slots.render('default') : '';
+const entry = type ? manifest[type] : undefined;
+// Named slots arrive inside the children HTML, wrapped by the renderer; pass each to the
+// component as a real Astro slot.
+const slotNames = Object.keys(entry?.slots ?? {});
+const { main, slots: slotHtml } = slotNames.length > 0 ? splitSlots(children) : { main: children, slots: {} };
+const filled = slotNames.filter((name) => slotHtml[name]?.trim());
+const canvas = isCanvasMode(Astro.locals);
+const emptyContainer = canvas && Boolean(entry?.acceptsChildren) && !main.trim();
+const markerAttrs = { [NODE_ATTR]: id, 'data-tapestry-type': type };
+// Rich text values are objects: remember their node and prop so RichText.astro
+// can mark them for inline editing on the canvas.
+if (canvas) for (const [name, value] of Object.entries(props)) registerPropOwner(Astro.locals, value, id, name);
+// In the canvas, every area of a component with named slots is marked (for drops), and empty
+// areas get a drop zone.
+const dropLabel = (name: string | undefined) =>
+	name === undefined ? 'Drop components here' : `Drop components here (${entry?.slots?.[name]?.label ?? name})`;
+---
+
+{
+	Component &&
+		(canvas ? (
+			<tapestry-canvas-node {...markerAttrs} style="display: contents">
+				{slotNames.length > 0 ? (
+					<Component {...props}>
+						{entry?.acceptsChildren && (
+							<tapestry-canvas-slot {...{ [SLOT_OF_ATTR]: id, [SLOT_ATTR]: '' }} style="display: contents">
+								{main.trim() ? (
+									<Fragment set:html={main} />
+								) : (
+									<tapestry-canvas-drop data-tapestry-drop-into={id}>{dropLabel(undefined)}</tapestry-canvas-drop>
+								)}
+							</tapestry-canvas-slot>
+						)}
+						{slotNames.map((name) => (
+							<tapestry-canvas-slot slot={name} {...{ [SLOT_OF_ATTR]: id, [SLOT_ATTR]: name }} style="display: contents">
+								{slotHtml[name]?.trim() ? (
+									<Fragment set:html={slotHtml[name]} />
+								) : (
+									<tapestry-canvas-drop data-tapestry-drop-into={id} data-tapestry-drop-slot={name}>
+										{dropLabel(name)}
+									</tapestry-canvas-drop>
+								)}
+							</tapestry-canvas-slot>
+						))}
+					</Component>
+				) : main.trim() ? (
+					<Component {...props}>
+						<Fragment set:html={main} />
+					</Component>
+				) : emptyContainer ? (
+					<Component {...props}>
+						<tapestry-canvas-drop data-tapestry-drop-into={id}>{dropLabel(undefined)}</tapestry-canvas-drop>
+					</Component>
+				) : (
+					<Component {...props} />
+				)}
+			</tapestry-canvas-node>
+		) : main.trim() || filled.length > 0 ? (
+			<Component {...props}>
+				{main.trim() && <Fragment set:html={main} />}
+				{filled.map((name) => (
+					<Fragment slot={name} set:html={slotHtml[name]} />
+				))}
+			</Component>
+		) : (
+			<Component {...props} />
+		))
+}

@@ -1,0 +1,124 @@
+# Continuous integration (ADR 0020): checks, browser e2e suites against a fresh
+# StudioCMS site, and the production Docker image. Runs on pushes to main and on
+# pull requests.
+#
+# Hardening: read-only token, actions pinned to full commit SHAs (tags can be
+# moved), no credentials left in the checkout, pnpm via Corepack at the version
+# in package.json, frozen lockfile (the supply-chain policies in
+# pnpm-workspace.yaml apply to every install).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, types, unit tests, audit, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm audit
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  e2e:
+    name: Browser e2e suites
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: playground
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Build the plugins
+        run: pnpm --filter @nascencestudio/tapestry build
+      - name: Fresh site configuration (throwaway secrets)
+        run: |
+          key="$(openssl rand -base64 16)"
+          echo "::add-mask::$key"
+          printf 'CMS_ENCRYPTION_KEY="%s"\nCMS_LIBSQL_URL="file:./studiocms.db"\n' "$key" > .env
+          chmod 600 .env
+          echo "CMS_ENCRYPTION_KEY=$key" >> "$GITHUB_ENV"
+          echo "CMS_LIBSQL_URL=file:./studiocms.db" >> "$GITHUB_ENV"
+      - run: pnpm migrate
+      - name: First-time setup (owner account, written to .dev-credentials)
+        run: |
+          CMS_SETUP=1 pnpm dev
+          for _ in $(seq 1 90); do curl -sf -o /dev/null http://localhost:4321/start && break; sleep 1; done
+          node scripts/setup-site.mjs
+          pnpm exec astro dev stop
+      - name: Start the dev server and seed the demo page
+        run: |
+          pnpm dev
+          for _ in $(seq 1 90); do curl -sf -o /dev/null http://localhost:4321/dashboard/login && break; sleep 1; done
+          pnpm seed
+      - name: e2e suites
+        run: pnpm e2e
+        env:
+          E2E_SCREENSHOTS: ${{ runner.temp }}/e2e-screenshots
+      - name: Performance budget (production build, what visitors download)
+        run: |
+          pnpm exec astro build
+          PORT=4600 HOST=127.0.0.1 node dist/server/entry.mjs > "$RUNNER_TEMP/production.log" 2>&1 &
+          for _ in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:4600/ && break; sleep 1; done
+          BASE_URL=http://127.0.0.1:4600 pnpm budget
+      - name: Dev server log (on failure)
+        if: failure()
+        run: pnpm exec astro dev logs | tail -200
+      - name: Production server log (on failure)
+        if: failure()
+        run: tail -200 "$RUNNER_TEMP/production.log" || true
+
+  docker:
+    name: Production image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build
+        run: docker build --build-arg SITE_URL=https://example.com -t nascence-site:ci .
+      - name: Start and wait until healthy
+        run: |
+          docker run -d --name site --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges:true \
+            -e CMS_ENCRYPTION_KEY="$(openssl rand -base64 16)" -e CMS_LIBSQL_URL=file:/data/studiocms.db \
+            -v site-data:/data nascence-site:ci
+          for _ in $(seq 1 60); do
+            status="$(docker inspect -f '{{.State.Health.Status}}' site)"
+            [ "$status" = healthy ] && break
+            sleep 2
+          done
+          docker inspect -f '{{.State.Health.Status}}' site | grep -qx healthy
+          test "$(docker exec site id -u)" != 0
+      - name: Image resizing works in the image (sharp's native binary resolves)
+        run: docker run --rm --read-only --tmpfs /tmp --entrypoint node -v "$PWD/.github/scripts/check-sharp.mjs:/tmp/check.mjs:ro" nascence-site:ci /tmp/check.mjs
+      - name: Container log (on failure)
+        if: failure()
+        run: docker logs site

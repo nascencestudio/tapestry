@@ -1,0 +1,54 @@
+---
+import { Media } from 'virtual:tapestry/media';
+/**
+ * Renders a `richtext` prop value: `<RichText value={body} />`.
+ * (`@nascencestudio/tapestry/RichText.astro`)
+ *
+ * Elements come from a fixed allowlist (RICH_TEXT_TAGS); text and the only
+ * attribute (`href`, checked with isSafeUrl) go through Astro's escaping. No
+ * `set:html`. Renders nothing for empty values.
+ *
+ * In canvas mode (editors only) the output is wrapped in an invisible
+ * `display: contents` element naming its node and prop, so the editor can
+ * edit the text in place (ADR 0013).
+ */
+import { type RenderNode, RICH_TEXT_TAGS, toRenderTree } from '../richtext.js';
+import { isSafeUrl } from '../validate.js';
+import { isCanvasMode, propOwner, TEXT_ATTR, TEXT_PROP_ATTR } from './canvas-mode.js';
+
+interface Props {
+	/** The prop value (rich text, or a plain string). */
+	value?: unknown;
+	/** Internal: already-built children when rendering recursively. */
+	nodes?: RenderNode[];
+}
+
+const nodes = Astro.props.nodes ?? toRenderTree(Astro.props.value, isSafeUrl);
+const allowed = new Set<string>(RICH_TEXT_TAGS);
+const owner =
+	Astro.props.nodes === undefined && isCanvasMode(Astro.locals)
+		? propOwner(Astro.locals, Astro.props.value)
+		: undefined;
+---
+
+{
+	owner ? (
+		<tapestry-canvas-text {...{ [TEXT_ATTR]: owner.nodeId, [TEXT_PROP_ATTR]: owner.prop }} style="display: contents">
+			<Astro.self nodes={nodes} />
+		</tapestry-canvas-text>
+	) : (
+		nodes.map((node) => {
+			if (typeof node === 'string') return node;
+			if (node.tag === 'media') return <Media id={node.attrs?.id} class="tapestry-media" />;
+			if (!allowed.has(node.tag)) return null;
+			if (node.tag === 'br') return <br />;
+			if (node.tag === 'hr') return <hr />;
+			const Tag = node.tag;
+			return (
+				<Tag {...(node.attrs ?? {})}>
+					<Astro.self nodes={node.children} />
+				</Tag>
+			);
+		})
+	)
+}

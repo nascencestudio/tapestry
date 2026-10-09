@@ -1,0 +1,36 @@
+{
+  "name": "playground",
+  "private": true,
+  "type": "module",
+  "description": "Astro + StudioCMS site used to develop and test Tapestry",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check",
+    "migrate": "studiocms migrate --latest",
+    "seed": "node scripts/seed-demo-page.mjs",
+    "studiocms": "studiocms",
+    "e2e": "node e2e/editor.e2e.mjs && node e2e/layers.e2e.mjs && node e2e/canvas.e2e.mjs && node e2e/site.e2e.mjs && node e2e/page-types.e2e.mjs && node e2e/publishing.e2e.mjs && node e2e/permissions.e2e.mjs && node e2e/richtext.e2e.mjs && node e2e/inline.e2e.mjs && node e2e/links.e2e.mjs && node e2e/lists.e2e.mjs && node e2e/slots.e2e.mjs && node e2e/patterns.e2e.mjs && node e2e/library.e2e.mjs && node e2e/islands.e2e.mjs && node e2e/migrations.e2e.mjs && node e2e/translations.e2e.mjs && node e2e/a11y.e2e.mjs && node e2e/settings.e2e.mjs && node e2e/media.e2e.mjs && node e2e/media-tapestry.e2e.mjs && node e2e/media-settings.e2e.mjs && node e2e/media-extras.e2e.mjs",
+    "budget": "node scripts/check-budget.mjs"
+  },
+  "dependencies": {
+    "@astrojs/node": "11.1.6",
+    "@astrojs/preact": "6.0.5",
+    "@effect/platform": "0.97.2",
+    "@effect/platform-node": "0.108.2",
+    "@libsql/client": "0.18.0",
+    "@nascencestudio/medialibrary": "0.1.1",
+    "@nascencestudio/tapestry": "workspace:*",
+    "@studiocms/md": "0.5.0",
+    "astro": "7.3.5",
+    "effect": "3.22.2",
+    "preact": "10.29.8",
+    "studiocms": "0.6.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "axe-core": "4.13.0",
+    "typescript": "6.0.3"
+  }
+}

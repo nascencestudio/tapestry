@@ -1,0 +1,222 @@
+---
+/**
+ * Drupal-style admin toolbar for the public site. Renders nothing at all unless
+ * the viewer is a logged-in editor, so anonymous visitors get zero extra bytes
+ * (markup and CSS are emitted only with the bar) and no JavaScript.
+ *
+ * Place it as the first element inside <body> in the site layout:
+ *
+ *   <AdminBar viewer={viewer} page={page} />
+ *
+ * `viewer` and `page` come from `getPage()` in `@nascencestudio/tapestry/page`.
+ */
+/// <reference types="studiocms/v/types" />
+import { StudioCMSRoutes } from 'studiocms:lib';
+import { isEditor, type Viewer } from '../access.js';
+import { isEmbedded, PREVIEW_PARAM } from './canvas-mode.js';
+import type { PublishingInfo } from './page.js';
+
+interface Props {
+	viewer: Viewer | null | undefined;
+	page?: { id: string; title: string; draft?: boolean | null } | null;
+	/** From getPage(), for Tapestry pages: published/draft state. */
+	publishing?: PublishingInfo | null;
+}
+
+const { viewer, page, publishing } = Astro.props;
+// Hidden inside the editor's canvas and version comparison, which show the page as visitors see it.
+const show = isEditor(viewer) && !isEmbedded(Astro.locals);
+const { mainLinks, authLinks } = StudioCMSRoutes;
+const editHref = page ? `${mainLinks.contentManagementEdit}?edit=${encodeURIComponent(page.id)}` : null;
+
+// One status badge: StudioCMS's page-level draft flag wins (the whole page is
+// hidden), then Tapestry's publishing state.
+const status = page?.draft
+	? { label: 'Draft', tone: 'draft' }
+	: publishing?.status === 'unpublished'
+		? { label: 'Not published yet', tone: 'draft' }
+		: publishing?.status === 'changed'
+			? { label: 'Unpublished changes', tone: 'changed' }
+			: { label: 'Published', tone: 'published' };
+const previewUrl = new URL(Astro.url);
+previewUrl.searchParams.set(PREVIEW_PARAM, '');
+const publishedUrl = new URL(Astro.url);
+publishedUrl.searchParams.delete(PREVIEW_PARAM);
+const previewHref = `${previewUrl.pathname}${previewUrl.search}`;
+const publishedHref = `${publishedUrl.pathname}${publishedUrl.search}`;
+---
+
+{
+	show && (
+		<>
+			{/* Inline and rendered only with the bar, so anonymous visitors download none of it.
+			    `all: initial` + explicit styles keep the bar looking the same on any site theme;
+			    selectors start with an ID so ordinary site rules (e.g. `.site a`) can't override them.
+			    Kept outside the <nav>: `all: initial` would otherwise make this <style> visible. */}
+			<style is:inline>
+			#tapestry-adminbar,
+			#tapestry-adminbar * {
+				all: initial;
+				box-sizing: border-box;
+				font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+				font-size: 13px;
+				line-height: 1;
+				color: #f4f4f8;
+			}
+			#tapestry-adminbar {
+				position: sticky;
+				top: 0;
+				z-index: 2147483000;
+				display: flex;
+				align-items: center;
+				gap: 2px;
+				flex-wrap: wrap;
+				min-height: 40px;
+				padding: 0 8px;
+				background: #1c1b22;
+				border-bottom: 1px solid #34323d;
+			}
+			#tapestry-adminbar .tab {
+				display: inline-flex;
+				align-items: center;
+				height: 40px;
+				padding: 0 12px;
+				cursor: pointer;
+				text-decoration: none;
+			}
+			#tapestry-adminbar .tab:hover {
+				background: #2c2a35;
+			}
+			#tapestry-adminbar .tab:focus-visible {
+				outline: 2px solid #a78bfa;
+				outline-offset: -2px;
+			}
+			#tapestry-adminbar .tab--home {
+				font-weight: 600;
+			}
+			#tapestry-adminbar .tab--primary {
+				background: #6d4ed6;
+				height: 28px;
+				border-radius: 4px;
+				margin-left: 8px;
+				font-weight: 600;
+			}
+			#tapestry-adminbar .tab--primary:hover {
+				background: #7c5ce6;
+			}
+			#tapestry-adminbar .page {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				margin-left: 12px;
+				padding-left: 12px;
+				border-left: 1px solid #34323d;
+				min-width: 0;
+			}
+			#tapestry-adminbar .title {
+				display: inline-block;
+				max-width: 28ch;
+				overflow: hidden;
+				white-space: nowrap;
+				text-overflow: ellipsis;
+				color: #c9c7d3;
+			}
+			#tapestry-adminbar .status {
+				display: inline-block;
+				padding: 4px 8px;
+				border-radius: 999px;
+				font-size: 11px;
+				font-weight: 600;
+				text-transform: uppercase;
+				letter-spacing: 0.04em;
+			}
+			#tapestry-adminbar .status--draft {
+				background: #f5b041;
+				color: #1c1b22;
+			}
+			#tapestry-adminbar .status--published {
+				background: #2e7d4f;
+			}
+			#tapestry-adminbar .status--changed {
+				background: #f5b041;
+				color: #1c1b22;
+			}
+			#tapestry-adminbar .status--preview {
+				background: #6d4ed6;
+			}
+			#tapestry-adminbar .spacer {
+				display: block;
+				flex: 1;
+			}
+			#tapestry-adminbar .user {
+				display: inline-block;
+				padding: 0 8px;
+				color: #c9c7d3;
+			}
+			@media print {
+				#tapestry-adminbar {
+					display: none;
+				}
+			}
+		</style>
+		<nav id="tapestry-adminbar" class="tapestry-adminbar" aria-label="Admin toolbar" data-tapestry-adminbar>
+
+			<a class="tab tab--home" href={mainLinks.dashboardIndex}>
+				Dashboard
+			</a>
+			<a class="tab" href={mainLinks.contentManagement}>
+				Content
+			</a>
+			<a class="tab" href={mainLinks.contentManagementCreate}>
+				Add page
+			</a>
+			{page && (
+				<span class="page">
+					<span class:list={['status', `status--${status.tone}`]} data-tapestry-status={status.tone}>
+						{status.label}
+					</span>
+					<span class="title">{page.title}</span>
+					{publishing?.scheduledAt && (
+						<span class="status status--preview" data-tapestry-scheduled>
+							Scheduled{' '}
+							<time datetime={publishing.scheduledAt}>
+								{new Date(publishing.scheduledAt).toLocaleString('en', {
+									dateStyle: 'medium',
+									timeStyle: 'short',
+									timeZone: 'UTC',
+								})}{' '}
+								UTC
+							</time>
+						</span>
+					)}
+					{publishing?.previewing ? (
+						<>
+							<span class="status status--preview" data-tapestry-previewing>
+								Previewing draft
+							</span>
+							<a class="tab" href={publishedHref} data-tapestry-view-published>
+								View published
+							</a>
+						</>
+					) : (
+						publishing &&
+						publishing.status !== 'published' && (
+							<a class="tab" href={previewHref} data-tapestry-preview-link>
+								Preview draft
+							</a>
+						)
+					)}
+					<a class="tab tab--primary" href={editHref} data-tapestry-edit>
+						Edit page
+					</a>
+				</span>
+			)}
+			<span class="spacer" />
+			<span class="user">{viewer?.user?.name}</span>
+			<a class="tab" href={authLinks.logoutURL}>
+				Log out
+			</a>
+		</nav>
+		</>
+	)
+}

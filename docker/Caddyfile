@@ -1,0 +1,22 @@
+# Caddy: HTTPS for SITE_DOMAIN (set in .env.production) with automatic
+# certificates, compression and security headers, proxying to the app.
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# Largest upload body: the same ceiling the app enforces for the media
+	# library's admin-set limits (MEDIA_MAX_UPLOAD_MB in .env.production,
+	# default 1024). The app still checks each kind's own limit.
+	request_body {
+		max_size {$MEDIA_MAX_UPLOAD_MB:1024}MiB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	reverse_proxy app:4321
+}

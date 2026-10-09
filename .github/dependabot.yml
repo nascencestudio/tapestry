@@ -1,0 +1,39 @@
+# Dependency updates (roadmap: "Dependabot for pinned action SHAs and dependencies").
+#
+# - GitHub Actions: keeps the full-SHA pins in .github/workflows current (the version
+#   tag stays in the comment).
+# - npm ecosystem (pnpm, detected from pnpm-lock.yaml): one PR per week with minor and
+#   patch updates grouped; majors separately, since they need reading (e.g. TypeScript 7
+#   and Preact 11 are held back on purpose; see CLAUDE.md "Pinned stack").
+# - Cooldown matches pnpm-workspace.yaml's minimumReleaseAge (3 days): brand-new releases
+#   are where hijacked packages show up. CI then installs with the frozen lockfile, so
+#   pnpm's trust and build-script policies apply to every Dependabot PR as well.
+# - Patched dependencies (patches/) fail the install when they stop applying, so an update
+#   to one of them can't merge without the patch being re-checked.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: ci
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+      semver-major-days: 14
+    versioning-strategy: increase
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: deps

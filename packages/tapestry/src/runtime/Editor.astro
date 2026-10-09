@@ -1,0 +1,100 @@
+---
+/**
+ * Dashboard editor for Tapestry pages. StudioCMS renders this inside its page
+ * edit form and saves the value of `<textarea name="page-content">`.
+ *
+ * The visual editor (Preact, see src/editor/) mounts into the host element and
+ * keeps the textarea in sync. Without JavaScript, the textarea itself stays
+ * visible as a plain JSON editor.
+ */
+/// <reference path="../virtual.d.ts" />
+import '../editor/editor.css';
+import config from 'virtual:tapestry/config';
+import manifest from 'virtual:tapestry/manifest';
+import type { PluginPageTypeEditorProps } from 'studiocms/types';
+import { hasPermission } from '../access.js';
+import { loadToolbarSettings } from './toolbar-store.js';
+import { getViewer } from './viewer.js';
+
+interface Props extends PluginPageTypeEditorProps {}
+
+const { content } = Astro.props;
+// StudioCMS resolves the session on dashboard routes; record who publishes.
+const locals = Astro.locals as { StudioCMS?: { security?: { userSessionData?: { user?: { name?: string } | null } } } };
+const userName = locals.StudioCMS?.security?.userSessionData?.user?.name ?? '';
+// Admins can narrow rich text toolbars (dashboard → Text formatting, ADR 0014).
+const toolbars = JSON.stringify(await loadToolbarSettings(manifest));
+// Who may publish (ADR 0022). Only the UI; the server enforces it (publish-guard.ts).
+const viewer = await getViewer(Astro);
+const canPublish = hasPermission(viewer.permissionLevel, config.publishPermission);
+---
+
+<div
+	class="tapestry-editor-host"
+	data-tapestry-editor
+	data-user-name={userName}
+	data-toolbars={toolbars}
+	data-can-publish={canPublish ? 'true' : 'false'}
+	data-publish-role={config.publishPermission}
+	data-user-level={viewer.permissionLevel}
+></div>
+<textarea id="page-content" name="page-content" class="tapestry-editor-field" data-tapestry-field spellcheck="false"
+	>{content ?? ''}</textarea
+>
+
+<script>
+	import config from 'virtual:tapestry/config';
+	import { loadPicker } from 'virtual:tapestry/media-client';
+	import manifest from 'virtual:tapestry/manifest';
+	import thumbnails from 'virtual:tapestry/thumbnails';
+	import { mountEditor } from '../editor/mount.js';
+	import { applyToolbarSettings, parseToolbarSettings } from '../toolbar-settings.js';
+
+	function toolbarSettings(raw: string | undefined) {
+		try {
+			return parseToolbarSettings(JSON.parse(raw ?? '{}'), manifest);
+		} catch {
+			return parseToolbarSettings({}, manifest);
+		}
+	}
+
+	let cleanup: (() => void) | undefined;
+
+	function init() {
+		const host = document.querySelector<HTMLElement>('[data-tapestry-editor]');
+		const field = document.querySelector<HTMLTextAreaElement>('textarea[data-tapestry-field]');
+		if (!host || !field) return;
+		const editorManifest = applyToolbarSettings(manifest, toolbarSettings(host.dataset.toolbars));
+		cleanup = mountEditor(host, field, editorManifest, {
+			pageUrlPattern: config.pageUrlPattern,
+			renderRoute: config.renderRoute,
+			historyLimit: config.historyLimit,
+			userName: host.dataset.userName || undefined,
+			canPublish: host.dataset.canPublish !== 'false',
+			publishRole: host.dataset.publishRole,
+			mediaPicker: loadPicker,
+			thumbnails,
+			languages: config.languages,
+			userLevel: host.dataset.userLevel,
+			pageId: new URL(location.href).searchParams.get('edit') ?? undefined,
+		}) ?? cleanup;
+		field.hidden = true;
+	}
+
+	// The dashboard may use client-side navigation, where scripts run only once:
+	// mount now and on every page load, and unmount before the page is swapped.
+	init();
+	document.addEventListener('astro:page-load', init);
+	document.addEventListener('astro:before-swap', () => {
+		cleanup?.();
+		cleanup = undefined;
+	});
+</script>
+
+<style>
+	.tapestry-editor-field {
+		width: 100%;
+		min-height: 20rem;
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	}
+</style>

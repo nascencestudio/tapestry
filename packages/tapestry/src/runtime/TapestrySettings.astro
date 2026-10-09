@@ -1,0 +1,101 @@
+---
+/**
+ * The Tapestry plugin page in the StudioCMS dashboard (Plugins → Tapestry),
+ * served at the URL StudioCMS links plugins to. StudioCMS 0.6.1 builds that link
+ * without a slash (`/<dashboard>/plugins@nascencestudio/tapestry`, known issue #27), so
+ * the page answers there and at the intended `/<dashboard>/plugins/@nascencestudio/tapestry`.
+ * Uses StudioCMS's own dashboard layout, with Tapestry's sections in the inner
+ * sidebar (only "Text formatting" for now). Admins only. See ADR 0014.
+ */
+/// <reference types="studiocms/v/types" />
+import { StudioCMSRoutes } from 'studiocms:lib';
+import { Button } from 'studiocms:ui/components/button';
+import { Icon } from 'studiocms:ui/components/icon';
+import PageHeader from 'studiocms/frontend/components/dashboard/PageHeader.astro';
+import SidebarLink from 'studiocms/frontend/components/dashboard/SidebarLink.astro';
+import Layout from 'studiocms/frontend/layouts/DashboardLayout.astro';
+import { hasPermission } from '../access.js';
+import ToolbarSettings from './ToolbarSettings.astro';
+import { getViewer } from './viewer.js';
+
+export const prerender = false;
+
+const dashboardIndex = StudioCMSRoutes.mainLinks.dashboardIndex.replace(/\/$/, '');
+// The routes match "/dashboard" and any other first segment; only the real dashboard path is this page.
+if (!Astro.url.pathname.startsWith(`${dashboardIndex}/plugins`)) {
+	return new Response(null, { status: 404 });
+}
+const viewer = await getViewer(Astro);
+if (!viewer.isLoggedIn) return Astro.redirect(StudioCMSRoutes.authLinks.loginURL);
+if (!hasPermission(viewer.permissionLevel, 'admin')) return Astro.redirect(dashboardIndex);
+
+const { siteConfig: config, defaultLang: lang, security } = Astro.locals.StudioCMS;
+const here = Astro.url.pathname;
+const sections = [
+	{ id: 'text-formatting', label: 'Text formatting', icon: 'heroicons:adjustments-horizontal' },
+] as const;
+const current = sections[0];
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+---
+
+<Layout
+	title={`Tapestry: ${current.label}`}
+	description="Tapestry plugin settings"
+	sidebar="double"
+	{lang}
+	{config}
+	currentUser={security?.userSessionData ?? null}
+>
+	<div slot="double-sidebar" class="tapestry-inner-sidebar" data-tapestry-settings-nav>
+		<div class="tapestry-inner-sidebar__header">
+			{/* StudioCMS's double-sidebar script expects #back-to-outer and #show-page (mobile navigation). */}
+			<Button variant="solid" color="primary" size="md" id="back-to-outer" class="mobile-btn mid-size-btn">
+				<Icon name="heroicons:arrow-left" width={24} height={24} slot="start-content" />
+			</Button>
+			<p class="tapestry-inner-sidebar__title">Tapestry</p>
+			<Button variant="solid" color="primary" size="md" id="show-page" class="mobile-btn">
+				<Icon name="heroicons:x-mark" width={24} height={24} slot="start-content" />
+			</Button>
+		</div>
+		<div class="tapestry-inner-sidebar__links">
+			{sections.map((section) => (
+				<SidebarLink icon={section.icon} href={here} aria-current={section.id === current.id ? 'page' : undefined}>
+					{section.label}
+				</SidebarLink>
+			))}
+		</div>
+	</div>
+
+	<div slot="header">
+		<PageHeader title={`Tapestry: ${current.label}`} />
+	</div>
+
+	<ToolbarSettings />
+</Layout>
+
+<style>
+	.tapestry-inner-sidebar {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		min-height: 100vh;
+		height: 100%;
+		padding: 1.5rem;
+	}
+	.tapestry-inner-sidebar__header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.tapestry-inner-sidebar__title {
+		flex: 1;
+		margin: 0;
+		font-weight: 600;
+		font-size: 1.125rem;
+	}
+	.tapestry-inner-sidebar__links {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+	}
+</style>

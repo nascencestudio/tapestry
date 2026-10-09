@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.astro/
+.env
+.env.*
+!.env.example
+!.env.production.example
+.dev-credentials
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.DS_Store
+coverage/
+# Uploaded media (playground and Docker volume)
+data/
+
+# Docs site: pages generated from docs/ by website/scripts/sync-docs.mjs
+website/src/content/docs/start/
+website/src/content/docs/guides/
+website/src/content/docs/reference/
+website/src/content/docs/project/
+website/src/content/docs/decisions/

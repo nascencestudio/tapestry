@@ -1,0 +1,33 @@
+---
+interface Props {
+	ratio?: 'even' | 'wide-left' | 'wide-right';
+}
+const { ratio = 'even' } = Astro.props;
+---
+
+<div class:list={['split', `split--${ratio}`]}>
+	<div class="split__column"><slot name="left" /></div>
+	<div class="split__column"><slot name="right" /></div>
+</div>
+
+<style>
+	.split {
+		display: grid;
+		gap: 2rem;
+		margin: 1.5rem 0;
+	}
+	@media (min-width: 48rem) {
+		.split--even {
+			grid-template-columns: 1fr 1fr;
+		}
+		.split--wide-left {
+			grid-template-columns: 2fr 1fr;
+		}
+		.split--wide-right {
+			grid-template-columns: 1fr 2fr;
+		}
+	}
+	.split__column {
+		min-width: 0;
+	}
+</style>

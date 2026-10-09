@@ -1,0 +1,107 @@
+packages:
+  - packages/*
+  - playground
+  - website
+
+# ---------------------------------------------------------------------------
+# Supply-chain hardening. See docs/decisions/0003-pnpm-and-supply-chain-hardening.md
+# ---------------------------------------------------------------------------
+
+# Refuse package versions published less than 3 days ago (value is minutes).
+# Most malicious releases are detected and unpublished within hours.
+minimumReleaseAge: 4320
+# Except our own package from Nascence Studio's other repository: published by its CI with
+# provenance (trustPolicy still applies), and Tapestry needs new releases without a 3-day wait.
+minimumReleaseAgeExclude:
+  - '@nascencestudio/medialibrary'
+
+# Fail if a package's trust evidence (provenance / trusted publisher) is weaker
+# than in earlier versions — a common sign of a hijacked maintainer account.
+trustPolicy: no-downgrade
+# Only enforce the trust check for versions published in the last 180 days
+# (value is minutes). Older versions without provenance are almost always
+# manual publishes by the usual maintainer (e.g. undici-types@6.21.0 by
+# matteo.collina, Nov 2024); a takeover would have been noticed long ago.
+trustPolicyIgnoreAfter: 259200
+
+# Transitive dependencies may only come from the registry, never git/tarball URLs.
+blockExoticSubdeps: true
+
+# Dependency lifecycle scripts (postinstall etc.) are blocked unless listed here.
+# Unlisted packages that want to run scripts fail the install so we notice.
+# Each entry is a deliberate decision — record changes in docs/devlog.md.
+strictDepBuilds: true
+allowBuilds:
+  # Bundler used by Vite/Astro; postinstall verifies its platform binary.
+  esbuild: true
+  # Image service used by Astro; installs its platform binary.
+  sharp: true
+  # Denied: optional native accelerators. Prebuilt binaries ship via optional
+  # dependencies and JS fallbacks exist, so the build scripts are unnecessary.
+  '@parcel/watcher': false
+  msgpackr-extract: false
+
+# Advisories reviewed and judged not exploitable in this project. Every entry
+# needs a reason and a re-check date; remove as soon as a patched version exists.
+# Details: docs/known-issues.md ("Audit advisories without patches").
+auditConfig:
+  ignoreGhsas:
+    # braces <=3.0.3 (no patch, published 2026-09-18). Exploit needs attacker-controlled
+    # glob patterns; StudioCMS's middleware only expands developer-defined route
+    # patterns and tests the request path against them. Re-check 2026-11-01.
+    - GHSA-vfj7-8cjw-p6xm
+
+# Respect "engines" fields and pin exact versions when adding dependencies.
+engineStrict: true
+saveExact: true
+
+# Refuse to run scripts if node_modules is out of sync with the lockfile.
+verifyDepsBeforeRun: error
+
+# Forced versions of transitive dependencies. Every entry needs a reason and an exit condition.
+overrides:
+  # GHSA-68fv-2mgg-jv7q (high, event-loop DoS via crafted source maps; build-time only
+  # here, via postcss/css-tree). 1.2.2 is the fix, same maintainer, published 2026-09-30.
+  # Remove once vite/postcss/css-tree resolve >=1.2.2 on their own.
+  source-map-js: 1.2.2
+  # GHSA-rj75-hqrm-r3gf (moderate, quadratic selector parsing in postcss-selector-parser <7.1.6;
+  # build-time only, docs site, parsing our own CSS). Expressive Code (Starlight's code blocks)
+  # uses postcss-nested 6, which pins the 6.x parser (no fix); postcss-nested 8.0.1 uses
+  # ^7.1.4 (resolves 7.1.6). Verified: the docs site builds and code blocks render (ADR 0036).
+  # Remove when expressive-code moves to postcss-nested >= 8.
+  '@expressive-code/core>postcss-nested': 8.0.1
+# Patches (pnpm patch). Every entry needs a reason and an exit condition; the install
+# fails if a patch stops applying (e.g. after an upgrade), so they can't go stale silently.
+patchedDependencies:
+  # Public pages loaded the StudioCMS dashboard's CSS (~67 KB: DashboardLayout + BaseLayout).
+  # Every page's module graph reaches StudioCMS's middleware (through Astro's manifest), and
+  # the middleware imported `studiocms:i18n`, which also exports the dashboard's
+  # LanguageSelector component (StudioCMS UI buttons/dropdowns, bundled with the dashboard
+  # CSS). The patch imports `defaultLang` from the plain config module instead (one line).
+  # Known issue #32. Remove when StudioCMS stops importing components in its middleware.
+  # Also (known issue #12): the "Database Viewer" dev-toolbar app is not registered (it fed
+  # the local database to an external iframe and spammed every dev page's console), and its
+  # query endpoint requires the owner role in dev too (it ran any SQL for anyone in dev).
+  # Remove when StudioCMS secures the endpoint and makes the app optional.
+  # Also (known issue #37, ADR 0030): after rendering, StudioCMS re-sanitizes the rendered page
+  # with ultrahtml's defaults, which drop every <script> components emit (Astro islands never
+  # hydrated). Page-type renderers that set `componentScripts: true` (Tapestry, whose content
+  # can't contain HTML) skip the sanitizer in those post-render passes; others are unchanged.
+  # Remove when StudioCMS stops re-sanitizing component output.
+  studiocms@0.6.1: patches/studiocms@0.6.1.patch
+  # @studiocms/md injects its heading/callout CSS into every page of the site
+  # (injectScript 'page-ssr'), even pages with no Markdown. The patch drops the global
+  # injection and adds `studiocms:md/styles-inline` so the site layout inlines the CSS
+  # on Markdown pages only. Known issue #33. Remove when the plugin makes this optional.
+  '@studiocms/md@0.5.0': patches/@studiocms__md@0.5.0.patch
+  # Dev server only: Astro 7's dev CSS collector walks a page's whole module graph, through
+  # `virtual:astro:manifest` (which links to every page and the middleware), so each page
+  # in `astro dev` got the CSS of every other page (~100 <style> tags on public pages; the
+  # site's global CSS on the dashboard, known issue #14). The patch stops the walk at the
+  # manifest, matching production, where pages are boundaries. Known issue #32. Remove when
+  # Astro fixes the dev collector (report upstream when the user asks).
+  astro@7.3.5: patches/astro@7.3.5.patch
+  # StudioCMS can't delete users: the ghost-user check is inverted (`!==`), so every real
+  # user is refused ("is an internal user and cannot be deleted") and only the internal ghost
+  # user would be deletable. The patch flips the comparison. Known issue #35. Remove when fixed upstream.
+  '@withstudiocms/sdk@0.4.2': patches/@withstudiocms__sdk@0.4.2.patch

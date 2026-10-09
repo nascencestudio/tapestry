@@ -1,0 +1,11 @@
+---
+interface Props {
+	text: string;
+	level?: '2' | '3' | '4';
+	align?: 'left' | 'center';
+}
+const { text, level = '2', align = 'left' } = Astro.props;
+const Tag = `h${level}` as 'h2' | 'h3' | 'h4';
+---
+
+<Tag style={{ textAlign: align, margin: 0 }}>{text}</Tag>

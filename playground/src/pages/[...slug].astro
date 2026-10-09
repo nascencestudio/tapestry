@@ -1,0 +1,33 @@
+---
+// Renders any StudioCMS page by slug ("/" maps to the "index" page).
+// StudioCMS picks the renderer from the page type, so Tapestry pages go
+// through Tapestry's renderer automatically.
+//
+// getPage() enforces draft visibility (drafts 404 for anyone but editors) and
+// sets private/noindex headers where needed. Don't call
+// SDKCoreJs.GET.page.bySlug directly: it doesn't filter drafts.
+
+import { StudioCMSRenderer } from 'studiocms:renderer';
+import { getPage } from '@nascencestudio/tapestry/page';
+import Layout from '../layouts/Layout.astro';
+
+const result = await getPage(Astro);
+if (!result) {
+	return new Response(null, { status: 404 });
+}
+const { page, viewer, publishing, language, translations } = result;
+---
+
+<Layout
+	title={page.title}
+	description={page.description}
+	viewer={viewer}
+	page={page}
+	publishing={publishing}
+	language={language}
+	translations={translations}
+>
+	<main>
+		<StudioCMSRenderer data={page} />
+	</main>
+</Layout>

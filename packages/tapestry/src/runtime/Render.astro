@@ -1,0 +1,47 @@
+---
+/**
+ * POST /_tapestry/render: renders an unsaved Tapestry document for the
+ * editor's visual canvas, through exactly the same pipeline as the public page
+ * (StudioCMS renderer → sanitizer → component registry → Node.astro), in
+ * canvas mode. Returns an HTML fragment; the editor takes the
+ * `[data-tapestry-root]` contents and swaps them into the canvas iframe.
+ *
+ * Editors only. Same-origin only (CSRF). Body is the document JSON (size-limited).
+ */
+/// <reference types="studiocms/v/types" />
+import { StudioCMSRenderer } from 'studiocms:renderer';
+import { isEditor } from '../access.js';
+import { LIMITS } from '../validate.js';
+import { enableCanvasMode } from './canvas-mode.js';
+import { getViewer } from './page.js';
+
+export const prerender = false;
+
+const deny = (status: number, message: string) =>
+	new Response(message, { status, headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' } });
+
+if (Astro.request.method !== 'POST') {
+	return deny(405, 'Method not allowed');
+}
+// CSRF: the editor posts from the same origin; browsers always send Origin on POST.
+if (Astro.request.headers.get('origin') !== Astro.url.origin) {
+	return deny(403, 'Cross-origin request refused');
+}
+if (!isEditor(await getViewer(Astro))) {
+	return deny(403, 'Editors only');
+}
+const content = await Astro.request.text();
+if (content.length > LIMITS.maxContentLength) {
+	return deny(413, 'Document too large');
+}
+
+enableCanvasMode(Astro.locals);
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+
+// The renderer validates the content, so arbitrary input is safe here.
+// biome-ignore lint/suspicious/noExplicitAny: minimal page shape the StudioCMS renderer reads
+const data: any = { package: 'tapestry/canvas', augments: [], defaultContent: { content } };
+---
+
+<StudioCMSRenderer data={data} />

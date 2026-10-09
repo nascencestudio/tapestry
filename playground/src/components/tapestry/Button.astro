@@ -1,0 +1,37 @@
+---
+import type { ResolvedLink } from '@nascencestudio/tapestry';
+
+interface Props {
+	label: string;
+	/** A resolved link (page on this site or web address); null if the linked page is gone. */
+	href: ResolvedLink | null;
+	variant?: 'primary' | 'secondary';
+}
+const { label, href, variant = 'primary' } = Astro.props;
+---
+
+<a
+	class:list={['button', `button--${variant}`]}
+	href={href?.href}
+	target={href?.newTab ? '_blank' : undefined}
+	rel={href?.rel}>{label}</a
+>
+
+<style>
+	.button {
+		align-self: flex-start;
+		display: inline-block;
+		padding: 0.625rem 1.125rem;
+		border-radius: 0.5rem;
+		font-weight: 600;
+		text-decoration: none;
+		border: 2px solid var(--site-brand);
+	}
+	.button--primary {
+		background: var(--site-brand);
+		color: var(--site-on-brand);
+	}
+	.button--secondary {
+		color: var(--site-brand);
+	}
+</style>

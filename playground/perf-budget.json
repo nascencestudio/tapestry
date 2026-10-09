@@ -1,0 +1,5 @@
+{
+  "_about": "Gzipped bytes (requests: count) an anonymous visitor downloads, measured on a production build by scripts/check-budget.mjs. Measured 2026-10-08: home 1.3 KB HTML, 1.5 KB CSS, 0.2 KB JS, 3 requests; island 2.9 KB HTML, 1.6 KB CSS, 8.0 KB JS, 9 requests. Raise a budget only with a reason in the devlog.",
+  "home": { "html": 3072, "css": 4096, "js": 1024, "requests": 4 },
+  "island": { "html": 5120, "css": 4096, "js": 12288, "requests": 12 }
+}

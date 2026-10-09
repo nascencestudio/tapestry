@@ -1,0 +1,21 @@
+---
+/**
+ * Wraps a whole Tapestry document. On the public site it adds nothing. In
+ * canvas mode it marks the region the editor swaps live
+ * (`display: contents`, so it doesn't affect layout).
+ */
+import { isCanvasMode, ROOT_ATTR } from './canvas-mode.js';
+
+const canvas = isCanvasMode(Astro.locals);
+const markerAttrs = { [ROOT_ATTR]: '' };
+---
+
+{
+	canvas ? (
+		<tapestry-canvas-root {...markerAttrs} style="display: contents">
+			<slot />
+		</tapestry-canvas-root>
+	) : (
+		<slot />
+	)
+}

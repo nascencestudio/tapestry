@@ -1,0 +1,25 @@
+{
+  "name": "tapestry-monorepo",
+  "private": true,
+  "type": "module",
+  "description": "Tapestry: drag-and-drop component page building for Astro + StudioCMS",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=12.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter playground dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "audit": "pnpm audit --prod",
+    "e2e": "pnpm --filter playground e2e",
+    "budget": "pnpm --filter playground budget"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14"
+  }
+}

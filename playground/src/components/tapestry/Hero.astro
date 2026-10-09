@@ -1,0 +1,72 @@
+---
+import type { MediaItem } from '@nascencestudio/tapestry';
+
+interface Props {
+	heading: string;
+	subheading?: string;
+	ctaLabel?: string;
+	ctaHref?: string;
+	/** A media library image (null when none is chosen or it was deleted). */
+	backgroundImage?: MediaItem | null;
+	align?: 'left' | 'center';
+}
+const { heading, subheading, ctaLabel, ctaHref, backgroundImage, align = 'left' } = Astro.props;
+// URLs come from the media library (validated storage keys), so they're safe in CSS.
+// A resized copy around 1600px wide is plenty for a background; the focal point keeps the crop.
+const image = backgroundImage?.kind === 'image' ? backgroundImage : null;
+const source = image?.variants.findLast((v) => v.width <= 1920)?.url ?? image?.url;
+const background = source ? `url("${source}")` : undefined;
+const position = image?.focalPoint ? `${image.focalPoint.x}% ${image.focalPoint.y}%` : 'center';
+---
+
+<header
+	class:list={['hero', `hero--${align}`, { 'hero--image': background }]}
+	style={background ? `--hero-image: ${background}; --hero-position: ${position}` : undefined}
+	role={backgroundImage?.alt ? 'img' : undefined}
+	aria-label={backgroundImage?.alt || undefined}
+>
+	<h1>{heading}</h1>
+	{subheading && <p class="hero__sub">{subheading}</p>}
+	{ctaLabel && ctaHref && <a class="hero__cta" href={ctaHref}>{ctaLabel}</a>}
+</header>
+
+<style>
+	.hero {
+		padding: 4rem 0 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.hero--image {
+		padding: 6rem 2rem 4rem;
+		border-radius: 0.75rem;
+		color: #fff;
+		background:
+			linear-gradient(rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.55)),
+			var(--hero-image) var(--hero-position, center) / cover no-repeat;
+	}
+	.hero--center {
+		align-items: center;
+		text-align: center;
+	}
+	h1 {
+		font-size: clamp(2rem, 5vw, 3.5rem);
+		line-height: 1.1;
+		margin: 0;
+	}
+	.hero__sub {
+		font-size: 1.25rem;
+		max-width: 40rem;
+		margin: 0;
+		opacity: 0.85;
+	}
+	.hero__cta {
+		display: inline-block;
+		padding: 0.75rem 1.25rem;
+		border-radius: 0.5rem;
+		background: var(--site-brand);
+		color: var(--site-on-brand);
+		text-decoration: none;
+		font-weight: 600;
+	}
+</style>

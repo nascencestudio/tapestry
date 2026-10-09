@@ -1,0 +1,38 @@
+diff --git a/dist/index.js b/dist/index.js
+index 9218d332fe3cbfffe462c99581c2fc6b07950048..e8cb9c1b37df9c56b528e33eb9f4961e2846877e 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -41,10 +41,17 @@ function internalMarkdownIntegration(options = {}) {
+ 						"studiocms:md/styles": `
+ 							import ${toModuleSpecifier(resolve("./styles/md-remark-headings.css"))};
+ 							${resolvedCalloutTheme ? `import ${toModuleSpecifier(resolvedCalloutTheme)};` : ""}
++						`,
++						// patched (Tapestry, docs/known-issues.md #33): the styles as a string, for sites to
++						// inline on Markdown pages only, instead of injecting them into every page.
++						"studiocms:md/styles-inline": `
++							import headings from ${toModuleSpecifier(resolve("./styles/md-remark-headings.css") + "?raw")};
++							${resolvedCalloutTheme ? `import callouts from ${toModuleSpecifier(resolvedCalloutTheme + "?raw")};` : "const callouts = '';"}
++							export default headings + callouts;
+ 						`
+ 					}
+ 				});
+-				params.injectScript("page-ssr", `import "studiocms:md/styles";`);
++				// patched (Tapestry, docs/known-issues.md #33): no global page-ssr injection.
+ 			},
+ 			"astro:config:done": () => {
+ 				shared.mdConfig = resolvedOptions;
+diff --git a/dist/virtual.d.ts b/dist/virtual.d.ts
+index 89852b0b2045d7f2ae641631f8e7992633ecce0c..61be22bb39b0fe26db0434c9a2ee29c579ed9f66 100644
+--- a/dist/virtual.d.ts
++++ b/dist/virtual.d.ts
+@@ -6,3 +6,10 @@ declare module 'studiocms:md/config' {
+ declare module 'studiocms:md/pre-render' {
+ 	export const preRender: typeof import('./lib/markdown-prerender').preRender;
+ }
++
++// patched (Tapestry, docs/known-issues.md #33)
++declare module 'studiocms:md/styles-inline' {
++	/** The Markdown renderer's CSS (heading anchors, callouts), to inline on Markdown pages. */
++	const css: string;
++	export default css;
++}

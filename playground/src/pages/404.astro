@@ -1,0 +1,27 @@
+---
+// The site's "not found" page. Without it, StudioCMS's own 404 (rendered in the full
+// dashboard layout, ~190 KB of dashboard markup) is what visitors get (known issue #34).
+import Layout from '../layouts/Layout.astro';
+
+export const prerender = false;
+---
+
+<Layout title="Page not found">
+	<main class="not-found">
+		<h1>Page not found</h1>
+		<p>The page you were looking for doesn't exist or has moved.</p>
+		<p><a href="/">Go to the home page</a></p>
+	</main>
+</Layout>
+
+<style>
+	.not-found {
+		max-width: 40rem;
+		margin: 0 auto;
+		padding: 6rem 1.5rem;
+	}
+	h1 {
+		font-size: clamp(2rem, 5vw, 3rem);
+		margin: 0 0 1rem;
+	}
+</style>

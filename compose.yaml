@@ -1,0 +1,50 @@
+# Production stack for a single server (e.g. Hetzner Cloud CPX11/CPX21):
+#   app   - the site (Astro + StudioCMS), data in the "site-data" volume
+#   caddy - HTTPS (automatic Let's Encrypt certificates) and security headers
+#
+# Setup and first run: docs/guides/deployment.md
+services:
+  app:
+    build:
+      context: .
+      args:
+        # From .env.production (run compose with --env-file .env.production).
+        SITE_URL: https://${SITE_DOMAIN:?set SITE_DOMAIN in .env.production}
+    image: nascence-site:latest
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      CMS_LIBSQL_URL: file:/data/studiocms.db
+      MEDIA_DIR: /data/media
+    volumes:
+      - site-data:/data
+    # Not published to the host: only Caddy reaches it.
+    expose:
+      - "4321"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    env_file: .env.production
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  site-data:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,37 @@
+diff --git a/dist/vite-plugin-css/index.js b/dist/vite-plugin-css/index.js
+index 4381698d4a3b9490f3a914e5caf3009fed588c5d..a43731228bb3f9bb96d9caf487a8e8630c85d159 100644
+--- a/dist/vite-plugin-css/index.js
++++ b/dist/vite-plugin-css/index.js
+@@ -18,6 +18,9 @@ import {
+ function getComponentFromVirtualModuleCssName(virtualModulePrefix, id) {
+   return id.slice(virtualModulePrefix.length).replace(new RegExp(ASTRO_CSS_EXTENSION_POST_PATTERN, "g"), ".");
+ }
++// patched (Tapestry, docs/known-issues.md #32): the manifest links to every page and the middleware;
++// walking into it gave every page in dev the CSS of every other page (and the dashboard the site's CSS).
++const isManifest = (id) => id.includes("virtual:astro:manifest");
+ async function ensureModulesLoaded(env, mod, seen = /* @__PURE__ */ new Set()) {
+   const id = mod.id ?? mod.url;
+   if (seen.has(id)) return;
+@@ -26,6 +29,7 @@ async function ensureModulesLoaded(env, mod, seen = /* @__PURE__ */ new Set()) {
+     if (!imp.id) continue;
+     if (seen.has(imp.id)) continue;
+     if (imp.id.includes(PROPAGATED_ASSET_QUERY_PARAM)) continue;
++    if (isManifest(imp.id)) continue;
+     if (imp.id === RESOLVED_MODULE_DEV_CSS || imp.id === RESOLVED_MODULE_DEV_CSS_ALL || imp.id.startsWith(RESOLVED_MODULE_DEV_CSS_PREFIX))
+       continue;
+     if (!imp.transformResult) {
+@@ -55,7 +59,7 @@ function* collectCSSWithOrder(id, mod, seen = /* @__PURE__ */ new Set()) {
+     return;
+   }
+   for (const imp of imported) {
+-    if (imp.id && !seen.has(imp?.id)) {
++    if (imp.id && !seen.has(imp?.id) && !isManifest(imp.id)) {
+       yield* collectCSSWithOrder(imp.id, imp, seen);
+     }
+   }
+diff --git a/src/core/README.md b/src/core/README.md
+deleted file mode 100644
+index f396c01c557b5c1193a5f8d0c17f8727f2ee9350..0000000000000000000000000000000000000000
+diff --git a/src/types/README.md b/src/types/README.md
+deleted file mode 100644
+index 10331210628e88a9cd869cadcceabc5009d73747..0000000000000000000000000000000000000000

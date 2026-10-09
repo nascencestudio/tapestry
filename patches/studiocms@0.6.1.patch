@@ -1,0 +1,96 @@
+diff --git a/dist/handlers/setupDbStudio.js b/dist/handlers/setupDbStudio.js
+index deb14dcec74dcec4804955216f74ac5c885d97fe..d28e005f98e0a099cee5bc56566b4672b01120af 100644
+--- a/dist/handlers/setupDbStudio.js
++++ b/dist/handlers/setupDbStudio.js
+@@ -10,7 +10,10 @@ const setupDbStudio = async (params, opts) => {
+       "virtual:studiocms/db-studio/connection": `export { createConnectionFromConfig } from ${resolveModuleSpecifier(`../toolbar/db-viewer/studio/virtual-connection/${dialect}.js`)};`
+     }
+   });
+-  addDevToolbarApp({
++  // patched (Tapestry, docs/known-issues.md #12): the "Database Viewer" dev-toolbar app is not registered.
++  // It embedded an external site in an iframe, fed it the local database, and its query endpoint ran any
++  // SQL without a login in dev. It also filled every page's console with errors (its endpoint fails).
++  if (false) addDevToolbarApp({
+     id: "studiocms-db-viewer",
+     entrypoint: resolve("../toolbar/db-viewer/index.js"),
+     name: "Database Viewer",
+diff --git a/dist/virtuals/components/Renderer.astro b/dist/virtuals/components/Renderer.astro
+index 2bbc47488dce5ce44ecb26c41a15171d20437a3a..9ce364b08a8428b517b150f9769b191b5efeff9f 100644
+--- a/dist/virtuals/components/Renderer.astro
++++ b/dist/virtuals/components/Renderer.astro
+@@ -63,6 +63,8 @@ const renderedContent = await renderFn({
+ 		result: $$result as SSRResult,
+ 		sanitizeOpts: RendererModule.sanitizeOpts,
+ 		preRenderer: RendererModule.renderer,
++		// Patched (known issue #37): keep scripts that components render (islands) for renderers that opt in.
++		componentScripts: (RendererModule as { componentScripts?: boolean }).componentScripts === true,
+ 	},
+ });
+ ---
+diff --git a/dist/virtuals/components/renderFn.js b/dist/virtuals/components/renderFn.js
+index 528e1349bb35191171ae0c9312a1549b22e517b9..a396444c8c4725aec8842b44836adb848ba4afe1 100644
+--- a/dist/virtuals/components/renderFn.js
++++ b/dist/virtuals/components/renderFn.js
+@@ -2,10 +2,12 @@ import { site } from "astro:config/server";
+ import { createRenderer } from "studiocms:component-registry/runtime";
+ import { createComponentProxy, transformHTML } from "@withstudiocms/component-registry";
+ import transformStorageAPI from "./ultrahtml-transformers/storage-api.js";
++import { transform } from "ultrahtml";
++import swap from "ultrahtml/transformers/swap";
+ const handlePrefixSuffix = (augment, content) => augment.type === "prefix" ? augment.html + content : content + augment.html;
+ const renderFn = async (args) => {
+   const { renderOpts, content, augments = [] } = args;
+-  const { result, sanitizeOpts, preRenderer } = renderOpts;
++  const { result, sanitizeOpts, preRenderer, componentScripts } = renderOpts;
+   const render = await createRenderer(result, sanitizeOpts, preRenderer);
+   let renderedContent = await render(content);
+   const componentsCollection = {};
+@@ -28,8 +30,17 @@ const renderFn = async (args) => {
+   for (const suffixAugment of augmentCollections.suffix) {
+     renderedContent = handlePrefixSuffix(suffixAugment, renderedContent);
+   }
+-  renderedContent = await transformHTML(renderedContent, components);
+-  renderedContent = await transformHTML(renderedContent, {}, {}, [transformStorageAPI({ site })]);
++  // Patched (known issue #37): these passes run over the *rendered* output, and transformHTML()
++  // always sanitizes with default options, which drop every <script>: Astro islands and
++  // component scripts never reached the page. Renderers that opt in (`componentScripts`, e.g.
++  // Tapestry, whose content can't contain HTML) skip the sanitizer here; the content itself
++  // was already sanitized before components were swapped in. Other page types are unchanged.
++  const postProcess = (html, swapComponents, transformers = []) =>
++    componentScripts === true
++      ? transform(html, [swap(swapComponents), ...transformers])
++      : transformHTML(html, swapComponents, {}, transformers);
++  renderedContent = await postProcess(renderedContent, components);
++  renderedContent = await postProcess(renderedContent, {}, [transformStorageAPI({ site })]);
+   if (args.postProcessorAugments && args.postProcessorAugments.length > 0) {
+     for (const postProcessorAugment of args.postProcessorAugments) {
+       try {
+diff --git a/frontend/middleware/index.ts b/frontend/middleware/index.ts
+index e329fec9728c99cd353c414d55343849eb04ed4e..8e9aaf318a2b76413d213c38f0f9018455ef772b 100644
+--- a/frontend/middleware/index.ts
++++ b/frontend/middleware/index.ts
+@@ -13,7 +13,9 @@
+ import crypto from 'node:crypto';
+ import { User, VerifyEmail } from 'studiocms:auth/lib';
+ import config, { dashboardConfig } from 'studiocms:config';
+-import { defaultLang } from 'studiocms:i18n';
++// patched (Tapestry, docs/known-issues.md #32): `studiocms:i18n` also exports the dashboard's LanguageSelector
++// component; importing it here put dashboard CSS (~67 KB) on every page, since every page's graph reaches the middleware.
++import { defaultLang } from '../../dist/virtuals/i18n/config.js';
+ import { StudioCMSRoutes } from 'studiocms:lib';
+ import { SDKCore } from 'studiocms:sdk';
+ import SCMSUiVersion from 'studiocms:ui/version';
+diff --git a/frontend/pages/studiocms_api/_handlers/integration/dbStudio.ts b/frontend/pages/studiocms_api/_handlers/integration/dbStudio.ts
+index 2abc3bb0f039319d9b0996f4be7d605a8dd6682e..6ec111580ef069d8601a5dd974e9ad7a49b0aedf 100644
+--- a/frontend/pages/studiocms_api/_handlers/integration/dbStudio.ts
++++ b/frontend/pages/studiocms_api/_handlers/integration/dbStudio.ts
+@@ -49,7 +49,8 @@ export const DbStudioAPIHandler = HttpApiBuilder.group(
+ 				// Security check: only allow access in the following cases
+ 				// 1. In development mode
+ 				// 2. In production, only if the user is an owner
+-				if (!isDev && currentUser.permissionLevel !== 'owner') {
++				// patched (Tapestry, docs/known-issues.md #12): owners only, in dev too (was: anyone in dev).
++				if (currentUser.permissionLevel !== 'owner') {
+ 					return yield* new Unauthorized();
+ 				}
+ 

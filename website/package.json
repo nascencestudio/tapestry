@@ -1,0 +1,16 @@
+{
+  "name": "website",
+  "private": true,
+  "type": "module",
+  "description": "The Tapestry documentation site (Starlight), built from ../docs",
+  "scripts": {
+    "sync": "node scripts/sync-docs.mjs",
+    "dev": "node scripts/sync-docs.mjs && astro dev",
+    "build": "node scripts/sync-docs.mjs && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.42.5",
+    "astro": "7.3.5"
+  }
+}

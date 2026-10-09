@@ -1,0 +1,128 @@
+---
+/**
+ * Dashboard page "Text formatting" (admins only): choose which formatting
+ * buttons editors get in each rich text field. Developers' toolbars are the
+ * ceiling; unchecked buttons disappear from the editor. Saved by
+ * settings-endpoint.ts. See ADR 0014.
+ */
+/// <reference path="../virtual.d.ts" />
+import config from 'virtual:tapestry/config';
+import manifest from 'virtual:tapestry/manifest';
+import { RICH_TEXT_BUTTON_INFO } from '../richtext.js';
+import { enabledButtons, FORM, richTextFields } from '../toolbar-settings.js';
+import { loadToolbarSettings } from './toolbar-store.js';
+
+const fields = richTextFields(manifest);
+const settings = await loadToolbarSettings(manifest);
+const saved = Astro.url.searchParams.has('saved');
+---
+
+<div class="tapestry-settings" data-tapestry-toolbar-settings>
+	{saved && (
+		<p class="tapestry-settings__saved" role="status" data-tapestry-settings-saved>
+			Saved. Editors get the new toolbars the next time they open a page.
+		</p>
+	)}
+	<p class="tapestry-settings__intro">
+		Choose the formatting buttons editors get in each rich text field. Only the buttons the site's developers
+		allowed for a field can be turned on. Turning a button off removes it from the editor (including keyboard
+		shortcuts and pasted formatting); text that already has that formatting keeps it until it's edited.
+	</p>
+	<form method="post" action={config.settingsRoute}>
+		<input type="hidden" name="return" value={Astro.url.pathname} />
+		{fields.length === 0 && <p>No components have rich text fields.</p>}
+		{
+			fields.map((field) => {
+				const enabled = new Set(enabledButtons(field, settings));
+				return (
+					<fieldset class="tapestry-settings__field" data-tapestry-settings-field={field.key}>
+						<legend>
+							{field.componentLabel} › {field.propLabel}
+						</legend>
+						<input type="hidden" name={FORM.field(field.key)} value="1" />
+						<div class="tapestry-settings__buttons">
+							{field.toolbar.map((button) => (
+								<label class="tapestry-settings__button">
+									<input
+										type="checkbox"
+										name={FORM.button(field.key)}
+										value={button}
+										checked={enabled.has(button)}
+										data-tapestry-settings-button={button}
+									/>
+									{RICH_TEXT_BUTTON_INFO[button].title}
+								</label>
+							))}
+						</div>
+					</fieldset>
+				);
+			})
+		}
+		{fields.length > 0 && (
+			<button type="submit" class="tapestry-settings__save" data-tapestry-settings-save>
+				Save
+			</button>
+		)}
+	</form>
+</div>
+
+<style>
+	.tapestry-settings {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		max-width: 48rem;
+	}
+	.tapestry-settings form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.tapestry-settings__intro {
+		margin: 0;
+		line-height: 1.5;
+	}
+	.tapestry-settings__saved {
+		margin: 0;
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.5rem;
+		border: 1px solid var(--success-base, hsl(142 60% 35%));
+	}
+	.tapestry-settings__field {
+		margin: 0;
+		padding: 0.75rem 1rem 1rem;
+		border: 1px solid var(--border, hsl(263 5% 68%));
+		border-radius: 0.5rem;
+	}
+	.tapestry-settings__field legend {
+		padding: 0 0.375rem;
+		font-weight: 600;
+	}
+	.tapestry-settings__buttons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1.25rem;
+	}
+	.tapestry-settings__button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		cursor: pointer;
+	}
+	.tapestry-settings__save {
+		align-self: flex-start;
+		font: inherit;
+		font-weight: 600;
+		padding: 0.5rem 1.25rem;
+		border-radius: 0.5rem;
+		border: 0;
+		color: #fff;
+		background: var(--primary-base, hsl(259 74% 45%));
+		cursor: pointer;
+	}
+	.tapestry-settings__save:focus-visible,
+	.tapestry-settings__button input:focus-visible {
+		outline: 2px solid var(--primary-base, hsl(259 74% 45%));
+		outline-offset: 2px;
+	}
+</style>

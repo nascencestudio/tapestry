@@ -1,0 +1,14 @@
+diff --git a/dist/modules/delete/index.js b/dist/modules/delete/index.js
+index f61fe65b08d130b61c200f2bf6b0f5b917881485..e3710a6e4f5a7fc6750298bd4550da278744e6d1 100644
+--- a/dist/modules/delete/index.js
++++ b/dist/modules/delete/index.js
+@@ -287,7 +287,8 @@ const SDKDeleteModule = Effect.gen(function* () {
+ 	* @param userId - The ID of the user to check.
+ 	* @returns An effect that fails with GhostUserError if the user ID is the Ghost user ID, otherwise succeeds with false.
+ 	*/
+-	const _isNotGhostUser = (userId) => userId !== GhostUserDefaults.id ? Effect.fail(new GhostUserError()) : Effect.succeed(false);
++	// patched (Tapestry, docs/known-issues.md #35): the condition was inverted, so every real user was refused.
++	const _isNotGhostUser = (userId) => userId === GhostUserDefaults.id ? Effect.fail(new GhostUserError()) : Effect.succeed(false);
+ 	return {
+ 		/**
+ 		* Deletes a page by its ID.

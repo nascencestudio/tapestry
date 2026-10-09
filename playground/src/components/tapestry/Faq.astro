@@ -1,0 +1,73 @@
+---
+import type { ResolvedLink, RichTextDoc } from '@nascencestudio/tapestry';
+import RichText from '@nascencestudio/tapestry/RichText.astro';
+
+interface Props {
+	heading?: string;
+	items?: Array<{ question: string; answer?: RichTextDoc; open: boolean }>;
+	more?: { label?: string; link: ResolvedLink | null };
+}
+const { heading, items = [], more } = Astro.props;
+---
+
+<section class="faq">
+	{heading && <h2 class="faq__heading">{heading}</h2>}
+	{
+		items.map((item) => (
+			<details class="faq__item" open={item.open}>
+				<summary class="faq__question">{item.question}</summary>
+				{item.answer && (
+					<div class="faq__answer">
+						<RichText value={item.answer} />
+					</div>
+				)}
+			</details>
+		))
+	}
+	{
+		more?.link && (
+			<p class="faq__more">
+				<a href={more.link.href} target={more.link.newTab ? '_blank' : undefined} rel={more.link.rel}>
+					{more.label || more.link.title || 'More help'}
+				</a>
+			</p>
+		)
+	}
+</section>
+
+<style>
+	.faq {
+		margin: 2rem 0;
+	}
+	.faq__heading {
+		margin: 0 0 1rem;
+		font-size: 1.625rem;
+	}
+	.faq__item {
+		border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+		padding: 0.75rem 0;
+	}
+	.faq__item:last-of-type {
+		border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+	}
+	.faq__question {
+		cursor: pointer;
+		font-weight: 600;
+	}
+	.faq__answer {
+		margin-top: 0.5rem;
+		line-height: 1.6;
+	}
+	.faq__answer :global(p) {
+		margin: 0 0 0.75em;
+	}
+	.faq__answer :global(:last-child) {
+		margin-bottom: 0;
+	}
+	.faq__more {
+		margin: 1rem 0 0;
+	}
+	.faq__more a {
+		color: inherit;
+	}
+</style>

@@ -1,0 +1,104 @@
+---
+// The Markdown renderer's CSS, inlined below on Markdown pages only (the plugin is patched so it
+// no longer adds this to every page; docs/known-issues.md #33).
+import markdownCss from 'studiocms:md/styles-inline';
+import type { Viewer } from '@nascencestudio/tapestry';
+import AdminBar from '@nascencestudio/tapestry/AdminBar.astro';
+import type { Language, PageTranslation, PublishingInfo } from '@nascencestudio/tapestry/page';
+
+interface Props {
+	title: string;
+	description?: string | null;
+	/** From getPage(); enables the admin bar for logged-in editors. */
+	viewer?: Viewer;
+	page?: { id: string; title: string; draft?: boolean | null; package?: string };
+	/** From getPage(): published/draft state of Tapestry pages. */
+	publishing?: PublishingInfo;
+	/** From getPage(): the page's language and its translations (sites with `languages`). */
+	language?: Language;
+	translations?: PageTranslation[];
+}
+const { title, description, viewer, page, publishing, language, translations = [] } = Astro.props;
+// Other language versions: a switcher and hreflang links (only when there's more than this one).
+const versions = translations.length > 1 ? translations : [];
+---
+
+<!doctype html>
+<html lang={language?.code ?? 'en'}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<title>{title}</title>
+		{description && <meta name="description" content={description} />}
+		{versions.map((t) => <link rel="alternate" hreflang={t.lang} href={new URL(t.path, Astro.url).href} />)}
+		{page?.package === 'studiocms/markdown' && <style is:inline set:html={markdownCss} />}
+	</head>
+	<body class="site">
+		<AdminBar viewer={viewer} page={page} publishing={publishing} />
+		{
+			versions.length > 0 && (
+				<nav class="site-languages" aria-label="Languages">
+					{versions.map((t) =>
+						t.current ? (
+							<span aria-current="page" lang={t.lang}>
+								{t.label}
+							</span>
+						) : (
+							<a href={t.path} hreflang={t.lang} lang={t.lang}>
+								{t.label}
+							</a>
+						),
+					)}
+				</nav>
+			)
+		}
+		<slot />
+	</body>
+</html>
+
+<!--
+	Site-wide styles are scoped to `.site` (on <body>) and use `--site-*`
+	variable names. In `astro dev`, StudioCMS dashboard pages also load every
+	site page's global CSS; unscoped `body`/`:root` rules would restyle the
+	dashboard (e.g. unreadable light mode). See docs/known-issues.md #14.
+-->
+<style is:global>
+	.site {
+		color-scheme: light dark;
+		--site-text: #1a1a1f;
+		--site-background: #ffffff;
+		--site-surface-muted: #f3f3f6;
+		--site-brand: #4f46e5;
+		--site-on-brand: #ffffff;
+		margin: 0;
+		font-family: system-ui, sans-serif;
+		color: var(--site-text);
+		background: var(--site-background);
+	}
+	@media (prefers-color-scheme: dark) {
+		.site {
+			--site-text: #ececf1;
+			--site-background: #121216;
+			--site-surface-muted: #1c1c22;
+			--site-brand: #818cf8;
+			--site-on-brand: #121216;
+		}
+	}
+	.site a {
+		color: var(--site-brand);
+	}
+	.site-languages {
+		display: flex;
+		justify-content: flex-end;
+		gap: 1rem;
+		padding: 0.5rem 1.5rem;
+		font-size: 0.875rem;
+	}
+	.site-languages a {
+		color: inherit;
+	}
+	.site-languages [aria-current] {
+		font-weight: 700;
+	}
+</style>

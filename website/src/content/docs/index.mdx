@@ -1,0 +1,35 @@
+---
+title: Tapestry
+description: Drag-and-drop, component-based page building for Astro + StudioCMS.
+template: splash
+hero:
+  tagline: A visual page builder for Astro + StudioCMS. Your Astro components, arranged by editors on a live canvas of the real page, rendered on the server with no client JavaScript unless a component opts in.
+  actions:
+    - text: Install and set up
+      link: start/install/
+      icon: right-arrow
+    - text: Define components
+      link: guides/defining-components/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+	<Card title="Your components" icon="puzzle">
+		Any `.astro` file becomes a building block with a typed prop schema: text, rich text,
+		links, media, lists, objects, named slots.
+	</Card>
+	<Card title="Edit on the real page" icon="pencil">
+		A live canvas with your site's layout and CSS: drag and drop, edit text in place,
+		keyboard navigation, desktop to mobile widths.
+	</Card>
+	<Card title="Publishing" icon="rocket">
+		Drafts, Publish, scheduled publishing, version history and comparison, and who may
+		publish or use which components.
+	</Card>
+	<Card title="Fast and secure" icon="approve-check">
+		Server-rendered HTML, zero JS by default, islands when a component opts in. Content is
+		validated JSON, never raw HTML.
+	</Card>
+</CardGrid>

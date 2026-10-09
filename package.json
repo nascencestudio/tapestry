@@ -1,6 +1,6 @@
 {
   "name": "@nascencestudio/tapestry",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Drag-and-drop component page building for Astro + StudioCMS",
   "license": "MIT",
   "author": "Nascence Studio",

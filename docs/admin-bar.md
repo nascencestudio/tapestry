@@ -21,8 +21,8 @@ bar appears at the top:
 | **Edit page** | this page's editor in the dashboard |
 | your name, **Log out** | StudioCMS's logout |
 
-In the other direction, the Tapestry editor's toolbar has a **View page ↗**
-button that opens the saved page in a new tab.
+In the other direction, the Tapestry editor's canvas bar has a **View page**
+button (next to reload) that opens the saved page in a new tab.
 
 Anonymous visitors get **nothing**: no bar markup, no CSS, no JavaScript, and no
 extra database work.

@@ -186,6 +186,46 @@ export const UI_ICONS = {
 			/>
 		</Svg>
 	),
+	/** Undo: an arrow hooking back to the left. */
+	undo: (
+		<Svg>
+			<path {...line} stroke-width={1.75} d="M3.5 6.5h6.25a3.25 3.25 0 0 1 0 6.5H7" />
+			<path {...line} stroke-width={1.75} d="M6.25 3.5L3.25 6.5l3 3" />
+		</Svg>
+	),
+	/** Redo: the mirror image. */
+	redo: (
+		<Svg>
+			<path {...line} stroke-width={1.75} d="M12.5 6.5H6.25a3.25 3.25 0 0 0 0 6.5H9" />
+			<path {...line} stroke-width={1.75} d="M9.75 3.5l3 3-3 3" />
+		</Svg>
+	),
+	/** Full screen: corners pointing out. */
+	expand: (
+		<Svg>
+			<path {...line} d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />
+		</Svg>
+	),
+	/** Leave full screen: corners pointing in. */
+	shrink: (
+		<Svg>
+			<path {...line} d="M6 2.5V6H2.5M13.5 6H10V2.5M10 13.5V10h3.5M2.5 10H6v3.5" />
+		</Svg>
+	),
+	/** Reload: a circular arrow. */
+	reload: (
+		<Svg>
+			<path {...line} d="M13.25 8a5.25 5.25 0 1 1-1.54-3.71" />
+			<path {...line} d="M13.25 2.5v3h-3" />
+		</Svg>
+	),
+	/** Opens in a new tab: an arrow out of a box. */
+	external: (
+		<Svg>
+			<path {...line} d="M9 2.5h4.5V7M13.5 2.5L7.5 8.5" />
+			<path {...line} d="M11.5 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3" />
+		</Svg>
+	),
 	/** Page structure: a component without children. */
 	dot: (
 		<Svg>

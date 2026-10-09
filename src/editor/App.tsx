@@ -187,6 +187,131 @@ export function App({
 	const { issues, valid } = store.validation.value;
 	const errorCount = issues.filter((i) => i.severity === 'error').length;
 
+	/** The purple bar above the canvas: undo and redo, then language, history and JSON. */
+	const editingTools = (
+		<div class="tp-actionbar" role="toolbar" aria-label="Editing tools" data-tapestry-actionbar>
+			<button
+				type="button"
+				class="tp-icon-button"
+				onClick={() => store.undo() && announce('Undone.')}
+				disabled={!store.canUndo.value || locked.value}
+				title="Undo (Ctrl/⌘+Z)"
+				aria-label="Undo"
+				data-tapestry-undo
+			>
+				{UI_ICONS.undo}
+			</button>
+			<button
+				type="button"
+				class="tp-icon-button"
+				onClick={() => store.redo() && announce('Redone.')}
+				disabled={!store.canRedo.value || locked.value}
+				title="Redo (Ctrl/⌘+Shift+Z)"
+				aria-label="Redo"
+				data-tapestry-redo
+			>
+				{UI_ICONS.redo}
+			</button>
+			<span class="tp-actionbar__separator" aria-hidden="true" />
+			{languages && languages.length > 1 && pageId && <TranslationsMenu languages={languages} pageId={pageId} />}
+			<button
+				type="button"
+				class="tp-button"
+				aria-pressed={showHistory.value}
+				onClick={() => {
+					showHistory.value = !showHistory.value;
+				}}
+				data-tapestry-history-toggle
+			>
+				History ({publishing.stored.value.history.length})
+			</button>
+			<button
+				type="button"
+				class="tp-button"
+				aria-pressed={showJson.value}
+				disabled={locked.value}
+				onClick={() => {
+					showJson.value = !showJson.value;
+				}}
+				data-tapestry-json-toggle
+			>
+				{'{ }'} JSON
+			</button>
+		</div>
+	);
+
+	/** Saving, at the right of the canvas's bottom bar: Save draft, Schedule…, Publish. */
+	const saveActions = form && (
+		<span class="tp-save-actions">
+			<button
+				type="button"
+				class="tp-button"
+				onClick={save}
+				disabled={locked.value}
+				title="Save as a draft; the live page doesn't change (Ctrl/⌘+S)"
+				data-tapestry-save
+			>
+				Save draft
+			</button>
+			<button
+				type="button"
+				class="tp-button"
+				aria-pressed={showSchedule.value}
+				disabled={!canPublish || locked.value || !valid}
+				onClick={() => {
+					showSchedule.value = !showSchedule.value;
+				}}
+				title={publishTitle ?? 'Publish the current version at a date and time you choose'}
+				data-tapestry-schedule-toggle
+			>
+				Schedule…
+			</button>
+			<button
+				type="button"
+				class="tp-button tp-button--primary"
+				onClick={publishNow}
+				disabled={!canPublish || locked.value || publishing.status.value === 'published' || !valid}
+				title={
+					publishTitle ?? (valid ? 'Make the current version live for visitors' : 'Fix the problems before publishing')
+				}
+				data-tapestry-publish
+			>
+				Publish
+			</button>
+		</span>
+	);
+
+	/** Full screen, next to the preview widths. */
+	const fullscreenButton = (
+		<button
+			type="button"
+			class="tp-icon-button"
+			aria-pressed={fullscreen.value}
+			aria-label={fullscreen.value ? 'Exit full screen' : 'Full screen'}
+			title={fullscreen.value ? 'Exit full screen' : 'Full screen'}
+			onClick={() => {
+				fullscreen.value = !fullscreen.value;
+			}}
+			data-tapestry-fullscreen-toggle
+		>
+			{fullscreen.value ? UI_ICONS.shrink : UI_ICONS.expand}
+		</button>
+	);
+
+	/** View page, next to the canvas's reload button. */
+	const viewPage = pageUrl?.value ? (
+		<a
+			class="tp-button tp-button--small"
+			href={pageUrl.value}
+			target="_blank"
+			rel="noopener"
+			title="Open the saved page in a new tab (unsaved changes aren't shown)"
+			data-tapestry-view
+		>
+			View page {UI_ICONS.external}
+		</a>
+	) : undefined;
+
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: only suppresses implicit form submission
 		<div
@@ -197,114 +322,9 @@ export function App({
 		>
 			{/* Between StudioCMS's page title (h1) and the panel titles (h3), for a correct outline. */}
 			<h2 class="tp-sr-only">Visual editor</h2>
-			<div class="tp-toolbar" role="toolbar" aria-label="Editor actions">
-				<button
-					type="button"
-					class="tp-button"
-					onClick={() => store.undo() && announce('Undone.')}
-					disabled={!store.canUndo.value || locked.value}
-					title="Undo (Ctrl/⌘+Z)"
-				>
-					↶ Undo
-				</button>
-				<button
-					type="button"
-					class="tp-button"
-					onClick={() => store.redo() && announce('Redone.')}
-					disabled={!store.canRedo.value || locked.value}
-					title="Redo (Ctrl/⌘+Shift+Z)"
-				>
-					↷ Redo
-				</button>
+			{/* Statuses only: the editing tools are in the bar above the canvas, saving in the bar below it. */}
+			<div class="tp-toolbar">
 				<span class="tp-toolbar__spacer" />
-				{languages && languages.length > 1 && pageId && <TranslationsMenu languages={languages} pageId={pageId} />}
-				<button
-					type="button"
-					class="tp-button"
-					aria-pressed={showHistory.value}
-					onClick={() => {
-						showHistory.value = !showHistory.value;
-					}}
-					data-tapestry-history-toggle
-				>
-					History ({publishing.stored.value.history.length})
-				</button>
-				{pageUrl?.value && (
-					<a
-						class="tp-button"
-						href={pageUrl.value}
-						target="_blank"
-						rel="noopener"
-						title="Open the saved page in a new tab (unsaved changes aren't shown)"
-						data-tapestry-view
-					>
-						View page ↗
-					</a>
-				)}
-				<button
-					type="button"
-					class="tp-button"
-					aria-pressed={showJson.value}
-					disabled={locked.value}
-					onClick={() => {
-						showJson.value = !showJson.value;
-					}}
-					data-tapestry-json-toggle
-				>
-					{'{ }'} JSON
-				</button>
-				<button
-					type="button"
-					class="tp-button"
-					aria-pressed={fullscreen.value}
-					onClick={() => {
-						fullscreen.value = !fullscreen.value;
-					}}
-					data-tapestry-fullscreen-toggle
-				>
-					{fullscreen.value ? '⤡ Exit full screen' : '⤢ Full screen'}
-				</button>
-				{form && (
-					<>
-						<button
-							type="button"
-							class="tp-button"
-							onClick={save}
-							disabled={locked.value}
-							title="Save as a draft; the live page doesn't change (Ctrl/⌘+S)"
-							data-tapestry-save
-						>
-							Save draft
-						</button>
-						<button
-							type="button"
-							class="tp-button tp-button--primary"
-							onClick={publishNow}
-							disabled={!canPublish || locked.value || publishing.status.value === 'published' || !valid}
-							title={
-								publishTitle ??
-								(valid ? 'Make the current version live for visitors' : 'Fix the problems before publishing')
-							}
-							data-tapestry-publish
-						>
-							Publish
-						</button>
-						<button
-							type="button"
-							class="tp-button"
-							aria-pressed={showSchedule.value}
-							disabled={!canPublish || locked.value || !valid}
-							onClick={() => {
-								showSchedule.value = !showSchedule.value;
-							}}
-							title={publishTitle ?? 'Publish the current version at a date and time you choose'}
-							data-tapestry-schedule-toggle
-						>
-							Schedule…
-						</button>
-					</>
-				)}
-				{/* Status last: its width changes (Published / Unpublished changes), and nothing after it moves. */}
 				<span class="tp-toolbar__statuses">
 					<span class="tp-status" data-state={valid ? 'ok' : 'error'}>
 						{valid ? 'Valid' : `${errorCount} problem${errorCount === 1 ? '' : 's'}`}
@@ -383,15 +403,24 @@ export function App({
 			)}
 
 			{showJson.value ? (
-				<JsonView
-					store={store}
-					initialText={locked.value ? unreadableContent : undefined}
-					locked={locked.value}
-					onClose={() => {
-						locked.value = false;
-						showJson.value = false;
-					}}
-				/>
+				<div class="tp-panel tp-json-wrap">
+					{editingTools}
+					<JsonView
+						store={store}
+						initialText={locked.value ? unreadableContent : undefined}
+						locked={locked.value}
+						onClose={() => {
+							locked.value = false;
+							showJson.value = false;
+						}}
+					/>
+					{saveActions && (
+						<div class="tp-canvas__footer">
+							<span class="tp-toolbar__spacer" />
+							{saveActions}
+						</div>
+					)}
+				</div>
 			) : (
 				<div class="tp-workspace">
 					<div class="tp-grid">
@@ -405,6 +434,10 @@ export function App({
 							renderUrl={renderUrl}
 							announce={announce}
 							onKeyDown={handleShortcut}
+							toolbar={editingTools}
+							afterViewports={fullscreenButton}
+							afterReload={viewPage}
+							footerEnd={saveActions || undefined}
 						/>
 						<PropsPanel store={store} />
 					</div>

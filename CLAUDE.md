@@ -388,7 +388,12 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
   `--tp-danger` is Tapestry's own text-safe red per theme).
 - Component permissions: one rule (`permissions.ts`) for editor and server. New save paths must go
   through `guardSaves()`; new editing paths through `store.commit` (which enforces locks).
-  Toolbar: keep status pills last, so their changing width never moves buttons.
+  Status pills have their own row (top right), so their changing width never moves a button.
+- Editor layout: the purple `tp-actionbar` (undo/redo | language, History, JSON) sits above the canvas
+  bar (viewports + full screen, reload + View page); Save draft, Schedule…, Publish are at the right
+  of the canvas's bottom bar. `App.tsx` builds these and passes them to `Canvas` (`toolbar`,
+  `afterViewports`, `afterReload`, `footerEnd`); the JSON view renders the same pieces around itself.
+  Bar styles target the bar's own buttons (`> .tp-button`), not those inside its popovers.
 - Translations are separate pages (rows `{ lang, source }` in plugin data). Anything that lists
   or links translations for visitors must check visibility (published, not a StudioCMS draft) like
   `languages.ts`; never expose an unpublished translation's slug.

@@ -260,7 +260,7 @@ replaced with the published document and never-published pages are removed.
 This closes StudioCMS's anonymous REST API (`/studiocms_api/rest/v1/public/pages`),
 which returns stored content verbatim.
 
-The Tapestry editor's toolbar links back with **View page ↗**, built from the slug
+The Tapestry editor's canvas bar links back with **View page**, built from the slug
 field and the `pageUrlPattern` option (exposed via `virtual:tapestry/config`).
 Guide: [admin-bar.md](admin-bar.md).
 

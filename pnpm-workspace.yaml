@@ -1,0 +1,71 @@
+# The plugin is the root package; the docs site is the only other project.
+packages:
+  - website
+
+# ---------------------------------------------------------------------------
+# Supply-chain hardening. See docs/decisions/0003-pnpm-and-supply-chain-hardening.md
+# ---------------------------------------------------------------------------
+
+# Refuse package versions published less than 3 days ago (value is minutes).
+# Most malicious releases are detected and unpublished within hours.
+minimumReleaseAge: 4320
+# Except our own package from Nascence Studio's other repository: published by its CI with
+# provenance (trustPolicy still applies), and Tapestry needs new releases without a 3-day wait.
+minimumReleaseAgeExclude:
+  - '@nascencestudio/medialibrary'
+
+# Fail if a package's trust evidence (provenance / trusted publisher) is weaker
+# than in earlier versions — a common sign of a hijacked maintainer account.
+trustPolicy: no-downgrade
+# Only enforce the trust check for versions published in the last 180 days
+# (value is minutes). Older versions without provenance are almost always
+# manual publishes by the usual maintainer (e.g. undici-types@6.21.0 by
+# matteo.collina, Nov 2024); a takeover would have been noticed long ago.
+trustPolicyIgnoreAfter: 259200
+
+# Transitive dependencies may only come from the registry, never git/tarball URLs.
+blockExoticSubdeps: true
+
+# Dependency lifecycle scripts (postinstall etc.) are blocked unless listed here.
+# Unlisted packages that want to run scripts fail the install so we notice.
+# Each entry is a deliberate decision — record changes in docs/devlog.md.
+strictDepBuilds: true
+allowBuilds:
+  # Bundler used by Vite/Astro; postinstall verifies its platform binary.
+  esbuild: true
+  # Image service used by Astro; installs its platform binary.
+  sharp: true
+  # Denied: optional native accelerators. Prebuilt binaries ship via optional
+  # dependencies and JS fallbacks exist, so the build scripts are unnecessary.
+  '@parcel/watcher': false
+  msgpackr-extract: false
+
+# Advisories reviewed and judged not exploitable in this project. Every entry
+# needs a reason and a re-check date; remove as soon as a patched version exists.
+# Details: docs/known-issues.md ("Audit advisories without patches").
+auditConfig:
+  ignoreGhsas:
+    # braces <=3.0.3 (no patch, published 2026-09-18). Exploit needs attacker-controlled
+    # glob patterns; StudioCMS's middleware only expands developer-defined route
+    # patterns and tests the request path against them. Re-check 2026-11-01.
+    - GHSA-vfj7-8cjw-p6xm
+
+# Respect "engines" fields and pin exact versions when adding dependencies.
+engineStrict: true
+saveExact: true
+
+# Refuse to run scripts if node_modules is out of sync with the lockfile.
+verifyDepsBeforeRun: error
+
+# Forced versions of transitive dependencies. Every entry needs a reason and an exit condition.
+overrides:
+  # GHSA-68fv-2mgg-jv7q (high, event-loop DoS via crafted source maps; build-time only
+  # here, via postcss/css-tree). 1.2.2 is the fix, same maintainer, published 2026-09-30.
+  # Remove once vite/postcss/css-tree resolve >=1.2.2 on their own.
+  source-map-js: 1.2.2
+  # GHSA-rj75-hqrm-r3gf (moderate, quadratic selector parsing in postcss-selector-parser <7.1.6;
+  # build-time only, docs site, parsing our own CSS). Expressive Code (Starlight's code blocks)
+  # uses postcss-nested 6, which pins the 6.x parser (no fix); postcss-nested 8.0.1 uses
+  # ^7.1.4 (resolves 7.1.6). Verified: the docs site builds and code blocks render (ADR 0036).
+  # Remove when expressive-code moves to postcss-nested >= 8.
+  '@expressive-code/core>postcss-nested': 8.0.1

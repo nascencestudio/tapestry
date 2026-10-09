@@ -1,0 +1,43 @@
+# Continuous integration (ADR 0020): lint, audit, build, types, unit tests and the docs site.
+# Runs on pushes to main and on pull requests. Browser e2e tests, the performance budget and
+# the production image run in nascencestudio/tapestry-playground (ADR 0038).
+#
+# Hardening: read-only token, actions pinned to full commit SHAs (tags can be moved), no
+# credentials left in the checkout, pnpm via Corepack at the version in package.json, frozen
+# lockfile (the supply-chain policies in pnpm-workspace.yaml apply to every install).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, audit, build, types, unit tests, docs site
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm audit
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: The package contents
+        run: pnpm pack --dry-run --ignore-scripts
+      - run: pnpm docs:build

@@ -1,0 +1,51 @@
+diff --git a/dist/virtuals/components/Renderer.astro b/dist/virtuals/components/Renderer.astro
+index 2bbc47488dce5ce44ecb26c41a15171d20437a3a..9ce364b08a8428b517b150f9769b191b5efeff9f 100644
+--- a/dist/virtuals/components/Renderer.astro
++++ b/dist/virtuals/components/Renderer.astro
+@@ -63,6 +63,8 @@ const renderedContent = await renderFn({
+ 		result: $$result as SSRResult,
+ 		sanitizeOpts: RendererModule.sanitizeOpts,
+ 		preRenderer: RendererModule.renderer,
++		// Patched (known issue #37): keep scripts that components render (islands) for renderers that opt in.
++		componentScripts: (RendererModule as { componentScripts?: boolean }).componentScripts === true,
+ 	},
+ });
+ ---
+diff --git a/dist/virtuals/components/renderFn.js b/dist/virtuals/components/renderFn.js
+index 528e1349bb35191171ae0c9312a1549b22e517b9..a396444c8c4725aec8842b44836adb848ba4afe1 100644
+--- a/dist/virtuals/components/renderFn.js
++++ b/dist/virtuals/components/renderFn.js
+@@ -2,10 +2,12 @@ import { site } from "astro:config/server";
+ import { createRenderer } from "studiocms:component-registry/runtime";
+ import { createComponentProxy, transformHTML } from "@withstudiocms/component-registry";
+ import transformStorageAPI from "./ultrahtml-transformers/storage-api.js";
++import { transform } from "ultrahtml";
++import swap from "ultrahtml/transformers/swap";
+ const handlePrefixSuffix = (augment, content) => augment.type === "prefix" ? augment.html + content : content + augment.html;
+ const renderFn = async (args) => {
+   const { renderOpts, content, augments = [] } = args;
+-  const { result, sanitizeOpts, preRenderer } = renderOpts;
++  const { result, sanitizeOpts, preRenderer, componentScripts } = renderOpts;
+   const render = await createRenderer(result, sanitizeOpts, preRenderer);
+   let renderedContent = await render(content);
+   const componentsCollection = {};
+@@ -28,8 +30,17 @@ const renderFn = async (args) => {
+   for (const suffixAugment of augmentCollections.suffix) {
+     renderedContent = handlePrefixSuffix(suffixAugment, renderedContent);
+   }
+-  renderedContent = await transformHTML(renderedContent, components);
+-  renderedContent = await transformHTML(renderedContent, {}, {}, [transformStorageAPI({ site })]);
++  // Patched (known issue #37): these passes run over the *rendered* output, and transformHTML()
++  // always sanitizes with default options, which drop every <script>: Astro islands and
++  // component scripts never reached the page. Renderers that opt in (`componentScripts`, e.g.
++  // Tapestry, whose content can't contain HTML) skip the sanitizer here; the content itself
++  // was already sanitized before components were swapped in. Other page types are unchanged.
++  const postProcess = (html, swapComponents, transformers = []) =>
++    componentScripts === true
++      ? transform(html, [swap(swapComponents), ...transformers])
++      : transformHTML(html, swapComponents, {}, transformers);
++  renderedContent = await postProcess(renderedContent, components);
++  renderedContent = await postProcess(renderedContent, {}, [transformStorageAPI({ site })]);
+   if (args.postProcessorAugments && args.postProcessorAugments.length > 0) {
+     for (const postProcessorAugment of args.postProcessorAugments) {
+       try {

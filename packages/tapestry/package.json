@@ -56,7 +56,7 @@
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "4.0.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "3.0.0",
-    "@preact/signals": "2.11.2",
+    "@preact/signals": "2.11.3",
     "preact": "10.29.8",
     "prosemirror-commands": "1.7.2",
     "prosemirror-history": "1.5.1",

@@ -20,6 +20,6 @@
     "budget": "pnpm --filter playground budget"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.14"
+    "@biomejs/biome": "2.5.15"
   }
 }

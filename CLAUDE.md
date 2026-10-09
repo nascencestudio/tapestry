@@ -48,13 +48,12 @@ Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in ta
 **Immediate next steps**
 1. Release (the user does it; never publish locally, ADR 0035/0037/0038):
    a. ✅ medialibrary 0.1.1 released via trusted publisher (stage only) + 2FA approval.
-   b. This repo: force-pushed (plugin-only `main`). npm **0.1.0 was built from the old monorepo
-      commit** (same code; stale `repository.directory`, README links, provenance commit `1d09db4`):
-      release **0.1.1** from this layout (delete the `v0.1.0` GitHub release/tag), deprecate 0.1.0
-      ("Use 0.1.1 or later"); then the trusted publisher (stage only), publishing access "2FA, no bypass
-      tokens", deletes the token + secret, and we remove `NODE_AUTH_TOKEN` from release.yml.
-   c. tapestry-playground: create the GitHub repo, push; then switch its
-      `@nascencestudio/tapestry` from `file:../tapestry` to `0.1.1` (its CI and Docker need that).
+   b. ✅ Tapestry **0.1.1** released (2026-10-09) via trusted publisher + 2FA approval; the release
+      workflow has no token. npm 0.1.0 was built from the old monorepo commit (same code, stale
+      metadata): the user deprecates it ("Use 0.1.1 or later"). Left for the user: publishing access "2FA, no bypass
+      tokens"; delete the npm token and the `NPM_TOKEN` secret.
+   c. tapestry-playground uses 0.1.1 from npm (e2e + Docker verified); the user creates the GitHub
+      repo and pushes.
    d. File the StudioCMS issue drafted in tapestry-playground/docs/upstream/.
 2. Report upstream (only when the user asks): `bySlug` drafts (#10), ignored config keys (#5),
    dev-toolbar DB viewer errors (#12), empty page type (#15), edit-screen crash/no delete (#16),

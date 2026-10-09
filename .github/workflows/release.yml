@@ -2,11 +2,9 @@
 # (a signed attestation linking each package to this workflow run and commit). ADR 0035.
 #
 # Runs when a GitHub release is published; stages the version, which goes live after a
-# maintainer approves it on npmjs.com (2FA). Authentication:
-# - First release: an `NPM_TOKEN` repository secret (granular, read and write for the scope).
-# - Then: on npmjs.com, add this repository, `release.yml` and environment `npm` as the
-#   package's **trusted publisher**, allowed actions: stage only (leave "npm publish" off);
-#   delete the token and the secret.
+# maintainer approves it on npmjs.com (2FA). Authentication: npm trusted publishing (OIDC, no
+# token): this repository, `release.yml`, environment `npm`, allowed actions: stage only (leave
+# "npm publish" off). Publishing access: 2FA required, bypass tokens disallowed.
 # - Bump `version` in package.json and tag the release `v<version>`.
 #
 # The same checks as CI run first; nothing is published if any of them fails.
@@ -56,7 +54,3 @@ jobs:
       # workflow identity can only stage, never release.
       - name: Stage the release
         run: pnpm stage publish --provenance --access public --no-git-checks
-        env:
-          # First release only (a trusted publisher needs an existing package). Remove this,
-          # the secret and the npm token once the trusted publisher is set up.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

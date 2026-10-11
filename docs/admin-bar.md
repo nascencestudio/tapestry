@@ -173,6 +173,21 @@ The editor's "View page" button builds the URL from the page slug with
 tapestry({ components, pageUrlPattern: '/{slug}' })
 ```
 
+## Listing public pages
+
+`listPublicPages()` (from `@nascencestudio/tapestry/page`) returns every page visitors can see
+right now: never StudioCMS drafts, Tapestry pages only once they're published (scheduled versions
+once their time has come), with each page's path, title, description, page type, last change,
+language and visible translations. Use it for sitemaps, feeds or a site map page; the
+[tapestry-seo](https://github.com/nascencestudio/tapestry-seo) plugin builds its sitemap from it
+([ADR 0039](decisions/0039-public-pages-and-tapestry-seo.md)).
+
+```ts
+import { listPublicPages } from '@nascencestudio/tapestry/page';
+
+const pages = await listPublicPages(); // [{ path: '/about', title: 'About', updatedAt: '…', translations: […] }, …]
+```
+
 ## How it works
 
 - **Session check.** StudioCMS only resolves the logged-in user for dashboard

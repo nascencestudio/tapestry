@@ -26,6 +26,8 @@ import { CANVAS_PARAM, enableCanvasMode, enableEmbeddedMode, PREVIEW_PARAM, VERS
 import { type PageTranslation, pageLanguages } from './languages.js';
 import { getViewer } from './viewer.js';
 
+export type { PublicPage, PublicPageTranslation } from './public-pages.js';
+export { listPublicPages } from './public-pages.js';
 export type { Language, PageTranslation };
 export { getViewer };
 

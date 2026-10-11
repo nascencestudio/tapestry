@@ -1739,3 +1739,14 @@
 		transition: none;
 	}
 }
+
+/* Frames that show the site (canvas, version comparison, library previews) follow the viewer's
+   system light/dark setting, like the site itself. Chrome otherwise passes the dashboard's own
+   theme (the frame element's color-scheme) into the frame, so a light dashboard on a dark system
+   showed the light site while visitors saw the dark one. Prefixed: StudioCMS sets color-scheme on
+   every element (`[data-theme] *`), which would otherwise win. */
+.tp-editor .tp-canvas__frame,
+.tp-editor .tp-compare__frames iframe,
+.tp-editor .tp-preview__viewport iframe {
+	color-scheme: normal;
+}

@@ -430,5 +430,10 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
   scoped package (token scope/permissions). New packages first show a `0.0.0-stage` stub until npm's
   automated check releases the real version (staged publishing). The first publish needs a token;
   trusted publishing can only be set up once the package exists.
+- Chrome passes an iframe element's `color-scheme` into the framed page's `prefers-color-scheme`, so
+  the frames that show the site (canvas, compare, library previews) set `color-scheme: normal` and
+  follow the system setting like the real site (a light dashboard on a dark system showed the light
+  site). CDP `Emulation.setEmulatedMedia` overrides every frame and hides this: test with Chrome's
+  `--force-dark-mode`.
 - Pragmatic DnD 4.x import paths: `@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter`,
   `/utils/combine`, hitbox `/list-item/attach-instruction` and `/list-item/extract-instruction`.

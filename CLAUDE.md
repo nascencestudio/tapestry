@@ -46,11 +46,14 @@ happens across sibling checkouts in `/Volumes/T7/www/`:
 Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in tapestry-playground (`../tapestry-playground/docs/devlog.md`).
 
 **Immediate next steps**
-1. Release Tapestry 0.2.0 (editor toolbars, modals; accepts medialibrary `^0.1.0 || ^0.2.0`):
-   branch `editor-toolbars` → pull request → merge (merge commit) → release `v0.2.0` → approve on
-   npm. `main` is protected (rulesets): always work on a branch. medialibrary 0.2.0 (folders) is out.
-   Then the playground switches to tapestry 0.2.0 and commits its waiting tests.
-   Still open: StudioCMS issue in tapestry-playground/docs/upstream/ (create the playground repo on GitHub first).
+1. Release Tapestry 0.3.0 (branch `public-pages`: `listPublicPages()`, ADR 0039): PR → merge (merge
+   commit) → release `v0.3.0` → approve on npm. `main` is protected: always work on a branch.
+   It unblocks **@nascencestudio/tapestry-seo** (`../tapestry-seo`, stage 1 done: robots.txt,
+   sitemap, settings page; not on GitHub yet), which then switches its `file:` dev dependency to 0.3.0.
+2. tapestry-seo stage 2 (decided, ADR 0039 / tapestry-seo ADR 0001): an **SEO** button in the purple
+   editor bar when tapestry-seo is installed (detected like the media library), opening a modal with
+   per-page SEO settings saved immediately; a `<Seo>` component for meta tags.
+   Still open: the StudioCMS issue in tapestry-playground/docs/upstream/ (create that repo on GitHub first).
 2. Report upstream (only when the user asks): `bySlug` drafts (#10), ignored config keys (#5),
    dev-toolbar DB viewer errors (#12), empty page type (#15), edit-screen crash/no delete (#16),
    HTML editor in dev (#19) and never saving (#20) (plugin since removed; still worth reporting),

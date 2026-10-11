@@ -6,12 +6,14 @@ import { ComparePanel } from './ComparePanel.js';
 import { Canvas } from './canvas/Canvas.js';
 import { monitorDrops } from './dnd.js';
 import { HistoryPanel } from './HistoryPanel.js';
+import { Popover } from './InfoPopover.js';
 import { UI_ICONS } from './icons.js';
 import { JsonView } from './JsonView.js';
 import { Layers } from './Layers.js';
 import { Library } from './Library.js';
 import { Modal } from './Modal.js';
 import { PropsPanel } from './PropsPanel.js';
+import { describeProblems } from './problems.js';
 import type { Publishing } from './publishing.js';
 import { formatWhen, SchedulePanel } from './SchedulePanel.js';
 import type { EditorStore } from './store.js';
@@ -186,7 +188,7 @@ export function App({
 	}
 
 	const { issues, valid } = store.validation.value;
-	const errorCount = issues.filter((i) => i.severity === 'error').length;
+	const problems = valid ? [] : describeProblems(store.doc.value, store.manifest, issues);
 
 	/** The purple bar above the canvas: undo and redo, then language, history and JSON. */
 	const editingTools = (
@@ -327,9 +329,51 @@ export function App({
 			<div class="tp-toolbar">
 				<span class="tp-toolbar__spacer" />
 				<span class="tp-toolbar__statuses">
-					<span class="tp-status" data-state={valid ? 'ok' : 'error'}>
-						{valid ? 'Valid' : `${errorCount} problem${errorCount === 1 ? '' : 's'}`}
-					</span>
+					{valid ? (
+						<span
+							class="tp-status"
+							data-state="ok"
+							title="Content check: every component is known and its settings are complete and allowed, so the page can be published"
+							data-tapestry-content-status="ok"
+						>
+							Content OK
+						</span>
+					) : (
+						<Popover
+							id="tp-problems"
+							label="Content check: some settings are missing or not allowed. Show the problems"
+							title="Fix these to publish"
+							buttonClass="tp-status tp-status--error tp-status--button"
+							text={
+								<span data-tapestry-content-status="error">
+									Content: {problems.length} problem{problems.length === 1 ? '' : 's'}
+								</span>
+							}
+						>
+							{(close) => (
+								<ul class="tp-problems" data-tapestry-problems>
+									{problems.map((problem) => (
+										<li key={`${problem.nodeId}:${problem.text}`}>
+											<button
+												type="button"
+												class="tp-problems__item"
+												disabled={!problem.nodeId}
+												onClick={() => {
+													if (!problem.nodeId) return;
+													store.select(problem.nodeId);
+													close();
+												}}
+												data-tapestry-problem={problem.nodeId ?? ''}
+											>
+												<span class="tp-problems__component">{problem.component}</span>
+												<span>{problem.text}</span>
+											</button>
+										</li>
+									))}
+								</ul>
+							)}
+						</Popover>
+					)}
 					<span
 						class="tp-status tp-status--publish"
 						data-publish-state={publishing.status.value}

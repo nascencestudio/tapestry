@@ -220,8 +220,71 @@
 .tp-status[data-state="ok"] {
 	--tp-status-color: var(--tp-success);
 }
-.tp-status[data-state="error"] {
+.tp-status[data-state="error"],
+.tp-status--error {
 	--tp-status-color: var(--tp-danger);
+}
+/* "Content: n problems" opens the list: a pill that is a button. */
+.tp-status--button {
+	font: inherit;
+	font-size: 0.75rem;
+	background: transparent;
+	cursor: pointer;
+}
+.tp-status--button::after {
+	content: "";
+	width: 0.35rem;
+	height: 0.35rem;
+	margin: -0.15rem 0 0 0.125rem;
+	border: solid currentColor;
+	border-width: 0 1.5px 1.5px 0;
+	transform: rotate(45deg);
+}
+.tp-status--button:hover,
+.tp-status--button[aria-expanded="true"] {
+	background: color-mix(in srgb, var(--tp-danger) 10%, transparent);
+}
+.tp-status--button:focus-visible {
+	outline: 2px solid var(--tp-primary);
+	outline-offset: 2px;
+}
+.tp-problems {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-width: 16rem;
+	max-width: 24rem;
+	max-height: 50vh;
+	overflow-y: auto;
+}
+.tp-problems__item {
+	all: unset;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	width: 100%;
+	padding: 0.375rem 0.5rem;
+	border-radius: 0.375rem;
+	font-size: 0.8125rem;
+	color: var(--tp-text);
+	cursor: pointer;
+}
+.tp-problems__item:hover:not(:disabled),
+.tp-problems__item:focus-visible {
+	background: var(--tp-hover, color-mix(in srgb, currentColor 8%, transparent));
+}
+.tp-problems__item:focus-visible {
+	outline: 2px solid var(--tp-primary);
+}
+.tp-problems__item:disabled {
+	cursor: default;
+}
+.tp-problems__component {
+	font-weight: 600;
 }
 
 /* Library */

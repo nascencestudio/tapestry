@@ -159,6 +159,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │       ├── canvas/        ← visual canvas: Canvas.tsx, controller.ts (iframe), scripts.ts (runs new component scripts once), geometry.ts + partial.ts (pure), inline.ts (on-canvas rich text), plain-text.ts (on-canvas plain text, ADR 0024)
 │       ├── structure-keys.ts ← keyboard + clipboard commands shared by the layer tree and the canvas
 │       ├── diff.ts        ← version differences (pure); ComparePanel.tsx, SchedulePanel.tsx
+│       ├── problems.ts    ← content check problems for the badge: component › setting + message, node to select (pure)
 │       ├── library-previews.ts, LibraryPreview.tsx ← thumbnails + live previews in the library (ADR 0029)
 │       ├── TranslationsMenu.tsx ← toolbar menu: language versions, create
 │       ├── patterns-client.ts ← library list, save/delete, insertPattern() (fresh copies)

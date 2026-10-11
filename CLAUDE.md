@@ -159,6 +159,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │       ├── canvas/        ← visual canvas: Canvas.tsx, controller.ts (iframe), scripts.ts (runs new component scripts once), geometry.ts + partial.ts (pure), inline.ts (on-canvas rich text), plain-text.ts (on-canvas plain text, ADR 0024)
 │       ├── structure-keys.ts ← keyboard + clipboard commands shared by the layer tree and the canvas
 │       ├── diff.ts        ← version differences (pure); ComparePanel.tsx, SchedulePanel.tsx
+│       ├── problems.ts    ← content check problems for the badge: component › setting + message, node to select (pure)
 │       ├── library-previews.ts, LibraryPreview.tsx ← thumbnails + live previews in the library (ADR 0029)
 │       ├── TranslationsMenu.tsx ← toolbar menu: language versions, create
 │       ├── patterns-client.ts ← library list, save/delete, insertPattern() (fresh copies)
@@ -430,5 +431,10 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
   scoped package (token scope/permissions). New packages first show a `0.0.0-stage` stub until npm's
   automated check releases the real version (staged publishing). The first publish needs a token;
   trusted publishing can only be set up once the package exists.
+- Chrome passes an iframe element's `color-scheme` into the framed page's `prefers-color-scheme`, so
+  the frames that show the site (canvas, compare, library previews) set `color-scheme: normal` and
+  follow the system setting like the real site (a light dashboard on a dark system showed the light
+  site). CDP `Emulation.setEmulatedMedia` overrides every frame and hides this: test with Chrome's
+  `--force-dark-mode`.
 - Pragmatic DnD 4.x import paths: `@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter`,
   `/utils/combine`, hitbox `/list-item/attach-instruction` and `/list-item/extract-instruction`.

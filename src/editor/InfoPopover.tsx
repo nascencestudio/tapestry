@@ -52,7 +52,10 @@ interface PopoverProps {
 	text?: ComponentChildren;
 	/** Called when the popover opens (e.g. to load its content). */
 	onOpen?: () => void;
-	children: ComponentChildren;
+	/** The button's classes instead of the default button look (e.g. a status pill). */
+	buttonClass?: string;
+	/** The content, or a function of `close` (closes without moving focus, e.g. after selecting something). */
+	children: ComponentChildren | ((close: () => void) => ComponentChildren);
 }
 
 /** An "i" button with a help popover. */
@@ -60,7 +63,17 @@ export function InfoPopover(props: Omit<PopoverProps, 'icon' | 'text'>) {
 	return <Popover {...props} icon={UI_ICONS.info} />;
 }
 
-export function Popover({ id, label, title, placement = 'below', icon, text, onOpen, children }: PopoverProps) {
+export function Popover({
+	id,
+	label,
+	title,
+	placement = 'below',
+	icon,
+	text,
+	onOpen,
+	buttonClass,
+	children,
+}: PopoverProps) {
 	const [open, setOpen] = useState(false);
 	const [align, setAlign] = useState<'start' | 'end'>('start');
 	const button = useRef<HTMLButtonElement>(null);
@@ -103,7 +116,9 @@ export function Popover({ id, label, title, placement = 'below', icon, text, onO
 			<button
 				ref={button}
 				type="button"
-				class={text ? 'tp-button tp-info__button tp-info__button--text' : 'tp-icon-button tp-info__button'}
+				class={
+					buttonClass ?? (text ? 'tp-button tp-info__button tp-info__button--text' : 'tp-icon-button tp-info__button')
+				}
 				aria-label={text ? undefined : label}
 				title={label}
 				aria-expanded={open}
@@ -142,7 +157,7 @@ export function Popover({ id, label, title, placement = 'below', icon, text, onO
 							{UI_ICONS.close}
 						</button>
 					</div>
-					<div class="tp-info__body">{children}</div>
+					<div class="tp-info__body">{typeof children === 'function' ? children(() => setOpen(false)) : children}</div>
 				</div>
 			)}
 		</span>

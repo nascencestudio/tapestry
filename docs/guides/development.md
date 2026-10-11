@@ -83,6 +83,10 @@ and the performance budget are described in the playground's README.
      until you edit something.
    - **Publish** makes the current version live. The status pill shows
      *Not published yet*, *Published* or *Unpublished changes*.
+   - The **content check** badge beside it shows *Content OK* when every component is known and
+     its settings are complete and allowed. Otherwise it shows *Content: n problems*. Click it for
+     the list (component, setting, what's wrong). Choosing one selects that component. Publish and
+     Schedule wait until the problems are fixed. Save draft still works.
    - **History (n)** lists the live version and the 5 previous published versions.
      **Restore to draft** loads one into the editor (it goes live only when you
      publish). **Discard unpublished changes** goes back to the live version. Both

@@ -16,6 +16,7 @@ import { PropsPanel } from './PropsPanel.js';
 import { describeProblems } from './problems.js';
 import type { Publishing } from './publishing.js';
 import { formatWhen, SchedulePanel } from './SchedulePanel.js';
+import { openSeo, seoAvailable } from './seo.js';
 import type { EditorStore } from './store.js';
 import { TranslationsMenu } from './TranslationsMenu.js';
 
@@ -190,7 +191,7 @@ export function App({
 	const { issues, valid } = store.validation.value;
 	const problems = valid ? [] : describeProblems(store.doc.value, store.manifest, issues);
 
-	/** The purple bar above the canvas: undo and redo, then language, history and JSON. */
+	/** The purple bar above the canvas: undo and redo, then language, history, JSON and SEO (with tapestry-seo). */
 	const editingTools = (
 		<div class="tp-actionbar" role="toolbar" aria-label="Editing tools" data-tapestry-actionbar>
 			<button
@@ -240,6 +241,20 @@ export function App({
 			>
 				{'{ }'} JSON
 			</button>
+			{pageId && seoAvailable() && (
+				<button
+					type="button"
+					class="tp-button"
+					aria-haspopup="dialog"
+					title="Search title, description and social image for this page (saved separately, at once)"
+					onClick={() => {
+						openSeo(pageId).catch((error) => console.error('[tapestry] the SEO dialog failed to open', error));
+					}}
+					data-tapestry-seo-toggle
+				>
+					SEO
+				</button>
+			)}
 		</div>
 	);
 

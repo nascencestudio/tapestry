@@ -28,6 +28,12 @@ declare module 'virtual:tapestry/media-client' {
 	export const loadPicker: null | (() => Promise<import('./editor/media.js').PickerModule>);
 }
 
+declare module 'virtual:tapestry/seo-client' {
+	/** True when @nascencestudio/tapestry-seo is installed (ADR 0040). */
+	export const enabled: boolean;
+	export const loadSeoEditor: null | (() => Promise<import('./editor/seo.js').SeoEditorModule>);
+}
+
 declare module 'virtual:tapestry/thumbnails' {
 	/** Thumbnail image URLs by component type (only components that set `thumbnail`). */
 	const thumbnails: Record<string, string>;

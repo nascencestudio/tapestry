@@ -78,6 +78,17 @@ describe('media modules', () => {
 	});
 });
 
+describe('SEO module', () => {
+	it('loads tapestry-seo’s dialog on demand when installed, else nothing (no SEO button)', async () => {
+		const { seoModuleSource } = await import('../src/vite.js');
+		expect(seoModuleSource('/s/editor/index.js')).toContain('import("/s/editor/index.js")');
+		expect(seoModuleSource('/s/editor/index.js')).toContain('export const enabled = true');
+		expect(seoModuleSource(null)).toContain('export const loadSeoEditor = null');
+		// Paths are written as JSON strings, so quotes can't break out of the import.
+		expect(seoModuleSource('/a"b/editor.js')).toContain('import("/a\\"b/editor.js")');
+	});
+});
+
 describe('thumbnails', () => {
 	const site = new URL('file:///site/');
 	const base = { label: 'X', component: './src/X.astro' };

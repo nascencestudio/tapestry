@@ -45,6 +45,7 @@ const canPublish = hasPermission(viewer.permissionLevel, config.publishPermissio
 <script>
 	import config from 'virtual:tapestry/config';
 	import { loadPicker } from 'virtual:tapestry/media-client';
+	import { loadSeoEditor } from 'virtual:tapestry/seo-client';
 	import manifest from 'virtual:tapestry/manifest';
 	import thumbnails from 'virtual:tapestry/thumbnails';
 	import { mountEditor } from '../editor/mount.js';
@@ -73,6 +74,7 @@ const canPublish = hasPermission(viewer.permissionLevel, config.publishPermissio
 			canPublish: host.dataset.canPublish !== 'false',
 			publishRole: host.dataset.publishRole,
 			mediaPicker: loadPicker,
+			seoEditor: loadSeoEditor,
 			thumbnails,
 			languages: config.languages,
 			userLevel: host.dataset.userLevel,

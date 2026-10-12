@@ -113,6 +113,12 @@ export interface TapestryOptions {
 	 * See docs/decisions/0032-translations.md.
 	 */
 	languages?: ReadonlyArray<string | { code: string; label?: string }>;
+	/**
+	 * Show an **SEO** button in the editor bar for @nascencestudio/tapestry-seo's per-page
+	 * settings. Default: on when the package is installed (it must also be registered as a
+	 * StudioCMS plugin). See docs/decisions/0040-seo-button.md.
+	 */
+	seo?: boolean;
 }
 
 /** Locate @nascencestudio/medialibrary from the site's project root, or null. */
@@ -124,6 +130,15 @@ function findMediaLibrary(root: string): MediaLibraryPaths | null {
 			picker: require.resolve('@nascencestudio/medialibrary/picker'),
 			media: require.resolve('@nascencestudio/medialibrary/Media.astro'),
 		};
+	} catch {
+		return null;
+	}
+}
+
+/** Locate @nascencestudio/tapestry-seo's editor entry from the site's project root, or null. */
+function findSeoEditor(root: string): string | null {
+	try {
+		return createRequire(join(root, 'package.json')).resolve('@nascencestudio/tapestry-seo/editor');
 	} catch {
 		return null;
 	}
@@ -305,6 +320,7 @@ export function tapestry(options: TapestryOptions): TapestryPlugin {
 												fallbackMedia: fileURLToPath(resolve('./runtime/MediaFallback.astro')),
 											},
 											islands,
+											options.seo === false ? null : findSeoEditor(fileURLToPath(config.root)),
 										),
 									],
 								},

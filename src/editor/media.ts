@@ -22,6 +22,9 @@ export function setMediaPickerLoader(load: (() => Promise<PickerModule>) | null)
 /** True when the media library is installed. */
 export const mediaAvailable = () => loader !== null;
 
+/** The picker loader itself, for other plugins' dialogs (the SEO dialog's image field). */
+export const mediaPickerLoader = () => loader;
+
 function picker(): Promise<PickerModule> | null {
 	if (!loader) return null;
 	loaded ??= loader();

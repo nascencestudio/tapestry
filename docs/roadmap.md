@@ -155,6 +155,13 @@ Decision: [ADR 0016](decisions/0016-media-library.md). Moved to its own reposito
 - [ ] Publish `@nascencestudio/tapestry` to npm with provenance: **prepared** (0.1.0, READMEs, LICENSE, release workflow with provenance/trusted publishing, StudioCMS patch shipped; [ADR 0035](decisions/0035-npm-release.md)); repositories set (nascencestudio/tapestry, nascencestudio/medialibrary, [ADR 0037](decisions/0037-media-library-repository.md)); media library 0.1.0 published 2026-10-09 and used from npm; Tapestry's release next
 - [x] Documentation site: Starlight in `website/`, generated from `docs/`, deployed to GitHub Pages ([ADR 0036](decisions/0036-documentation-site.md), 2026-10-08)
 
+## Companion plugins
+
+- [x] SEO: `@nascencestudio/tapestry-seo` (robots.txt with crawler categories, sitemap from
+  `listPublicPages()`, [ADR 0039](decisions/0039-public-pages-and-tapestry-seo.md), 2026-10-11); the
+  editor's **SEO** button for per-page settings (`seo` option, `virtual:tapestry/seo-client`,
+  [ADR 0040](decisions/0040-seo-button.md), 0.4.0, 2026-10-12)
+
 ## Later / maybe
 
 - Real-time collaboration (Canvas has it; it's significant work)

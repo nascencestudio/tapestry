@@ -1090,10 +1090,6 @@
 .tp-richtext__content s {
 	text-decoration: line-through;
 }
-.tp-richtext__button--subscript,
-.tp-richtext__button--superscript {
-	font-variant-numeric: normal;
-}
 
 /* Toolbar icons and menu buttons */
 .tp-richtext__button {

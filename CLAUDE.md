@@ -436,5 +436,8 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
   follow the system setting like the real site (a light dashboard on a dark system showed the light
   site). CDP `Emulation.setEmulatedMedia` overrides every frame and hides this: test with Chrome's
   `--force-dark-mode`.
+- A button's visible text must be part of its accessible name (axe 4.14 `label-content-name-mismatch`
+  counts text even inside `aria-hidden`; single letters like B/I/U pass as icons). Toolbar buttons
+  named in words ("Subscript") get drawn icons, not text like "X₂".
 - Pragmatic DnD 4.x import paths: `@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter`,
   `/utils/combine`, hitbox `/list-item/attach-instruction` and `/list-item/extract-instruction`.

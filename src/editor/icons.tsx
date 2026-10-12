@@ -1,7 +1,8 @@
 /**
  * Toolbar icons for the rich text editor: small inline SVGs drawn for Tapestry
  * (no icon font or library), 16×16, using `currentColor`. Typographic buttons
- * (bold, italic…) use styled letters instead; see `GLYPHS`. `UI_ICONS` are the
+ * (bold, italic…) use styled letters instead; see `GLYPHS`. Subscript and superscript are drawn
+ * (a text "X₂" counts as visible text that the button's name must contain: axe 4.14). `UI_ICONS` are the
  * editor's own controls (page structure, hints), drawn the same way.
  */
 import type { JSX } from 'preact';
@@ -31,7 +32,17 @@ const alignLines = (rows: Array<[number, number]>) => (
 	</Svg>
 );
 
+/** An X with a small 2 below (subscript) or above (superscript) its baseline; drawn, not text. */
+const scriptIcon = (twoTop: number) => (
+	<Svg>
+		<path {...line} d="M2.5 4.5l6 7M8.5 4.5l-6 7" />
+		<path {...line} d={`M10.75 ${twoTop + 1}a1.6 1.6 0 0 1 3 .55c0 .8-.75 1.3-1.5 1.95L10.75 ${twoTop + 4.5}h3`} />
+	</Svg>
+);
+
 export const ICONS = {
+	subscript: scriptIcon(9.5),
+	superscript: scriptIcon(1),
 	link: (
 		<Svg>
 			<path {...line} d="M6.5 9.5l3-3" />
@@ -121,8 +132,6 @@ export const GLYPHS = {
 	italic: { text: 'I', className: 'tp-glyph--italic' },
 	underline: { text: 'U', className: 'tp-glyph--underline' },
 	strike: { text: 'S', className: 'tp-glyph--strike' },
-	subscript: { text: 'X₂', className: '' },
-	superscript: { text: 'X²', className: '' },
 } as const;
 
 /** A text-style "icon": P, H1…H6. */

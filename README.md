@@ -13,6 +13,8 @@ components, with **no client JavaScript unless a component opts in**.
   [`@nascencestudio/medialibrary`](https://github.com/nascencestudio/medialibrary)), lists and objects, named slots
 - Patterns (saved sections), translations, component permissions, migrations
 - Interactive components (Astro islands) when a component opts in
+- SEO with [`@nascencestudio/tapestry-seo`](https://github.com/nascencestudio/tapestry-seo): an **SEO**
+  button in the editor for each page's search title, description and social image, robots.txt and a sitemap
 
 Inspired by [Drupal Canvas](https://www.drupal.org/project/canvas). The editor is built with
 [Preact](https://preactjs.com) (about 35 KB gzipped on first load, dashboard only); page content is
@@ -91,6 +93,12 @@ const { page, viewer, publishing } = result;
 
 Then create a page of type **Tapestry (visual builder)** in the dashboard and
 build it on its **Page Content** tab.
+
+Optional companions, picked up automatically when installed and registered as StudioCMS plugins:
+[`@nascencestudio/medialibrary`](https://github.com/nascencestudio/medialibrary) (`media` props, images
+in rich text; option `mediaLibrary`) and
+[`@nascencestudio/tapestry-seo`](https://github.com/nascencestudio/tapestry-seo) (the editor's **SEO**
+button; option `seo`).
 
 ## Interactive components need a StudioCMS patch
 

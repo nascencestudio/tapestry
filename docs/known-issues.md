@@ -221,10 +221,15 @@ resolved, and note the resolution in the devlog.
   overlapping polls, the dev server got stuck (logins returned 500) until it was restarted.
 - **Handled in tests:** `saveAndWait()` waits for StudioCMS's save response
   instead of polling, and `storedContent()` retries `SQLITE_BUSY`.
-- **Open question:** busy sites on a local SQLite file could hit this when a slow
-  read overlaps a save. WAL mode (`PRAGMA journal_mode=WAL`) or a busy timeout would
-  likely fix it; not verified with StudioCMS yet. Hosted libSQL/Turso is unaffected.
-- **Todo:** report upstream.
+- **Worse case, seen in CI (2026-10-12):** when a page save and StudioCMS's session check (auth-kit's
+  `validateSessionToken`, which also writes) collided, the session check failed with `SessionError`
+  and **kept its read lock**: every later save answered 400 until the server restarted.
+- **Fix (verified):** WAL mode (`PRAGMA journal_mode=WAL`): readers never block writers, so a leftover
+  read can't freeze saves. On a scratch file, a held read makes a write fail with `SQLITE_BUSY` in
+  rollback mode and succeed in WAL; in the editor, a save succeeds while a read is held. The playground
+  runs `scripts/sqlite-wal.mjs` after migrations (dev, CI, Docker entrypoint). **Sites on a local
+  SQLite file should do the same.** Hosted libSQL/Turso is unaffected.
+- **Todo:** report upstream (auth-kit doesn't release its transaction on errors), when the user asks.
 
 ### 24. StudioCMS toasts cover the editor toolbar for a few seconds after saving
 - **Found:** 2026-10-05 · **Affects:** e2e only (cosmetic for people)

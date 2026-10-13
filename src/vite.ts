@@ -9,6 +9,7 @@ export const CONFIG_MODULE_ID = 'virtual:tapestry/config';
 export const MEDIA_MODULE_ID = 'virtual:tapestry/media';
 export const MEDIA_CLIENT_MODULE_ID = 'virtual:tapestry/media-client';
 export const THUMBNAILS_MODULE_ID = 'virtual:tapestry/thumbnails';
+export const SEO_CLIENT_MODULE_ID = 'virtual:tapestry/seo-client';
 
 /** Where @nascencestudio/medialibrary's entry points are, when it's installed. */
 export interface MediaLibraryPaths {
@@ -33,6 +34,17 @@ export function mediaModuleSources(paths: MediaLibraryPaths | null, fallbackMedi
 		server: `export const enabled = true;\nexport { getMediaItems } from ${JSON.stringify(paths.server)};\nexport { default as Media } from ${JSON.stringify(paths.media)};\n`,
 		client: `export const enabled = true;\nexport const loadPicker = () => import(${JSON.stringify(paths.picker)});\n`,
 	};
+}
+
+/**
+ * Source of `virtual:tapestry/seo-client`: with @nascencestudio/tapestry-seo, a loader for its SEO
+ * dialog (`/editor`, loaded on demand when the SEO button is used); without it, null, and the
+ * editor shows no SEO button (ADR 0040).
+ */
+export function seoModuleSource(editorPath: string | null): string {
+	return editorPath
+		? `export const enabled = true;\nexport const loadSeoEditor = () => import(${JSON.stringify(editorPath)});\n`
+		: 'export const enabled = false;\nexport const loadSeoEditor = null;\n';
 }
 
 /** Browser-safe runtime settings exposed as `virtual:tapestry/config`. */
@@ -167,6 +179,7 @@ export function tapestryVitePlugin(
 	},
 	media: MediaSetup = { paths: null, fallbackMedia: '' },
 	islands: ReadonlyMap<string, string> = new Map(),
+	seoEditor: string | null = null,
 ) {
 	const mediaSources = mediaModuleSources(media.paths, media.fallbackMedia);
 	const modules = new Map([
@@ -176,6 +189,7 @@ export function tapestryVitePlugin(
 		[`\0${MEDIA_MODULE_ID}`, mediaSources.server],
 		[`\0${MEDIA_CLIENT_MODULE_ID}`, mediaSources.client],
 		[`\0${THUMBNAILS_MODULE_ID}`, thumbnailsModuleSource(definitions, root)],
+		[`\0${SEO_CLIENT_MODULE_ID}`, seoModuleSource(seoEditor)],
 	]);
 	return {
 		name: 'tapestry:virtual-modules',

@@ -46,14 +46,11 @@ happens across sibling checkouts in `/Volumes/T7/www/`:
 Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in tapestry-playground (`../tapestry-playground/docs/devlog.md`).
 
 **Immediate next steps**
-1. Release Tapestry 0.3.0 (branch `public-pages`: `listPublicPages()`, ADR 0039): PR → merge (merge
-   commit) → release `v0.3.0` → approve on npm. `main` is protected: always work on a branch.
-   It unblocks **@nascencestudio/tapestry-seo** (`../tapestry-seo`, stage 1 done: robots.txt,
-   sitemap, settings page; not on GitHub yet), which then switches its `file:` dev dependency to 0.3.0.
-2. tapestry-seo stage 2 (decided, ADR 0039 / tapestry-seo ADR 0001): an **SEO** button in the purple
-   editor bar when tapestry-seo is installed (detected like the media library), opening a modal with
-   per-page SEO settings saved immediately; a `<Seo>` component for meta tags.
-   Still open: the StudioCMS issue in tapestry-playground/docs/upstream/ (create that repo on GitHub first).
+1. Release Tapestry 0.4.0 (branch `seo-button`: the editor's **SEO** button for tapestry-seo, `seo`
+   option, ADR 0040): PR → merge (merge commit) → release `v0.4.0` → approve on npm. `main` is
+   protected: always work on a branch. Then tapestry-seo 0.2.0 (per-page SEO, `<Seo>`, site defaults)
+   switches its dev dependency to 0.4.0 and is released; then the playground moves to both.
+   Still open: the StudioCMS issue in tapestry-playground/docs/upstream/ (only when the user asks).
 2. Report upstream (only when the user asks): `bySlug` drafts (#10), ignored config keys (#5),
    dev-toolbar DB viewer errors (#12), empty page type (#15), edit-screen crash/no delete (#16),
    HTML editor in dev (#19) and never saving (#20) (plugin since removed; still worth reporting),
@@ -129,7 +126,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │   ├── richtext.ts        ← rich text format, cleanRichText() (toolbar allowlist), toRenderTree() (pure)
 │   ├── toolbar-settings.ts← admin toolbar narrowing: parse/apply/form helpers (pure)
 │   ├── translations.ts    ← languages option, translation rows/groups, new-translation slug/title/content (pure, ADR 0032)
-│   ├── vite.ts            ← virtual modules: manifest, component imports, runtime config, thumbnails;
+│   ├── vite.ts            ← virtual modules: manifest, component imports, runtime config, thumbnails, seo-client (ADR 0040);
 │   │                        islandWrapperSource() (index.ts writes them to node_modules/.tapestry/islands)
 │   ├── virtual.d.ts       ← types for virtual:tapestry/*
 │   ├── runtime/
@@ -163,6 +160,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │       ├── library-previews.ts, LibraryPreview.tsx ← thumbnails + live previews in the library (ADR 0029)
 │       ├── TranslationsMenu.tsx ← toolbar menu: language versions, create
 │       ├── patterns-client.ts ← library list, save/delete, insertPattern() (fresh copies)
+│       ├── seo.ts         ← SEO button's loader for tapestry-seo's dialog (ADR 0040); media.ts holds the picker loader
 │       ├── publishing.ts  ← stored page signal, writes draft/publish into the textarea
 │       ├── icons.tsx      ← toolbar + UI icons (inline SVG, drawn for Tapestry) and letter glyphs
 │       ├── InfoPopover.tsx ← "i" button + closable help popover, ShortcutList, shortcutText()
@@ -439,5 +437,8 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 - A button's visible text must be part of its accessible name (axe 4.14 `label-content-name-mismatch`
   counts text even inside `aria-hidden`; single letters like B/I/U pass as icons). Toolbar buttons
   named in words ("Subscript") get drawn icons, not text like "X₂".
+- Companion plugins (tapestry-seo) import `virtual:tapestry/config`, `/media` and `/media-client`
+  (ADR 0040): changing those modules' exports breaks them. Optional companions are detected by
+  resolving their entry from the site root (`findMediaLibrary`, `findSeoEditor`); their UI loads on demand.
 - Pragmatic DnD 4.x import paths: `@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter`,
   `/utils/combine`, hitbox `/list-item/attach-instruction` and `/list-item/extract-instruction`.

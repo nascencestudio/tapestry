@@ -21,6 +21,7 @@ import { configurePreviews } from './library-previews.js';
 import { type PickerModule, setMediaPickerLoader } from './media.js';
 import { createPublishing } from './publishing.js';
 import { preloadRichText } from './richtext-loader.js';
+import { type SeoEditorModule, setSeoEditorLoader } from './seo.js';
 import { createEditorStore } from './store.js';
 
 const MOUNTED = 'tapestryMounted';
@@ -48,6 +49,8 @@ export interface MountOptions {
 	pageId?: string;
 	/** Library thumbnail URLs by component type (`virtual:tapestry/thumbnails`). */
 	thumbnails?: Record<string, string>;
+	/** Loads @nascencestudio/tapestry-seo's SEO dialog (absent when it isn't installed; ADR 0040). */
+	seoEditor?: (() => Promise<SeoEditorModule>) | null;
 }
 
 /** Mount the editor. Safe to call repeatedly; returns a cleanup function (or undefined if already mounted). */
@@ -61,6 +64,7 @@ export function mountEditor(
 	host.dataset[MOUNTED] = 'true';
 
 	setMediaPickerLoader(options.mediaPicker ?? null);
+	setSeoEditorLoader(options.seoEditor ?? null);
 	configurePreviews({
 		...(options.thumbnails ? { thumbnails: options.thumbnails } : {}),
 		...(options.renderRoute ? { renderRoute: options.renderRoute } : {}),

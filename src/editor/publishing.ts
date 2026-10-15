@@ -116,9 +116,15 @@ export function createPublishing({
 		return entry ? store.commit(entry.document, { select: null }) : false;
 	}
 
+	/** Adopt what the server stored (the part editor's save may keep the live version). */
+	function replaceStored(page: StoredPage): void {
+		stored.value = page;
+	}
+
 	return {
 		stored,
 		status,
+		replaceStored,
 		scheduledAt,
 		publish,
 		schedule,

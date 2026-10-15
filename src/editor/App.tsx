@@ -1,5 +1,6 @@
 import { effect, type ReadonlySignal, useSignal } from '@preact/signals';
 import { useEffect, useRef } from 'preact/hooks';
+import { PART_PARAM, TEMPLATE_PARAM } from '../runtime/canvas-mode.js';
 import type { Language } from '../translations.js';
 import type { ValidationIssue } from '../validate.js';
 import { ComparePanel } from './ComparePanel.js';
@@ -18,6 +19,7 @@ import type { Publishing } from './publishing.js';
 import { formatWhen, SchedulePanel } from './SchedulePanel.js';
 import { openSeo, seoAvailable } from './seo.js';
 import type { EditorStore } from './store.js';
+import { TemplateMenu } from './TemplateMenu.js';
 import { TranslationsMenu } from './TranslationsMenu.js';
 
 export interface AppProps {
@@ -42,6 +44,12 @@ export interface AppProps {
 	canPublish?: boolean;
 	/** The lowest role that may publish (for the explanation). */
 	publishRole?: string;
+	/**
+	 * Editing a template's header or footer part (ADR 0041) instead of a page: saving goes through
+	 * `save` (not StudioCMS's form), the canvas shows the part in a real page, and page-only tools
+	 * (translations, SEO, template, View page) are hidden.
+	 */
+	part?: { id: string; region: 'header' | 'footer'; name: string; save: () => Promise<string | null> };
 }
 
 const STATUS_LABEL = {
@@ -68,6 +76,7 @@ export function App({
 	publishRole = 'admin',
 	languages,
 	pageId,
+	part,
 }: AppProps) {
 	const publishTitle = canPublish
 		? undefined
@@ -79,6 +88,8 @@ export function App({
 	const showHistory = useSignal(false);
 	const showSchedule = useSignal(false);
 	const compareIndex = useSignal<number | null>(null);
+	/** The part editor's save outcome (pages get StudioCMS's toast instead). */
+	const saveStatus = useSignal<{ kind: 'busy' | 'done' | 'error'; text: string } | null>(null);
 	const root = useRef<HTMLDivElement>(null);
 
 	const announce = (text: string) => {
@@ -89,29 +100,47 @@ export function App({
 		});
 	};
 
+	/** Store what's in the content field: StudioCMS's form for pages, the parts endpoint for parts. */
+	function submit(done: string) {
+		if (!part) {
+			// StudioCMS's own submit handler does the saving and shows its toast.
+			form?.requestSubmit();
+			return;
+		}
+		saveStatus.value = { kind: 'busy', text: 'Saving…' };
+		part.save().then(
+			(problem) => {
+				saveStatus.value = problem ? { kind: 'error', text: problem } : { kind: 'done', text: done };
+				announce(problem ?? done);
+			},
+			() => {
+				saveStatus.value = { kind: 'error', text: 'Saving failed (network).' };
+			},
+		);
+	}
+
 	function save() {
-		// StudioCMS's own submit handler does the saving and shows its toast.
 		// Saving stores the draft; the live site is unchanged until Publish.
-		form?.requestSubmit();
+		submit('Draft saved.');
 		announce('Saving draft…');
 	}
 
 	function publishNow() {
 		publishing.publish();
-		form?.requestSubmit();
+		submit(part ? `Published: every page using this ${part.region} shows it now.` : 'Published.');
 		announce('Publishing…');
 	}
 
 	function scheduleAt(at: string) {
 		publishing.schedule(at);
-		form?.requestSubmit();
+		submit(`Scheduled for ${formatWhen(at)}.`);
 		showSchedule.value = false;
 		announce(`Scheduled to go live on ${formatWhen(at)}. Saving…`);
 	}
 
 	function cancelSchedule() {
 		publishing.unschedule();
-		form?.requestSubmit();
+		submit('Schedule cancelled.');
 		announce('Schedule cancelled. Saving…');
 	}
 
@@ -191,7 +220,7 @@ export function App({
 	const { issues, valid } = store.validation.value;
 	const problems = valid ? [] : describeProblems(store.doc.value, store.manifest, issues);
 
-	/** The purple bar above the canvas: undo and redo, then language, history, JSON and SEO (with tapestry-seo). */
+	/** The purple bar above the canvas: undo and redo, then language, history, JSON and SEO (with tapestry-seo), then the template. */
 	const editingTools = (
 		<div class="tp-actionbar" role="toolbar" aria-label="Editing tools" data-tapestry-actionbar>
 			<button
@@ -255,12 +284,23 @@ export function App({
 					SEO
 				</button>
 			)}
+			{pageId && (
+				<>
+					<span class="tp-actionbar__separator" aria-hidden="true" />
+					<TemplateMenu store={store} announce={announce} />
+				</>
+			)}
 		</div>
 	);
 
 	/** Saving, at the right of the canvas's bottom bar: Save draft, Schedule…, Publish. */
-	const saveActions = form && (
+	const saveActions = (form || part) && (
 		<span class="tp-save-actions">
+			{part && saveStatus.value && (
+				<span class="tp-save-status" role="status" data-kind={saveStatus.value.kind} data-tapestry-save-status>
+					{saveStatus.value.text}
+				</span>
+			)}
 			<button
 				type="button"
 				class="tp-button"
@@ -317,18 +357,19 @@ export function App({
 	);
 
 	/** View page, next to the canvas's reload button. */
-	const viewPage = pageUrl?.value ? (
-		<a
-			class="tp-button tp-button--small"
-			href={pageUrl.value}
-			target="_blank"
-			rel="noopener"
-			title="Open the saved page in a new tab (unsaved changes aren't shown)"
-			data-tapestry-view
-		>
-			View page {UI_ICONS.external}
-		</a>
-	) : undefined;
+	const viewPage =
+		pageUrl?.value && !part ? (
+			<a
+				class="tp-button tp-button--small"
+				href={pageUrl.value}
+				target="_blank"
+				rel="noopener"
+				title="Open the saved page in a new tab (unsaved changes aren't shown)"
+				data-tapestry-view
+			>
+				View page {UI_ICONS.external}
+			</a>
+		) : undefined;
 
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: only suppresses implicit form submission
@@ -425,7 +466,7 @@ export function App({
 				</details>
 			)}
 
-			{showSchedule.value && form && (
+			{showSchedule.value && (form || part) && (
 				<SchedulePanel
 					publishing={publishing}
 					disabled={locked.value || !valid}
@@ -518,6 +559,8 @@ export function App({
 						afterViewports={fullscreenButton}
 						afterReload={viewPage}
 						footerEnd={saveActions || undefined}
+						params={part ? { [PART_PARAM]: part.id } : { [TEMPLATE_PARAM]: store.doc.value.template ?? 'default' }}
+						{...(part ? { emptyText: `This ${part.region} is empty. Drag components here.` } : {})}
 					/>
 					<PropsPanel store={store} />
 				</div>

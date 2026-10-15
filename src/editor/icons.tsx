@@ -195,6 +195,13 @@ export const UI_ICONS = {
 			/>
 		</Svg>
 	),
+	/** A page layout: header bar, content, footer bar (the template menu). */
+	template: (
+		<Svg>
+			<rect {...line} x="2" y="2" width="12" height="12" rx="1.5" />
+			<path {...line} d="M2 5.25h12M2 10.75h12" />
+		</Svg>
+	),
 	/** Undo: an arrow hooking back to the left. */
 	undo: (
 		<Svg>

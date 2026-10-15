@@ -14,7 +14,15 @@
  */
 import { effect } from '@preact/signals';
 import { h, render } from 'preact';
-import { NODE_ATTR, ROOT_ATTR, SLOT_ATTR, SLOT_OF_ATTR, TEXT_ATTR } from '../../runtime/canvas-mode.js';
+import {
+	EDITING_PART_ATTR,
+	NODE_ATTR,
+	REGION_ATTR,
+	ROOT_ATTR,
+	SLOT_ATTR,
+	SLOT_OF_ATTR,
+	TEXT_ATTR,
+} from '../../runtime/canvas-mode.js';
 import type { TapestryDocument, TapestryNode } from '../../types.js';
 import { activeDrag, applyDrop, type DragData } from '../dnd.js';
 import type { EditorStore } from '../store.js';
@@ -44,6 +52,19 @@ export interface CanvasControllerOptions {
 	onStatus: (state: CanvasState, message?: string) => void;
 	/** Keyboard shortcuts pressed while focus is inside the canvas. Return true if handled. */
 	onKeyDown?: (event: KeyboardEvent) => boolean;
+	/** Shown in an empty document. Default: "This page is empty. Drag components here." */
+	emptyText?: string;
+}
+
+/**
+ * The root the editor edits (ADR 0041): in the part editor, the one inside the region being edited;
+ * otherwise the page body's, the first root outside any template region. Other roots (the template's
+ * header and footer on a page, the page body in the part editor) are shown but never edited.
+ */
+export function editableRoot(d: Document): Element | null {
+	const editing = d.querySelector(`[${EDITING_PART_ATTR}]`);
+	if (editing) return editing.querySelector(`[${ROOT_ATTR}]`);
+	return Array.from(d.querySelectorAll(`[${ROOT_ATTR}]`)).find((el) => !el.closest(`[${REGION_ATTR}]`)) ?? null;
 }
 
 /**
@@ -54,7 +75,9 @@ export interface CanvasControllerOptions {
 function renderJson(document: TapestryDocument): string {
 	const strip = (nodes: TapestryNode[]): TapestryNode[] =>
 		nodes.map(({ label: _label, children, ...rest }) => (children ? { ...rest, children: strip(children) } : rest));
-	return JSON.stringify({ ...document, root: strip(document.root) });
+	// The template choice isn't rendered here (a template change reloads the canvas).
+	const { template: _template, ...rest } = document;
+	return JSON.stringify({ ...rest, root: strip(document.root) });
 }
 
 /** Debounce for re-rendering after edits (ms). Typing produces many edits. */
@@ -134,6 +157,13 @@ const CANVAS_CSS = `
 #${OVERLAY_ID} .tc-format .tp-richtext__menu-item[aria-checked="true"] { color: #6d4ed6; font-weight: 600; }
 #${OVERLAY_ID} .tc-format .tp-icon-default { display: inline-flex; opacity: 0.5; }
 #${OVERLAY_ID} .tc-format .tp-field__error { flex-basis: 100%; margin: 0; color: #b42318; font-size: 12px; }
+/* Template regions that aren't being edited: shown, faded, outlined, not interactive (ADR 0041). The
+   wrappers are display: contents (no box), so the fade and outline go on each top-level component. */
+[${REGION_ATTR}]:not([${EDITING_PART_ATTR}]) { pointer-events: none !important; }
+[${REGION_ATTR}]:not([${EDITING_PART_ATTR}]) [${ROOT_ATTR}] > [${NODE_ATTR}] > * { opacity: 0.5;
+	outline: 1px dashed rgb(162 155 184 / 0.8); outline-offset: -1px; }
+tapestry-canvas-body { display: block; margin: 1.5rem; padding: 3rem 1rem; border: 2px dashed #a29bb8; border-radius: 8px;
+	text-align: center; font: 15px system-ui, sans-serif; color: #5f5a73; background: rgb(162 155 184 / 0.08); }
 tapestry-canvas-empty { display: block; margin: 2rem; padding: 4rem 1rem; border: 2px dashed #8b5cf6; border-radius: 8px;
 	text-align: center; font: 16px system-ui, sans-serif; color: #6d4ed6; }
 tapestry-canvas-drop { display: flex; align-items: center; justify-content: center; min-height: 4.5rem; margin: 0.5rem 0;
@@ -149,6 +179,7 @@ function isTextEntry(target: EventTarget | null): boolean {
 
 export function createCanvasController(options: CanvasControllerOptions) {
 	const { iframe, store, renderUrl, announce, onStatus } = options;
+	const emptyText = options.emptyText ?? 'This page is empty. Drag components here.';
 	const manifest = store.manifest;
 
 	let doc: Document | null = null;
@@ -464,7 +495,7 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		if (!doc || !root) return;
 		if (store.doc.peek().root.length === 0 && !root.querySelector('tapestry-canvas-empty')) {
 			const empty = doc.createElement('tapestry-canvas-empty');
-			empty.textContent = 'This page is empty. Drag components here.';
+			empty.textContent = emptyText;
 			root.append(empty);
 		}
 	}
@@ -825,7 +856,16 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		}
 		inline.stop();
 		ranScripts = scriptKeys(doc);
-		root = doc.querySelector(`[${ROOT_ATTR}]`);
+		root = editableRoot(doc);
+		// The part editor: the page's own content area becomes a placeholder.
+		if (root && doc.querySelector(`[${EDITING_PART_ATTR}]`)) {
+			const body = Array.from(doc.querySelectorAll(`[${ROOT_ATTR}]`)).find((el) => !el.closest(`[${REGION_ATTR}]`));
+			if (body && !body.querySelector('tapestry-canvas-body')) {
+				const placeholder = doc.createElement('tapestry-canvas-body');
+				placeholder.textContent = 'Page content';
+				body.append(placeholder);
+			}
+		}
 		if (!root) {
 			overlay = null;
 			onStatus(

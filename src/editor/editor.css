@@ -1809,3 +1809,50 @@
 .tp-editor .tp-preview__viewport iframe {
 	color-scheme: normal;
 }
+
+/* Template menu (ADR 0041): one button per template, the current one marked. */
+.tp-templates {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-width: 18rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.tp-templates__item {
+	all: unset;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	width: 100%;
+	padding: 0.4rem 0.6rem;
+	border: 1px solid transparent;
+	border-radius: 0.375rem;
+	cursor: pointer;
+}
+.tp-templates__item:hover,
+.tp-templates__item:focus-visible {
+	background: var(--tp-surface-2);
+}
+.tp-templates__item:focus-visible {
+	outline: 2px solid var(--tp-primary);
+}
+.tp-templates__item[aria-pressed="true"] {
+	border-color: var(--tp-primary);
+}
+.tp-templates__name {
+	font-weight: 600;
+}
+
+/* The part editor's save outcome, before Save draft (pages use StudioCMS's toast). */
+.tp-save-status {
+	align-self: center;
+	margin-right: 0.25rem;
+	color: var(--tp-muted);
+	font-size: 0.8125rem;
+}
+.tp-save-status[data-kind="error"] {
+	color: var(--tp-danger);
+}

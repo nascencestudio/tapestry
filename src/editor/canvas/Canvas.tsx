@@ -30,11 +30,16 @@ interface Props {
 	afterReload?: ComponentChildren;
 	/** The bottom bar's right end (saving and publishing). */
 	footerEnd?: ComponentChildren;
+	/** Extra query parameters for the canvas page (the template to show, the part being edited). */
+	params?: Record<string, string>;
+	/** Shown in an empty document (default: an empty page's message). */
+	emptyText?: string;
 }
 
-function canvasUrl(pageUrl: string): string {
+function canvasUrl(pageUrl: string, params: Record<string, string>): string {
 	const url = new URL(pageUrl, window.location.origin);
 	url.searchParams.set(CANVAS_PARAM, '');
+	for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
 	return `${url.pathname}${url.search}`;
 }
 
@@ -63,12 +68,14 @@ export function Canvas({
 	afterViewports,
 	afterReload,
 	footerEnd,
+	params = {},
+	emptyText,
 }: Props) {
 	const viewport = useSignal<Viewport>('desktop');
 	const status = useSignal<{ state: CanvasState; message?: string }>({ state: 'loading' });
 	const iframe = useRef<HTMLIFrameElement>(null);
 	const controller = useRef<CanvasController | null>(null);
-	const url = pageUrl?.value ? canvasUrl(pageUrl.value) : null;
+	const url = pageUrl?.value ? canvasUrl(pageUrl.value, params) : null;
 
 	useEffect(() => {
 		const element = iframe.current;
@@ -79,6 +86,7 @@ export function Canvas({
 			renderUrl,
 			announce,
 			onKeyDown,
+			...(emptyText ? { emptyText } : {}),
 			onStatus: (state, message) => {
 				status.value = { state, message };
 			},

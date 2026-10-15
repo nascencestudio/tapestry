@@ -360,6 +360,8 @@ export interface TapestryNode {
 export interface TapestryDocument {
 	/** Format version, so stored pages can be migrated later. */
 	version: 1;
+	/** The page's template (`tt_…`, ADR 0041). Missing: the site's default template. Pages only. */
+	template?: string;
 	/** Top-level nodes, rendered in order. */
 	root: TapestryNode[];
 }

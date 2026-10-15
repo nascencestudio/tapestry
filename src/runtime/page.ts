@@ -24,11 +24,12 @@ import type { Language } from '../translations.js';
 import { emptyDocument } from '../validate.js';
 import { CANVAS_PARAM, enableCanvasMode, enableEmbeddedMode, PREVIEW_PARAM, VERSION_PARAM } from './canvas-mode.js';
 import { type PageTranslation, pageLanguages } from './languages.js';
+import { loadRegions, PART_PARAM, type PageRegions, TEMPLATE_PARAM } from './regions.js';
 import { getViewer } from './viewer.js';
 
 export type { PublicPage, PublicPageTranslation } from './public-pages.js';
 export { listPublicPages } from './public-pages.js';
-export type { Language, PageTranslation };
+export type { Language, PageRegions, PageTranslation };
 export { getViewer };
 
 type RequestContext = Pick<AstroGlobal, 'cookies' | 'params' | 'response' | 'url' | 'locals'>;
@@ -61,6 +62,8 @@ export interface PageResult {
 	 * the order of `languages`: for a language switcher and `<link rel="alternate" hreflang>`.
 	 */
 	translations?: PageTranslation[];
+	/** The page's template and its header/footer documents, for `<Region>` (ADR 0041). */
+	regions: PageRegions;
 }
 
 const TAPESTRY_PAGE_TYPE = 'tapestry/canvas';
@@ -103,7 +106,13 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 		enableCanvasMode(Astro.locals);
 		Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 	}
-	if (page.package !== TAPESTRY_PAGE_TYPE) return { page, viewer, ...i18n };
+	// Editors only: the canvas previews an unsaved template choice, or edits a part (body: placeholder).
+	const templateOverride = canvas ? Astro.url.searchParams.get(TEMPLATE_PARAM) : null;
+	const editingPart = canvas ? Astro.url.searchParams.get(PART_PARAM) : null;
+	if (page.package !== TAPESTRY_PAGE_TYPE) {
+		const regions = await loadRegions({ doc: null, preview: canvas, templateOverride, editingPart });
+		return { page, viewer, ...i18n, regions };
+	}
 
 	// A scheduled version whose time has come is the published one (no background job).
 	const stored = applyDueSchedule(
@@ -119,6 +128,7 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 		enableEmbeddedMode(Astro.locals);
 		Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 		const content = JSON.stringify(doc);
+		const regions = await loadRegions({ doc, preview: version !== 'published' });
 		const rendered = {
 			...page,
 			defaultContent: page.defaultContent ? { ...page.defaultContent, content } : page.defaultContent,
@@ -127,6 +137,7 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 			page: rendered,
 			viewer,
 			...i18n,
+			regions,
 			publishing: {
 				status: pageStatus(stored),
 				publishedAt: stored.publishedAt,
@@ -141,7 +152,9 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 	if (previewing) Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 	// Copy, never mutate: StudioCMS caches page objects across requests, and the
 	// chosen version (possibly a draft) must not leak into another request.
-	const content = JSON.stringify(chosen ?? emptyDocument());
+	const regions = await loadRegions({ doc: chosen, preview: previewing, templateOverride, editingPart });
+	// The part editor's canvas shows the page's layout with an empty body (the placeholder goes there).
+	const content = JSON.stringify(regions.editingPart ? emptyDocument() : (chosen ?? emptyDocument()));
 	const rendered = {
 		...page,
 		defaultContent: page.defaultContent ? { ...page.defaultContent, content } : page.defaultContent,
@@ -150,6 +163,7 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 		page: rendered,
 		viewer,
 		...i18n,
+		regions,
 		publishing: {
 			status: pageStatus(stored),
 			publishedAt: stored.publishedAt,

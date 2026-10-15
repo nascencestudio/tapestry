@@ -164,7 +164,28 @@ const versions = translations.length > 1 ? translations : [];
 Your catch-all route (`[...slug].astro`) already serves `/fr/about`. Page links inside
 Tapestry content follow the page's language. See [ADR 0032](decisions/0032-translations.md).
 
-### 7. Optional: page URL pattern
+### 7. Optional: templates (shared header and footer)
+
+Admins build headers and footers once (Dashboard → Plugins → Tapestry → Templates) and combine them
+into templates; editors choose a page's template in the editor. Place the regions in your layout,
+around the page content:
+
+```astro
+---
+import Region from '@nascencestudio/tapestry/Region.astro';
+const { result } = Astro.props; // getPage()'s result
+---
+<body>
+  <Region name="header" page={result} />
+  <slot />
+  <Region name="footer" page={result} />
+</body>
+```
+
+Pages of other types (Markdown) get the default template's header and footer. See
+[ADR 0041](decisions/0041-templates.md).
+
+### 8. Optional: page URL pattern
 
 The editor's "View page" button builds the URL from the page slug with
 `pageUrlPattern` (default `/{slug}`; the `index` slug maps to `/`):

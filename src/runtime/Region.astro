@@ -1,0 +1,44 @@
+---
+/**
+ * `<Region name="header" page={result} />`: a page's template header or footer (ADR 0041), rendered
+ * through the same pipeline as page content (StudioCMS renderer → sanitizer → registry → Node.astro).
+ * Put one above and one below the page content in your layout. Renders nothing when the page's
+ * template has no part there (or it was never published and the viewer isn't previewing).
+ *
+ * In the editor's canvas the output is wrapped in `<tapestry-region>` (`display: contents`) naming
+ * the region and part, so the editor knows which document it may edit there (the page body in the
+ * page editor, this part in the part editor). Visitors get no wrapper.
+ */
+/// <reference types="studiocms/v/types" />
+import { StudioCMSRenderer } from 'studiocms:renderer';
+import { EDITING_PART_ATTR, isCanvasMode, REGION_ATTR, REGION_PART_ATTR } from './canvas-mode.js';
+import type { PageResult } from './page.js';
+
+interface Props {
+	name: 'header' | 'footer';
+	/** getPage()'s result. */
+	page: PageResult | null | undefined;
+}
+
+const { name, page } = Astro.props;
+const region = page?.regions?.[name];
+const canvas = isCanvasMode(Astro.locals);
+const content = region?.document ? JSON.stringify(region.document) : null;
+// biome-ignore lint/suspicious/noExplicitAny: minimal page shape the StudioCMS renderer reads
+const data: any = content ? { package: 'tapestry/canvas', augments: [], defaultContent: { content } } : null;
+const markers = {
+	[REGION_ATTR]: name,
+	[REGION_PART_ATTR]: region?.part ?? '',
+	...(page?.regions?.editingPart && page.regions.editingPart === region?.part ? { [EDITING_PART_ATTR]: '' } : {}),
+};
+---
+
+{
+	canvas ? (
+		<tapestry-region {...markers} style="display: contents">
+			{data && <StudioCMSRenderer data={data} />}
+		</tapestry-region>
+	) : (
+		data && <StudioCMSRenderer data={data} />
+	)
+}

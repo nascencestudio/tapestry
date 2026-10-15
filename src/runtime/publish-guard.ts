@@ -28,15 +28,9 @@ import config from 'virtual:tapestry/config';
 import manifest from 'virtual:tapestry/manifest';
 import type { APIContext } from 'astro';
 import { hasPermission, isEditor } from '../access.js';
-import { lockedChanges, lockedMessage, lockedTypes, matchesSomeVersion } from '../permissions.js';
-import {
-	keepPublishingState,
-	looksLikeTapestryContent,
-	parseStoredPage,
-	type StoredPage,
-	workingDocument,
-} from '../revisions.js';
-import type { TapestryDocument } from '../types.js';
+import { lockedTypes } from '../permissions.js';
+import { looksLikeTapestryContent } from '../revisions.js';
+import { applySaveRules } from '../save-rules.js';
 import { getViewer } from './viewer.js';
 
 const PAGE_TYPE = 'tapestry/canvas';
@@ -94,25 +88,6 @@ async function storedPage(id: string): Promise<{ package: string; content: strin
 	return { package: String(page.package), content: typeof row?.content === 'string' ? row.content : '' };
 }
 
-/** Every document a stored page holds (the versions locked components may come from). */
-function versionsOf(page: StoredPage): TapestryDocument[] {
-	return [
-		workingDocument(page),
-		...(page.published ? [page.published] : []),
-		...(page.scheduled ? [page.scheduled.document] : []),
-		...page.history.map((entry) => entry.document),
-	];
-}
-
-/** The documents a save sets: live, working copy, scheduled. */
-function documentsOf(page: StoredPage): TapestryDocument[] {
-	return [
-		workingDocument(page),
-		...(page.published ? [page.published] : []),
-		...(page.scheduled ? [page.scheduled.document] : []),
-	];
-}
-
 const anyComponentPermission = Object.values(manifest).some((entry) => (entry.permission ?? 'editor') !== 'editor');
 
 /**
@@ -155,25 +130,15 @@ export async function guardSaves(context: APIContext): Promise<Request | Respons
 	if (!current && request.method !== 'POST') {
 		return forbid('This content can only be saved to an existing page.');
 	}
-	let content = typeof slot.value === 'string' ? slot.value : '';
-	if (keepPublishing) {
-		const merged =
-			keepPublishingState(content, current?.content ?? '') ?? keepPublishingState('', current?.content ?? '');
-		if (merged === null) return forbid('Only people allowed to publish can save this content.');
-		slot.set(merged);
-		content = merged;
-	}
-	if (locked.size > 0) {
-		const before = parseStoredPage(current?.content ?? '', manifest, config.historyLimit).page;
-		const after = parseStoredPage(content, manifest, config.historyLimit).page;
-		const versions = versionsOf(before);
-		for (const doc of documentsOf(after)) {
-			if (matchesSomeVersion(doc, versions, locked)) continue;
-			const [change] = lockedChanges(workingDocument(before), doc, locked);
-			return forbid(change ? lockedMessage(change, manifest) : 'This page has components you can’t change.');
-		}
-	}
+	const result = applySaveRules(typeof slot.value === 'string' ? slot.value : '', current?.content ?? '', {
+		keepPublishing,
+		locked,
+		manifest,
+		historyLimit: config.historyLimit,
+	});
+	if ('error' in result) return forbid(result.error);
 	if (!keepPublishing) return null;
+	slot.set(result.content);
 
 	const headers = new Headers(request.headers);
 	headers.delete('content-length');

@@ -14,6 +14,7 @@ import { render } from 'preact';
 import { pagePath } from '../access.js';
 import { lockedTypes } from '../permissions.js';
 import { applyDueSchedule, DEFAULT_HISTORY_LIMIT, parseStoredPage, workingDocument } from '../revisions.js';
+import { PARTS_ROUTE } from '../routes.js';
 import type { Language } from '../translations.js';
 import type { ComponentManifest, TapestryDocument } from '../types.js';
 import { App } from './App.js';
@@ -51,6 +52,13 @@ export interface MountOptions {
 	thumbnails?: Record<string, string>;
 	/** Loads @nascencestudio/tapestry-seo's SEO dialog (absent when it isn't installed; ADR 0040). */
 	seoEditor?: (() => Promise<SeoEditorModule>) | null;
+	/**
+	 * Edit a template's header or footer part instead of a page (ADR 0041): saved through the parts
+	 * endpoint, shown on the canvas inside `canvasPage` (a real page's path).
+	 */
+	part?: { id: string; region: 'header' | 'footer'; name: string };
+	/** The part editor's canvas page (e.g. `/`). */
+	canvasPage?: string | null;
 }
 
 /** Mount the editor. Safe to call repeatedly; returns a cleanup function (or undefined if already mounted). */
@@ -99,15 +107,36 @@ export function mountEditor(
 	};
 
 	// The page's public URL follows StudioCMS's slug field (on the Basic Information tab).
-	const slugField = field.form?.querySelector<HTMLInputElement>('input[name="page-slug"]') ?? null;
+	// The part editor shows the part inside a real page instead.
+	const slugField = options.part
+		? null
+		: (field.form?.querySelector<HTMLInputElement>('input[name="page-slug"]') ?? null);
 	const pattern = options.pageUrlPattern ?? '/{slug}';
-	const pageUrl = signal<string | null>(null);
+	const pageUrl = signal<string | null>(options.part ? (options.canvasPage ?? null) : null);
 	const updatePageUrl = () => {
 		const slug = slugField?.value.trim();
 		pageUrl.value = slug ? pagePath(pattern, slug) : null;
 	};
-	updatePageUrl();
+	if (!options.part) updatePageUrl();
 	slugField?.addEventListener('input', updatePageUrl);
+
+	/** The part editor's save: the content field to the parts endpoint; adopt what was stored. */
+	const savePart = async (): Promise<string | null> => {
+		const part = options.part;
+		if (!part) return null;
+		const response = await fetch(PARTS_ROUTE, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ id: part.id, content: field.value }),
+		});
+		const body = (await response.json().catch(() => ({}))) as { content?: string; error?: string };
+		if (!response.ok || typeof body.content !== 'string')
+			return body.error ?? `Saving failed (HTTP ${response.status}).`;
+		field.value = body.content;
+		publishing.replaceStored(parseStoredPage(body.content, manifest, historyLimit).page);
+		return null;
+	};
 
 	render(
 		<App
@@ -122,6 +151,7 @@ export function mountEditor(
 			publishRole={options.publishRole}
 			languages={options.languages}
 			pageId={options.pageId}
+			{...(options.part ? { part: { ...options.part, save: savePart } } : {})}
 		/>,
 		host,
 	);

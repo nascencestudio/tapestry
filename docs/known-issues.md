@@ -357,6 +357,16 @@ resolved, and note the resolution in the devlog.
 - **Handled:** constrained editor inputs are detached from the form
   (`form="tapestry-detached"`); validation happens in the editor.
 
+### 38. Two plugins with dashboard pages take the whole dashboard down
+- **Found:** 2026-10-15 · **Affects:** studiocms 0.6.1 · **Severity:** breaking (every dashboard route 404s)
+- StudioCMS names each plugin page's components `item.title + 'pageBodyComponent'` in a generated
+  module. Titles must be translation objects (`{ en: 'Media' }`), so every page becomes
+  `"[object Object]pageBodyComponent"`: with two plugin pages (the media library's Media and Tapestry's
+  Template Management) the module exports the same name twice and the dashboard fails to load.
+- **Fix:** the patch Tapestry ships (`patches/studiocms@0.6.1.patch`) and the playground's name them by
+  `item.slug` (plugin id + route, unique). Sites must apply the patch (README).
+- **Todo:** report upstream (when the user asks).
+
 ### 37. StudioCMS strips every `<script>` that components render
 - **Found:** 2026-10-07 · **Upstream** (StudioCMS 0.6.1) · **Patched**
 - `renderFn` (`dist/virtuals/components/renderFn.js`) runs `transformHTML()` twice more over the

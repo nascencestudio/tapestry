@@ -101,13 +101,16 @@ in rich text; option `mediaLibrary`) and
 [`@nascencestudio/tapestry-seo`](https://github.com/nascencestudio/tapestry-seo) (the editor's **SEO**
 button; option `seo`).
 
-## Interactive components need a StudioCMS patch
+## Apply the StudioCMS patch that ships with Tapestry
 
-StudioCMS 0.6.1 removes every `<script>` that components render from page
-content, so islands (`client: 'visible'` etc.) never become interactive and
-`<script>`s in your components don't run. Until StudioCMS changes this, apply the
-small patch that ships with this package (it only affects page types that opt in,
-like Tapestry):
+StudioCMS 0.6.1 has two bugs this package's small patch fixes:
+
+- It removes every `<script>` that components render from page content, so islands
+  (`client: 'visible'` etc.) never become interactive and `<script>`s in your components
+  don't run (the fix only affects page types that opt in, like Tapestry).
+- When two plugins add dashboard pages (Tapestry's Template Management and the media
+  library's Media), the whole dashboard answers 404. The fix names each plugin page by its
+  own address.
 
 ```sh
 mkdir -p patches
@@ -121,7 +124,7 @@ patchedDependencies:
 ```
 
 Then `pnpm install`. (With npm, use [patch-package](https://github.com/ds300/patch-package)
-with the same file.) Sites without interactive components don't need it.
+with the same file.)
 
 ## Documentation
 

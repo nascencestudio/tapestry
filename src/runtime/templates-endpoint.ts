@@ -21,6 +21,7 @@ import {
 	newId,
 	PART_ID,
 	TEMPLATE_ID,
+	type TemplateError,
 	templatesUsing,
 } from '../templates.js';
 import {
@@ -73,8 +74,8 @@ export const GET: APIRoute = async (context) => {
 	}
 };
 
-/** One form action; returns an error message for the page, or null when done. */
-async function act(form: URLSearchParams): Promise<string | null> {
+/** One form action; returns an error code for the page (TEMPLATE_ERRORS), or null when done. */
+async function act(form: URLSearchParams): Promise<TemplateError | null> {
 	const action = form.get('action');
 	const part = (key: string) => {
 		const value = form.get(key) ?? '';
@@ -87,67 +88,60 @@ async function act(form: URLSearchParams): Promise<string | null> {
 		case 'create-template':
 		case 'update-template': {
 			const name = cleanName(form.get('name'));
-			if (!name) return 'Give the template a name.';
+			if (!name) return 'name-required';
 			const parts = await listParts(manifest, config.historyLimit);
 			const header = part('header');
 			const footer = part('footer');
-			if (header && !parts.some((p) => p.id === header && p.region === 'header'))
-				return 'That header no longer exists.';
-			if (footer && !parts.some((p) => p.id === footer && p.region === 'footer'))
-				return 'That footer no longer exists.';
+			if (header && !parts.some((p) => p.id === header && p.region === 'header')) return 'part-missing';
+			if (footer && !parts.some((p) => p.id === footer && p.region === 'footer')) return 'part-missing';
 			if (action === 'create-template') {
-				if (templates.length >= MAX_TEMPLATES) return `A site can have up to ${MAX_TEMPLATES} templates.`;
+				if (templates.length >= MAX_TEMPLATES) return 'too-many-templates';
 				const created = { id: newId('tt_', random), name, header, footer };
 				await saveTemplate(created);
 				// The first template becomes the default, so pages pick it up at once.
 				if (templates.length === 0) await setDefaultTemplate(created.id);
 				return null;
 			}
-			if (!TEMPLATE_ID.test(id) || !templates.some((t) => t.id === id)) return 'That template no longer exists.';
+			if (!TEMPLATE_ID.test(id) || !templates.some((t) => t.id === id)) return 'template-missing';
 			await saveTemplate({ id, name, header, footer });
 			return null;
 		}
 		case 'delete-template': {
-			if (!TEMPLATE_ID.test(id)) return 'That template no longer exists.';
+			if (!TEMPLATE_ID.test(id)) return 'template-missing';
 			await deleteTemplate(id);
 			if ((await getDefaultTemplate()) === id) await setDefaultTemplate(null);
 			return null;
 		}
 		case 'set-default': {
-			if (id !== '' && !(TEMPLATE_ID.test(id) && templates.some((t) => t.id === id)))
-				return 'That template no longer exists.';
+			if (id !== '' && !(TEMPLATE_ID.test(id) && templates.some((t) => t.id === id))) return 'template-missing';
 			await setDefaultTemplate(id || null);
 			return null;
 		}
 		case 'create-part': {
 			const name = cleanName(form.get('name'));
 			const region = form.get('region');
-			if (!name) return 'Give the part a name.';
-			if (!isRegion(region)) return 'Choose header or footer.';
-			if ((await listParts(manifest, config.historyLimit)).length >= MAX_PARTS)
-				return `A site can have up to ${MAX_PARTS} parts.`;
+			if (!name) return 'name-required';
+			if (!isRegion(region)) return 'region-required';
+			if ((await listParts(manifest, config.historyLimit)).length >= MAX_PARTS) return 'too-many-parts';
 			await savePart({ id: newId('tp_', random), region, name, page: emptyStoredPage() });
 			return null;
 		}
 		case 'rename-part': {
 			const name = cleanName(form.get('name'));
-			if (!name) return 'Give the part a name.';
+			if (!name) return 'name-required';
 			const existing = PART_ID.test(id) ? await getPart(id, manifest, config.historyLimit) : null;
-			if (!existing) return 'That part no longer exists.';
+			if (!existing) return 'part-not-found';
 			await savePart({ ...existing, name });
 			return null;
 		}
 		case 'delete-part': {
-			if (!PART_ID.test(id)) return 'That part no longer exists.';
-			const users = templatesUsing(id, templates);
-			if (users.length > 0) {
-				return `It’s used by ${users.map((t) => `“${t.name}”`).join(', ')}. Choose another part there first.`;
-			}
+			if (!PART_ID.test(id)) return 'part-not-found';
+			if (templatesUsing(id, templates).length > 0) return 'part-in-use';
 			await deletePart(id);
 			return null;
 		}
 		default:
-			return 'Unknown action.';
+			return 'unknown';
 	}
 }
 
@@ -160,16 +154,18 @@ export const POST: APIRoute = async (context) => {
 	if (body.length > MAX_BODY) return deny(413, 'Too large');
 	const form = new URLSearchParams(body);
 
-	let problem: string | null;
+	let problem: TemplateError | null;
 	try {
 		problem = await act(form);
 	} catch (error) {
 		console.error('[tapestry] template change failed', error);
-		problem = 'Saving failed. Please try again.';
+		problem = 'failed';
 	}
-	// Back to the Templates page (same-origin paths only), with the outcome.
+	// Back to the Templates page (same-origin addresses only), with the outcome.
 	const back = new URL(form.get('return') || '/', context.url);
-	const target = new URL(back.origin === context.url.origin ? back.pathname : '/', context.url);
+	const target = new URL(back.origin === context.url.origin ? back.pathname + back.search : '/', context.url);
+	target.searchParams.delete('saved');
+	target.searchParams.delete('error');
 	if (problem) target.searchParams.set('error', problem);
 	else target.searchParams.set('saved', '1');
 	return new Response(null, {

@@ -157,8 +157,11 @@ const CANVAS_CSS = `
 #${OVERLAY_ID} .tc-format .tp-richtext__menu-item[aria-checked="true"] { color: #6d4ed6; font-weight: 600; }
 #${OVERLAY_ID} .tc-format .tp-icon-default { display: inline-flex; opacity: 0.5; }
 #${OVERLAY_ID} .tc-format .tp-field__error { flex-basis: 100%; margin: 0; color: #b42318; font-size: 12px; }
-/* Template regions that aren't being edited: shown, faded, not interactive (ADR 0041). */
-[${REGION_ATTR}]:not([${EDITING_PART_ATTR}]) > * { pointer-events: none !important; opacity: 0.55; }
+/* Template regions that aren't being edited: shown, faded, outlined, not interactive (ADR 0041). The
+   wrappers are display: contents (no box), so the fade and outline go on each top-level component. */
+[${REGION_ATTR}]:not([${EDITING_PART_ATTR}]) { pointer-events: none !important; }
+[${REGION_ATTR}]:not([${EDITING_PART_ATTR}]) [${ROOT_ATTR}] > [${NODE_ATTR}] > * { opacity: 0.5;
+	outline: 1px dashed rgb(162 155 184 / 0.8); outline-offset: -1px; }
 tapestry-canvas-body { display: block; margin: 1.5rem; padding: 3rem 1rem; border: 2px dashed #a29bb8; border-radius: 8px;
 	text-align: center; font: 15px system-ui, sans-serif; color: #5f5a73; background: rgb(162 155 184 / 0.08); }
 tapestry-canvas-empty { display: block; margin: 2rem; padding: 4rem 1rem; border: 2px dashed #8b5cf6; border-radius: 8px;

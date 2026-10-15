@@ -1,0 +1,144 @@
+---
+/**
+ * The part editor (ADR 0041): the full Tapestry editor for a template's header or footer, on the
+ * Plugins → Tapestry page (`?part=<id>`, admins). Saved through /_tapestry/parts (not StudioCMS's page
+ * form); the canvas shows the part in place on a real page (the home page, else the first page),
+ * with that page's own content replaced by a placeholder.
+ */
+/// <reference types="studiocms/v/types" />
+/// <reference path="../virtual.d.ts" />
+import '../editor/editor.css';
+import { runSDK, SDKCoreJs } from 'studiocms:sdk';
+import config from 'virtual:tapestry/config';
+import manifest from 'virtual:tapestry/manifest';
+import { hasPermission, pagePath } from '../access.js';
+import type { PartRecord } from '../templates.js';
+import { getPartContent } from './templates-store.js';
+import { loadToolbarSettings } from './toolbar-store.js';
+import { getViewer } from './viewer.js';
+
+interface Props {
+	part: PartRecord;
+	/** The Templates section's address (back link). */
+	back: string;
+}
+const { part, back } = Astro.props;
+const content = (await getPartContent(part.id)) ?? '';
+const toolbars = JSON.stringify(await loadToolbarSettings(manifest));
+const viewer = await getViewer(Astro);
+const canPublish = hasPermission(viewer.permissionLevel, config.publishPermission);
+const locals = Astro.locals as { StudioCMS?: { security?: { userSessionData?: { user?: { name?: string } | null } } } };
+const userName = locals.StudioCMS?.security?.userSessionData?.user?.name ?? '';
+
+// The canvas page: the home page, else the first page (any type; editors see drafts in the canvas).
+async function canvasPage(): Promise<string | null> {
+	try {
+		const pages = (await runSDK(SDKCoreJs.GET.pages(true, true))) as unknown as Array<{ slug: string }>;
+		const list = Array.isArray(pages) ? pages : [];
+		const page = list.find((p) => p.slug === 'index') ?? list[0];
+		return page ? pagePath(config.pageUrlPattern, String(page.slug)) : null;
+	} catch {
+		return null;
+	}
+}
+const canvas = await canvasPage();
+const regionLabel = part.region === 'header' ? 'Header' : 'Footer';
+---
+
+<div class="tapestry-part-editor" data-tapestry-part-editor>
+	<p class="tapestry-part-editor__intro">
+		<a href={back} data-tapestry-part-back>← Templates</a>
+		<span>
+			{regionLabel}: <strong>{part.name}</strong>. Publishing it updates every page whose template uses it.
+		</span>
+	</p>
+	{!canvas && (
+		<p class="tapestry-part-editor__intro" role="note">Create a page first: the canvas shows the part on one of your pages.</p>
+	)}
+	<div
+		class="tapestry-editor-host"
+		data-tapestry-editor
+		data-part-id={part.id}
+		data-part-region={part.region}
+		data-part-name={part.name}
+		data-canvas-page={canvas ?? ''}
+		data-user-name={userName}
+		data-toolbars={toolbars}
+		data-can-publish={canPublish ? 'true' : 'false'}
+		data-publish-role={config.publishPermission}
+		data-user-level={viewer.permissionLevel}
+	></div>
+	<textarea class="tapestry-editor-field" data-tapestry-field aria-label={`${regionLabel} content (JSON)`} spellcheck="false"
+		>{content}</textarea
+	>
+</div>
+
+<script>
+	import config from 'virtual:tapestry/config';
+	import { loadPicker } from 'virtual:tapestry/media-client';
+	import manifest from 'virtual:tapestry/manifest';
+	import thumbnails from 'virtual:tapestry/thumbnails';
+	import { mountEditor } from '../editor/mount.js';
+	import { applyToolbarSettings, parseToolbarSettings } from '../toolbar-settings.js';
+
+	function toolbarSettings(raw: string | undefined) {
+		try {
+			return parseToolbarSettings(JSON.parse(raw ?? '{}'), manifest);
+		} catch {
+			return parseToolbarSettings({}, manifest);
+		}
+	}
+
+	let cleanup: (() => void) | undefined;
+
+	function init() {
+		const host = document.querySelector<HTMLElement>('[data-tapestry-part-editor] [data-tapestry-editor]');
+		const field = document.querySelector<HTMLTextAreaElement>('[data-tapestry-part-editor] textarea[data-tapestry-field]');
+		if (!host || !field || !host.dataset.partId) return;
+		const region = host.dataset.partRegion === 'footer' ? 'footer' : 'header';
+		cleanup =
+			mountEditor(host, field, applyToolbarSettings(manifest, toolbarSettings(host.dataset.toolbars)), {
+				pageUrlPattern: config.pageUrlPattern,
+				renderRoute: config.renderRoute,
+				historyLimit: config.historyLimit,
+				userName: host.dataset.userName || undefined,
+				canPublish: host.dataset.canPublish !== 'false',
+				publishRole: host.dataset.publishRole,
+				mediaPicker: loadPicker,
+				thumbnails,
+				userLevel: host.dataset.userLevel,
+				part: { id: host.dataset.partId, region, name: host.dataset.partName ?? '' },
+				canvasPage: host.dataset.canvasPage || null,
+			}) ?? cleanup;
+		field.hidden = true;
+	}
+
+	init();
+	document.addEventListener('astro:page-load', init);
+	document.addEventListener('astro:before-swap', () => {
+		cleanup?.();
+		cleanup = undefined;
+	});
+</script>
+
+<style>
+	.tapestry-part-editor {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.tapestry-part-editor__intro {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+		margin: 0;
+	}
+	.tapestry-part-editor__intro a {
+		color: var(--primary-base, hsl(259 74% 45%));
+	}
+	.tapestry-editor-field {
+		width: 100%;
+		min-height: 20rem;
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	}
+</style>

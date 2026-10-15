@@ -1845,3 +1845,14 @@
 .tp-templates__name {
 	font-weight: 600;
 }
+
+/* The part editor's save outcome, before Save draft (pages use StudioCMS's toast). */
+.tp-save-status {
+	align-self: center;
+	margin-right: 0.25rem;
+	color: var(--tp-muted);
+	font-size: 0.8125rem;
+}
+.tp-save-status[data-kind="error"] {
+	color: var(--tp-danger);
+}

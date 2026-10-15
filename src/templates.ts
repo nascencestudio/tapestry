@@ -88,6 +88,24 @@ export function partDocument(part: Pick<PartRecord, 'page'>, preview: boolean): 
 	return preview ? (part.page.draft ?? part.page.published) : part.page.published;
 }
 
+/**
+ * Why a Templates page action failed: codes in the redirect (never free text, so a crafted link
+ * can't put arbitrary words into the dashboard), messages on the page.
+ */
+export const TEMPLATE_ERRORS = {
+	'name-required': 'Give it a name.',
+	'part-missing': 'That header or footer no longer exists.',
+	'template-missing': 'That template no longer exists.',
+	'part-not-found': 'That part no longer exists.',
+	'region-required': 'Choose header or footer.',
+	'part-in-use': 'A template uses that part. Choose another part in that template first.',
+	'too-many-templates': `A site can have up to ${MAX_TEMPLATES} templates.`,
+	'too-many-parts': `A site can have up to ${MAX_PARTS} headers and footers.`,
+	unknown: 'Unknown action.',
+	failed: 'Saving failed. Please try again.',
+} as const;
+export type TemplateError = keyof typeof TEMPLATE_ERRORS;
+
 /** Which templates use a part (to warn before deleting it). */
 export const templatesUsing = (partId: string, templates: readonly TemplateRecord[]) =>
 	templates.filter((t) => t.header === partId || t.footer === partId);

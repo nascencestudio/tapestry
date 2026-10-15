@@ -77,8 +77,10 @@ never-published pages are left out.
 ```ts
 interface TapestryDocument {
   version: 1;            // format version, for future migrations
+  template?: string;     // pages only: the template ("tt_" + 16); absent: the default (ADR 0041)
   root: TapestryNode[];  // top-level nodes, rendered in order
 }
+// Keys are written in this order (documents are compared as strings).
 
 interface TapestryNode {
   id: string;                       // unique within the document
@@ -277,6 +279,35 @@ interface Pattern {
 
 Patterns are **copies**: inserting one validates its nodes against the current
 manifest and gives them fresh ids; pages never reference a pattern.
+
+## Templates and parts
+
+[ADR 0041](decisions/0041-templates.md). Rows in `StudioCMSPluginData`:
+
+```ts
+// id "@nascencestudio/tapestry-part:<id>": a header or footer, edited like a page
+interface Part {
+  id: string;                    // "tp_" + 16 lowercase base-36 characters
+  region: 'header' | 'footer';
+  name: string;                  // one line, ≤ 80 characters
+  page: StoredPage;              // the stored page format above (draft, publish, history, schedule)
+}
+
+// id "@nascencestudio/tapestry-template:<id>"
+interface Template {
+  id: string;                    // "tt_" + 16
+  name: string;
+  header: string | null;         // a part id
+  footer: string | null;
+}
+
+// id "@nascencestudio/tapestry-templates"
+interface TemplateSettings { defaultTemplate: string | null }
+```
+
+A page uses its document's `template`, else the default template, else none. Visitors get each
+part's published version; editors previewing get drafts. Parts are saved with the same rules as
+pages (publish permission, locked components; `save-rules.ts`).
 
 ## Translations
 

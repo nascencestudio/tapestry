@@ -11,6 +11,7 @@ components, with **no client JavaScript unless a component opts in**.
 - Drafts, publishing, scheduled publishing, version history and comparison
 - Rich text (ProseMirror, per-field toolbars), links, media (with
   [`@nascencestudio/medialibrary`](https://github.com/nascencestudio/medialibrary)), lists and objects, named slots
+- Templates: shared headers and footers built in the same editor, chosen per page
 - Patterns (saved sections), translations, component permissions, migrations
 - Interactive components (Astro islands) when a component opts in
 - SEO with [`@nascencestudio/tapestry-seo`](https://github.com/nascencestudio/tapestry-seo): an **SEO**

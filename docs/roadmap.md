@@ -155,6 +155,14 @@ Decision: [ADR 0016](decisions/0016-media-library.md). Moved to its own reposito
 - [ ] Publish `@nascencestudio/tapestry` to npm with provenance: **prepared** (0.1.0, READMEs, LICENSE, release workflow with provenance/trusted publishing, StudioCMS patch shipped; [ADR 0035](decisions/0035-npm-release.md)); repositories set (nascencestudio/tapestry, nascencestudio/medialibrary, [ADR 0037](decisions/0037-media-library-repository.md)); media library 0.1.0 published 2026-10-09 and used from npm; Tapestry's release next
 - [x] Documentation site: Starlight in `website/`, generated from `docs/`, deployed to GitHub Pages ([ADR 0036](decisions/0036-documentation-site.md), 2026-10-08)
 
+## Site structure
+
+- [x] Templates: shared header and footer parts built in the editor, combined by templates that pages
+  choose (Template menu), draft/publish/history for parts, `<Region>` for layouts
+  ([ADR 0041](decisions/0041-templates.md), 0.5.0, 2026-10-15)
+- [ ] Menus: `@nascencestudio/tapestry-menus` (menus edited in the dashboard; Menu and Breadcrumbs
+  components for templates and pages; next)
+
 ## Companion plugins
 
 - [x] SEO: `@nascencestudio/tapestry-seo` (robots.txt with crawler categories, sitemap from

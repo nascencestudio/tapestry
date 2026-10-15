@@ -1,75 +1,79 @@
-# 0041. Templates: shared header and footer parts
+# 0041. Templates: shared headers, footers and page layouts
 
-- Status: Accepted (the user's decisions, 2026-10-14); design by the assistant
-- Date: 2026-10-14
+- Status: Accepted (the user's decisions, 2026-10-14 and 2026-10-15); design by the assistant
+- Date: 2026-10-15 (revised the same week, before release)
 
 ## Context
 
-Menus (and logos, footers, contact details) belong on every page, but Tapestry pages are built one
-by one. The user proposed **templates** built with the same editor as pages: three regions (header,
-body, footer), the body a fixed placeholder for the page's own content; pages show the template's
-header and footer on the canvas, not editable, and pick their template from a menu in the editor
-bar (like the language menu, next to SEO). This matches established practice: WordPress block
-themes (templates with template parts and a "Post content" block), Drupal Canvas page regions,
-Webflow/Framer page templates.
+Menus, logos and footers belong on many pages, but Tapestry pages are built one by one. The user
+asked for **templates** built with the same editor as pages. A first version (headers and footers
+only, chosen per page) was revised after trying it: templates should be reusable **page layouts**
+that pages inherit, with layout and content components of their own. This matches established
+practice: WordPress block themes (templates, template parts, a "Post content" block), Drupal Layout
+Builder and Canvas page regions, Webflow/Framer page templates.
 
 The user's decisions:
 
-1. **Shared parts:** headers and footers are built once as named parts ("Main header"); a template
-   picks one header and one footer. Editing a part updates every template using it.
-2. **Draft, preview, publish, history** for parts, like pages (a part change reaches every page).
-3. **Admins** edit parts and templates (Dashboard → Plugins → Tapestry → Templates, next to Text
-   formatting). Editors choose a page's template.
-4. Menus are a separate plugin (tapestry-menus, its own ADR); a Menu component goes into parts.
+1. **Template Management** is its own dashboard item, right under Media, with two sub-pages:
+   **Headers and Footers** (shared parts, as before) and **Templates**.
+2. **Shared parts:** headers and footers are built once and chosen by templates (and one-off pages).
+3. **Templates are inherited:** a template's body (any components) is fixed and shared; it contains
+   one or more named **content areas** (Main, Sidebar…) that pages fill. Changing the template
+   changes every page using it, except their own area content.
+4. **Fixed template content is locked** on pages (per-field overrides may come later).
+5. **One-off pages** (no template) start with no header or footer; editors can add an existing
+   header and footer (they can't create parts there).
+6. Parts and templates have **draft, preview, publish and history**; **admins** edit them; editors
+   choose a page's template, header and footer.
+7. Menus are a separate plugin (tapestry-menus); a Menu component goes into parts or templates.
 
 ## Decision
 
 ### Data
-- **Parts:** plugin data rows `tapestry-part:<id>`: `{ region: 'header' | 'footer', name, page }` where
-  `page` is the stored page format (ADR 0011: published, draft, history, schedule), so revisions.ts,
-  publish-guard rules (locked components) and validation apply unchanged.
-- **Templates:** rows `tapestry-template:<id>`: `{ name, header: partId | null, footer: partId | null }`,
-  and one setting for the **default template**. Templates are a form (name, two pickers), not an editor.
-- **A page's template:** an optional `template` id on the page's document (format 1, optional key),
-  so a change is a draft until published, and history keeps it. Missing or unknown → the default
-  template. Existing pages need no migration.
+- **Parts:** rows `tapestry-part:<id>`: `{ id: 'tp_…', region, name, page }`, `page` the stored page
+  format (ADR 0011).
+- **Templates:** rows `tapestry-template:<id>`: `{ id: 'tt_…', name, header, footer, page }`. `page`
+  holds the template body (draft, publish, history). Header and footer are settings of the template.
+- **Content area:** a built-in component, type `tapestry-area`, prop `name`; its area key is the
+  slugified name (`Main` → `main`). Only offered in the template editor.
+- **A page document** (keys in this order; documents are compared as strings):
+  `{ version, template?, header?, footer?, root }`. With `template`, the page's top-level nodes carry
+  `slot` = the area key they belong to; `header`/`footer` are ignored (the template's apply). Without
+  one, `header`/`footer` are the page's own choice (absent: none).
 
-### The site
-- `getPage()` resolves the page's template and adds `regions: { header, footer }` (documents) to its
-  result: published part versions for visitors; drafts for editors previewing (`?tapestry-preview`)
-  and in the canvas. A part that was never published renders nothing for visitors.
-- **`<Region name="header" page={result} />`** (`@nascencestudio/tapestry/Region.astro`) renders a region
-  through the same pipeline as pages (StudioCMS renderer → sanitizer → registry → `Node.astro`).
-  Sites place `<Region>`s in their layout around the page content. No JavaScript.
+### Rendering
+- `getPage()` resolves the template (published for visitors; drafts for editors previewing and in
+  the canvas), adds `regions` (header, footer) and **merges** the page into the template body: each
+  content area gets the page's nodes for its key (`mergeTemplate()`, pure). Template node ids are
+  prefixed `tpl_` so they can't collide with page ids. The merged document goes through the normal
+  pipeline. Page content whose area no longer exists is not rendered (the editor shows it).
+- `<Region name="header|footer">` renders the header/footer (unchanged).
+- The render endpoint merges too when the canvas sends a template id.
 
-### The editors
-- **Page editor:** a **Template** menu in the purple bar (after SEO, with a separator), listing
-  templates with the current one checked. Changing it is a document edit (undo, draft). The canvas
-  shows the template's header and footer, rendered but not selectable or editable.
-- **Part editor:** Templates → a part → **Edit** opens the full Tapestry editor (library, layers,
-  canvas, history) on a dashboard page, saving through `/_tapestry/parts` (admins, same origin)
-  instead of StudioCMS's page form. Its canvas shows a real page (the home page, else the first
-  published Tapestry page) with the part being edited in place and the body as a "Page content"
-  placeholder.
-- **Which document is editable** is decided in the browser from wrapper attributes, not by a
-  per-request server flag (Astro renders sibling components concurrently): in canvas mode each
-  region is wrapped in `<tapestry-region data-tapestry-region="header" data-tapestry-part="…">`;
-  the canvas edits the root inside the region being edited, or the root outside any region (the
-  page body), and ignores the rest.
+### Editing
+- **Page editor:** the Template menu lists "No template" (with header/footer pickers) and the
+  templates. With a template, the document root has the template's areas as its slots: the layer
+  tree groups top-level components by area, the canvas shows template content faded and locked
+  (`tpl_` nodes are never selectable) and each area as a drop zone. Switching templates moves
+  content to the area with the same key, else the first area (one undoable change).
+- **Template editor / part editor:** the full editor on the Template Management page, saving through
+  `/_tapestry/parts` (parts and templates; admins; the same save rules as pages). The canvas shows a
+  real page: the template body (areas as labelled placeholders) or the part in place.
+- **Which root is editable** is decided in the browser from wrapper attributes, never by a
+  per-request server flag (Astro renders siblings concurrently).
 
 ## Alternatives considered
 
-- **Each template owns its header and footer:** simpler, but sites with several templates would
-  duplicate their header (offered; the user chose shared parts).
-- **Saving a part makes it live at once:** offered; the user chose draft and publish.
-- **Templates as StudioCMS pages of a hidden page type:** reuses StudioCMS's save and history, but
-  they'd appear in the content tree, routes and REST API, and StudioCMS's own history rolls back
-  the live version (known issue #21).
-- **A server flag that turns canvas markers off inside regions:** racy with concurrent rendering.
+- **Header/footer-only templates** (the first version): too little; pages couldn't share layout.
+- **Templates as starting points (copied):** offered; the user chose inheritance.
+- **A single content area:** offered; the user chose named areas.
+- **Templates as StudioCMS pages of a hidden page type:** they'd appear in the content tree, routes
+  and REST API, and StudioCMS's own history rolls back the live version (known issue #21).
 
 ## Consequences
 
-- Sites add `<Region>`s to their layout (two lines). Pages keep working without them.
-- Parts are language-neutral in the first version: a Menu inside follows the page's language;
-  translated text in a header is later work.
-- The editor gains a second save path (parts); page saves stay on StudioCMS's form.
+- Sites add `<Region>`s to their layout (two lines); the template body arrives through the normal page
+  rendering.
+- Renaming a content area moves pages' content out of it; it stays in the document and the editor
+  offers it for placing again.
+- Parts and templates are language-neutral for now; Menu components inside follow the page's language.

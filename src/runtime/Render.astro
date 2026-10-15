@@ -9,11 +9,14 @@
  * Editors only. Same-origin only (CSRF). Body is the document JSON (size-limited).
  */
 /// <reference types="studiocms/v/types" />
+/// <reference path="../virtual.d.ts" />
 import { StudioCMSRenderer } from 'studiocms:renderer';
+import manifest from 'virtual:tapestry/manifest';
 import { isEditor } from '../access.js';
-import { LIMITS } from '../validate.js';
+import { LIMITS, validateDocument } from '../validate.js';
 import { enableCanvasMode } from './canvas-mode.js';
 import { getViewer } from './page.js';
+import { loadLayout } from './regions.js';
 
 export const prerender = false;
 
@@ -30,9 +33,20 @@ if (Astro.request.headers.get('origin') !== Astro.url.origin) {
 if (!isEditor(await getViewer(Astro))) {
 	return deny(403, 'Editors only');
 }
-const content = await Astro.request.text();
-if (content.length > LIMITS.maxContentLength) {
+const raw = await Astro.request.text();
+if (raw.length > LIMITS.maxContentLength) {
 	return deny(413, 'Document too large');
+}
+// A page that uses a template is rendered inside it (drafts: this is the editor's canvas; ADR 0041).
+let content = raw;
+try {
+	const doc = validateDocument(JSON.parse(raw), manifest).document;
+	if (doc.template) {
+		const merged = (await loadLayout({ doc, preview: true })).body(doc);
+		if (merged) content = JSON.stringify(merged);
+	}
+} catch {
+	// Not JSON: the renderer reports it like any invalid content.
 }
 
 enableCanvasMode(Astro.locals);

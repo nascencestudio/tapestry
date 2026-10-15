@@ -1,9 +1,10 @@
 ---
 /**
- * The part editor (ADR 0041): the full Tapestry editor for a template's header or footer, on the
- * Plugins → Tapestry page (`?part=<id>`, admins). Saved through /_tapestry/parts (not StudioCMS's page
- * form); the canvas shows the part in place on a real page (the home page, else the first page),
- * with that page's own content replaced by a placeholder.
+ * The editor for a header/footer part or a template body (ADR 0041), on the Template Management page
+ * (`?edit=<id>`, admins): the full Tapestry editor, saved through /_tapestry/parts (not StudioCMS's page
+ * form). The canvas shows it in place on a real page (the home page, else the first page): a part in
+ * its region with the page's content as a placeholder; a template's body (its content areas labelled)
+ * between its header and footer.
  */
 /// <reference types="studiocms/v/types" />
 /// <reference path="../virtual.d.ts" />
@@ -12,18 +13,19 @@ import { runSDK, SDKCoreJs } from 'studiocms:sdk';
 import config from 'virtual:tapestry/config';
 import manifest from 'virtual:tapestry/manifest';
 import { hasPermission, pagePath } from '../access.js';
-import type { PartRecord } from '../templates.js';
-import { getPartContent } from './templates-store.js';
+import type { PartRecord, TemplateRecord } from '../templates.js';
+import { getStoredContent } from './templates-store.js';
 import { loadToolbarSettings } from './toolbar-store.js';
 import { getViewer } from './viewer.js';
 
 interface Props {
-	part: PartRecord;
-	/** The Templates section's address (back link). */
+	subject: PartRecord | TemplateRecord;
+	/** The list it came from (back link). */
 	back: string;
 }
-const { part, back } = Astro.props;
-const content = (await getPartContent(part.id)) ?? '';
+const { subject, back } = Astro.props;
+const isPart = 'region' in subject;
+const content = (await getStoredContent(subject.id)) ?? '';
 const toolbars = JSON.stringify(await loadToolbarSettings(manifest));
 const viewer = await getViewer(Astro);
 const canPublish = hasPermission(viewer.permissionLevel, config.publishPermission);
@@ -42,25 +44,32 @@ async function canvasPage(): Promise<string | null> {
 	}
 }
 const canvas = await canvasPage();
-const regionLabel = part.region === 'header' ? 'Header' : 'Footer';
+const kindLabel = isPart ? (subject.region === 'header' ? 'Header' : 'Footer') : 'Template';
+const backLabel = isPart ? '← Headers and Footers' : '← Templates';
 ---
 
-<div class="tapestry-part-editor" data-tapestry-part-editor>
-	<p class="tapestry-part-editor__intro">
-		<a href={back} data-tapestry-part-back>← Templates</a>
+<div class="tapestry-content-editor" data-tapestry-content-editor>
+	<p class="tapestry-content-editor__intro">
+		<a href={back} data-tapestry-content-back>{backLabel}</a>
 		<span>
-			{regionLabel}: <strong>{part.name}</strong>. Publishing it updates every page whose template uses it.
+			{kindLabel}: <strong>{subject.name}</strong>.{' '}
+			{isPart
+				? 'Publishing it updates every page that shows it.'
+				: 'Add Content areas where pages put their content; the rest is the same on every page using this template. Publishing updates them all.'}
 		</span>
 	</p>
 	{!canvas && (
-		<p class="tapestry-part-editor__intro" role="note">Create a page first: the canvas shows the part on one of your pages.</p>
+		<p class="tapestry-content-editor__intro" role="note">
+			Create a page first: the canvas shows this on one of your pages.
+		</p>
 	)}
 	<div
 		class="tapestry-editor-host"
 		data-tapestry-editor
-		data-part-id={part.id}
-		data-part-region={part.region}
-		data-part-name={part.name}
+		data-subject-kind={isPart ? 'part' : 'template'}
+		data-subject-id={subject.id}
+		data-subject-name={subject.name}
+		data-subject-region={isPart ? subject.region : ''}
 		data-canvas-page={canvas ?? ''}
 		data-user-name={userName}
 		data-toolbars={toolbars}
@@ -68,7 +77,7 @@ const regionLabel = part.region === 'header' ? 'Header' : 'Footer';
 		data-publish-role={config.publishPermission}
 		data-user-level={viewer.permissionLevel}
 	></div>
-	<textarea class="tapestry-editor-field" data-tapestry-field aria-label={`${regionLabel} content (JSON)`} spellcheck="false"
+	<textarea class="tapestry-editor-field" data-tapestry-field aria-label={`${kindLabel} content (JSON)`} spellcheck="false"
 		>{content}</textarea
 	>
 </div>
@@ -92,10 +101,14 @@ const regionLabel = part.region === 'header' ? 'Header' : 'Footer';
 	let cleanup: (() => void) | undefined;
 
 	function init() {
-		const host = document.querySelector<HTMLElement>('[data-tapestry-part-editor] [data-tapestry-editor]');
-		const field = document.querySelector<HTMLTextAreaElement>('[data-tapestry-part-editor] textarea[data-tapestry-field]');
-		if (!host || !field || !host.dataset.partId) return;
-		const region = host.dataset.partRegion === 'footer' ? 'footer' : 'header';
+		const host = document.querySelector<HTMLElement>('[data-tapestry-content-editor] [data-tapestry-editor]');
+		const field = document.querySelector<HTMLTextAreaElement>(
+			'[data-tapestry-content-editor] textarea[data-tapestry-field]',
+		);
+		const id = host?.dataset.subjectId;
+		if (!host || !field || !id) return;
+		const kind = host.dataset.subjectKind === 'template' ? 'template' : 'part';
+		const region = host.dataset.subjectRegion === 'footer' ? 'footer' : 'header';
 		cleanup =
 			mountEditor(host, field, applyToolbarSettings(manifest, toolbarSettings(host.dataset.toolbars)), {
 				pageUrlPattern: config.pageUrlPattern,
@@ -107,7 +120,7 @@ const regionLabel = part.region === 'header' ? 'Header' : 'Footer';
 				mediaPicker: loadPicker,
 				thumbnails,
 				userLevel: host.dataset.userLevel,
-				part: { id: host.dataset.partId, region, name: host.dataset.partName ?? '' },
+				subject: { kind, id, name: host.dataset.subjectName ?? '', ...(kind === 'part' ? { region } : {}) },
 				canvasPage: host.dataset.canvasPage || null,
 			}) ?? cleanup;
 		field.hidden = true;
@@ -122,18 +135,19 @@ const regionLabel = part.region === 'header' ? 'Header' : 'Footer';
 </script>
 
 <style>
-	.tapestry-part-editor {
+	.tapestry-content-editor {
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
 	}
-	.tapestry-part-editor__intro {
+	.tapestry-content-editor__intro {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.5rem 1rem;
 		margin: 0;
+		line-height: 1.5;
 	}
-	.tapestry-part-editor__intro a {
+	.tapestry-content-editor__intro a {
 		color: var(--primary-base, hsl(259 74% 45%));
 	}
 	.tapestry-editor-field {

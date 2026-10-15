@@ -5,24 +5,17 @@
  * without a slash (`/<dashboard>/plugins@nascencestudio/tapestry`, known issue #27), so
  * the page answers there and at the intended `/<dashboard>/plugins/@nascencestudio/tapestry`.
  * Uses StudioCMS's own dashboard layout, with Tapestry's sections in the inner
- * sidebar: Text formatting (ADR 0014) and Templates (`?section=templates`, ADR 0041); a header or
- * footer part opens in the part editor (`?part=<id>`). Admins only.
+ * sidebar (only "Text formatting" for now). Admins only. See ADR 0014.
  */
 /// <reference types="studiocms/v/types" />
 import { StudioCMSRoutes } from 'studiocms:lib';
 import { Button } from 'studiocms:ui/components/button';
 import { Icon } from 'studiocms:ui/components/icon';
-import tapestryConfig from 'virtual:tapestry/config';
-import manifest from 'virtual:tapestry/manifest';
 import PageHeader from 'studiocms/frontend/components/dashboard/PageHeader.astro';
 import SidebarLink from 'studiocms/frontend/components/dashboard/SidebarLink.astro';
 import Layout from 'studiocms/frontend/layouts/DashboardLayout.astro';
 import { hasPermission } from '../access.js';
-import { PART_ID } from '../templates.js';
-import PartEditor from './PartEditor.astro';
-import TemplatesSettings from './TemplatesSettings.astro';
 import ToolbarSettings from './ToolbarSettings.astro';
-import { getPart } from './templates-store.js';
 import { getViewer } from './viewer.js';
 
 export const prerender = false;
@@ -39,21 +32,14 @@ if (!hasPermission(viewer.permissionLevel, 'admin')) return Astro.redirect(dashb
 const { siteConfig: config, defaultLang: lang, security } = Astro.locals.StudioCMS;
 const here = Astro.url.pathname;
 const sections = [
-	{ id: 'text-formatting', label: 'Text formatting', icon: 'heroicons:adjustments-horizontal', href: here },
-	{ id: 'templates', label: 'Templates', icon: 'heroicons:rectangle-group', href: `${here}?section=templates` },
+	{ id: 'text-formatting', label: 'Text formatting', icon: 'heroicons:adjustments-horizontal' },
 ] as const;
-const partId = Astro.url.searchParams.get('part');
-const part = partId && PART_ID.test(partId) ? await getPart(partId, manifest, tapestryConfig.historyLimit) : null;
-if (partId && !part) return Astro.redirect(`${here}?section=templates&error=part-not-found`);
-const current = part || Astro.url.searchParams.get('section') === 'templates' ? sections[1] : sections[0];
-const heading = part
-	? `Tapestry: ${part.region === 'header' ? 'Header' : 'Footer'} "${part.name}"`
-	: `Tapestry: ${current.label}`;
+const current = sections[0];
 Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
 
 <Layout
-	title={heading}
+	title={`Tapestry: ${current.label}`}
 	description="Tapestry plugin settings"
 	sidebar="double"
 	{lang}
@@ -73,7 +59,7 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 		</div>
 		<div class="tapestry-inner-sidebar__links">
 			{sections.map((section) => (
-				<SidebarLink icon={section.icon} href={section.href} aria-current={section.id === current.id ? 'page' : undefined}>
+				<SidebarLink icon={section.icon} href={here} aria-current={section.id === current.id ? 'page' : undefined}>
 					{section.label}
 				</SidebarLink>
 			))}
@@ -81,16 +67,10 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 	</div>
 
 	<div slot="header">
-		<PageHeader title={heading} />
+		<PageHeader title={`Tapestry: ${current.label}`} />
 	</div>
 
-	{part ? (
-		<PartEditor part={part} back={`${here}?section=templates`} />
-	) : current.id === 'templates' ? (
-		<TemplatesSettings here={here} />
-	) : (
-		<ToolbarSettings />
-	)}
+	<ToolbarSettings />
 </Layout>
 
 <style>

@@ -6,6 +6,8 @@
  */
 import { batch, computed, signal } from '@preact/signals';
 import { lockedChanges, lockedMessage, matchesSomeVersion } from '../permissions.js';
+import { withRootAreas } from '../slots.js';
+import { AREA_TYPE } from '../templates.js';
 import type { ComponentManifest, TapestryDocument } from '../types.js';
 import { parseDocument } from '../validate.js';
 import { allIds, findNode, visibleIds } from './tree.js';
@@ -34,6 +36,13 @@ export interface StoreOptions {
 	locked?: ReadonlySet<string>;
 	/** The page's stored versions (live, scheduled, history), for the rule above. */
 	knownVersions?: () => readonly TapestryDocument[];
+	/**
+	 * Templates' content areas by template id (ADR 0041): a page whose document names a template has
+	 * those areas at its root (top-level components belong to one of them).
+	 */
+	templateAreas?: ReadonlyMap<string, ReadonlyArray<{ key: string; name: string }>>;
+	/** What's edited: a page (default), a header/footer part, or a template body (ADR 0041). */
+	editing?: 'page' | 'part' | 'template';
 }
 
 export function createEditorStore(
@@ -57,6 +66,19 @@ export function createEditorStore(
 		selectedId.value ? (findNode(doc.value, selectedId.value)?.node ?? null) : null,
 	);
 	const validation = computed(() => parseDocument(JSON.stringify(doc.value), manifest));
+	// The manifest the editing code uses: with the root's areas when the page uses a template. Follows
+	// the document (undoing a template change brings its areas back).
+	const catalog = storeOptions.templateAreas ?? new Map();
+	const editing = storeOptions.editing ?? 'page';
+	// In a template body the content area is a placeholder for pages' content, not a container.
+	const baseManifest: ComponentManifest =
+		editing === 'template' && manifest[AREA_TYPE]
+			? { ...manifest, [AREA_TYPE]: { ...manifest[AREA_TYPE], acceptsChildren: false } }
+			: manifest;
+	const editingManifest = computed(() => {
+		const template = editing === 'page' ? doc.value.template : undefined;
+		return template ? withRootAreas(baseManifest, catalog.get(template) ?? []) : baseManifest;
+	});
 	const canUndo = computed(() => past.value.length > 0);
 	const canRedo = computed(() => future.value.length > 0);
 	/** Node ids the layer tree shows, in order (descendants of collapsed containers left out). */
@@ -182,7 +204,14 @@ export function createEditorStore(
 		select,
 		setCollapsed,
 		setAllCollapsed,
-		manifest,
+		/** The component manifest, with the page's template areas at its root (see `withRootAreas`). */
+		get manifest() {
+			return editingManifest.value;
+		},
+		/** Templates' content areas by template id. */
+		templateAreas: catalog,
+		/** What's edited: a page, a header/footer part, or a template body. */
+		editing,
 		/** Component types the current user may not change. */
 		locked,
 		/** Whether a node is a locked component for the current user. */

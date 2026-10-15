@@ -1,128 +1,130 @@
 /**
- * The page editor's template menu (ADR 0041): which template this page uses (its header and footer),
- * and the others to choose from. Choosing is a document edit (undo, draft): the page's `template`
- * id changes and the canvas reloads with the new header and footer. "Site default" removes the
- * page's own choice. Shown only when the site has templates.
+ * The page editor's template menu (ADR 0041): "No template" (the page's own header and footer, chosen
+ * from the existing parts) or one of the templates (its header, footer and body layout; the page fills
+ * its content areas). Choosing is a document edit (undo, draft): with a template, the page's
+ * components move to the area with the same name, else the first area.
  */
-import { useSignal } from '@preact/signals';
-import { useEffect } from 'preact/hooks';
-import { TEMPLATES_ROUTE } from '../routes.js';
+import { assignAreas, type ContentArea } from '../templates.js';
 import type { TapestryDocument } from '../types.js';
 import { Popover } from './InfoPopover.js';
 import { UI_ICONS } from './icons.js';
 import type { EditorStore } from './store.js';
 
-export interface TemplateSummary {
-	id: string;
-	name: string;
-	header: string | null;
-	footer: string | null;
+export interface TemplateCatalog {
+	templates: Array<{ id: string; name: string; header: string | null; footer: string | null; areas: ContentArea[] }>;
+	parts: Array<{ id: string; region: 'header' | 'footer'; name: string }>;
 }
 
-interface TemplateList {
-	templates: TemplateSummary[];
-	parts: Array<{ id: string; name: string }>;
-	defaultTemplate: string | null;
+/** The document with the page's own header and footer (and no template), in key order. */
+export function withOwnParts(doc: TapestryDocument, header: string | null, footer: string | null): TapestryDocument {
+	return assignAreas(doc, { header, footer });
 }
 
-/** The document with another template choice (`null`: the site default), in key order (documents are compared as strings). */
-export function chooseTemplate(doc: TapestryDocument, template: string | null): TapestryDocument {
-	const { version, root } = doc;
-	return template ? { version, template, root } : { version, root };
-}
+export function TemplateMenu({
+	store,
+	catalog,
+	announce,
+}: {
+	store: EditorStore;
+	catalog: TemplateCatalog;
+	announce: (message: string) => void;
+}) {
+	const { templates, parts } = catalog;
+	if (templates.length === 0 && parts.length === 0) return null; // nothing to choose yet
+	const doc = store.doc.value;
+	const current = templates.find((t) => t.id === doc.template) ?? null;
+	const partName = (id: string | null) => (id ? (parts.find((p) => p.id === id)?.name ?? 'Missing part') : 'None');
+	const label = current?.name ?? (doc.template ? 'Missing template' : 'No template');
 
-export function TemplateMenu({ store, announce }: { store: EditorStore; announce: (message: string) => void }) {
-	const list = useSignal<TemplateList | null>(null);
-	const error = useSignal('');
-
-	useEffect(() => {
-		let cancelled = false;
-		fetch(TEMPLATES_ROUTE, { credentials: 'same-origin' })
-			.then(async (response) => {
-				if (!response.ok) throw new Error(`HTTP ${response.status}`);
-				return (await response.json()) as TemplateList;
-			})
-			.then((loaded) => {
-				if (!cancelled) list.value = loaded;
-			})
-			.catch(() => {
-				if (!cancelled) error.value = "Couldn't load the templates.";
-			});
-		return () => {
-			cancelled = true;
-		};
-	}, []);
-
-	const templates = list.value?.templates ?? [];
-	if (list.value && templates.length === 0) return null; // no templates yet: nothing to choose
-	const chosen = store.doc.value.template ?? null;
-	const fallback = templates.find((t) => t.id === list.value?.defaultTemplate) ?? null;
-	const current = templates.find((t) => t.id === chosen) ?? null;
-	const partName = (id: string | null) =>
-		id ? (list.value?.parts.find((p) => p.id === id)?.name ?? 'Missing part') : 'None';
-	const label = current?.name ?? (fallback ? fallback.name : 'Template');
-
-	const choose = (template: string | null, close: () => void) => {
+	const chooseTemplate = (id: string, close: () => void) => {
 		close();
-		if (template === chosen) return;
-		store.commit(chooseTemplate(store.doc.peek(), template));
-		const name = template
-			? templates.find((t) => t.id === template)?.name
-			: `the site default (${fallback?.name ?? 'none'})`;
-		announce(`Template: ${name}. Save to keep it.`);
+		const template = templates.find((t) => t.id === id);
+		if (!template || id === doc.template) return;
+		store.commit(assignAreas(store.doc.peek(), { template: id, areas: template.areas }));
+		announce(`Template: ${template.name}. Your content is in its areas. Save to keep it.`);
+	};
+	const chooseNone = (close: () => void) => {
+		close();
+		if (!doc.template) return;
+		store.commit(withOwnParts(store.doc.peek(), null, null));
+		announce('No template: the page has its own header and footer (none yet). Save to keep it.');
+	};
+	const setPart = (region: 'header' | 'footer', id: string) => {
+		const now = store.doc.peek();
+		const header = region === 'header' ? id || null : (now.header ?? null);
+		const footer = region === 'footer' ? id || null : (now.footer ?? null);
+		store.commit(withOwnParts(now, header, footer));
 	};
 
 	return (
 		<Popover
 			id="tp-template"
-			label="This page’s template (header and footer)"
+			label="This page’s template (layout, header and footer)"
 			title="Template"
 			icon={UI_ICONS.template}
 			text={<span data-tapestry-current-template>{label}</span>}
 		>
 			{(close) => (
 				<>
-					{error.value && (
-						<p class="tp-field__error" role="alert">
-							{error.value}
-						</p>
-					)}
-					{!list.value && !error.value && <p class="tp-muted">Loading…</p>}
-					{list.value && (
-						<ul class="tp-templates" data-tapestry-templates>
-							<li>
+					<ul class="tp-templates" data-tapestry-templates>
+						<li>
+							<button
+								type="button"
+								class="tp-templates__item"
+								aria-pressed={!doc.template}
+								onClick={() => chooseNone(close)}
+								data-tapestry-template=""
+							>
+								<span class="tp-templates__name">No template</span>
+								<span class="tp-muted">A one-off page: its own layout, header and footer</span>
+							</button>
+							{!doc.template && (
+								<div class="tp-templates__parts" data-tapestry-own-parts>
+									{(['header', 'footer'] as const).map((region) => (
+										<label class="tp-field" key={region}>
+											<span class="tp-field__label">{region === 'header' ? 'Header' : 'Footer'}</span>
+											<select
+												class="tp-input"
+												form="tapestry-detached"
+												value={doc[region] ?? ''}
+												onChange={(event) => setPart(region, event.currentTarget.value)}
+												data-tapestry-own-part={region}
+											>
+												<option value="">None</option>
+												{parts
+													.filter((p) => p.region === region)
+													.map((p) => (
+														<option key={p.id} value={p.id}>
+															{p.name}
+														</option>
+													))}
+											</select>
+										</label>
+									))}
+								</div>
+							)}
+						</li>
+						{templates.map((template) => (
+							<li key={template.id}>
 								<button
 									type="button"
 									class="tp-templates__item"
-									aria-pressed={chosen === null}
-									onClick={() => choose(null, close)}
-									data-tapestry-template=""
+									aria-pressed={doc.template === template.id}
+									onClick={() => chooseTemplate(template.id, close)}
+									data-tapestry-template={template.id}
 								>
-									<span class="tp-templates__name">Site default</span>
-									<span class="tp-muted">{fallback ? fallback.name : 'No default template'}</span>
+									<span class="tp-templates__name">{template.name}</span>
+									<span class="tp-muted">
+										Header: {partName(template.header)} · Footer: {partName(template.footer)} · Areas:{' '}
+										{template.areas.map((a) => a.name).join(', ') || 'none'}
+									</span>
 								</button>
 							</li>
-							{templates.map((template) => (
-								<li key={template.id}>
-									<button
-										type="button"
-										class="tp-templates__item"
-										aria-pressed={chosen === template.id}
-										onClick={() => choose(template.id, close)}
-										data-tapestry-template={template.id}
-									>
-										<span class="tp-templates__name">{template.name}</span>
-										<span class="tp-muted">
-											Header: {partName(template.header)} · Footer: {partName(template.footer)}
-										</span>
-									</button>
-								</li>
-							))}
-						</ul>
-					)}
+						))}
+					</ul>
 					<p class="tp-field__help">
-						The header and footer come from the template and are edited in Dashboard → Plugins → Tapestry → Templates.
-						Changing the template is part of this page’s draft.
+						Templates, headers and footers are built in Template Management. Changing them here is part of this page’s
+						draft.
 					</p>
 				</>
 			)}

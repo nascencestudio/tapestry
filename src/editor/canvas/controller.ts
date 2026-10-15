@@ -15,6 +15,7 @@
 import { effect } from '@preact/signals';
 import { h, render } from 'preact';
 import {
+	AREA_ATTR,
 	EDITING_PART_ATTR,
 	NODE_ATTR,
 	REGION_ATTR,
@@ -23,12 +24,13 @@ import {
 	SLOT_OF_ATTR,
 	TEXT_ATTR,
 } from '../../runtime/canvas-mode.js';
+import { TEMPLATE_NODE_PREFIX } from '../../templates.js';
 import type { TapestryDocument, TapestryNode } from '../../types.js';
 import { activeDrag, applyDrop, type DragData } from '../dnd.js';
 import type { EditorStore } from '../store.js';
 import { copySelection, handleStructureKey, pasteClipboard } from '../structure-keys.js';
 import { duplicateNode, findNode, removeNode } from '../tree.js';
-import { type Indicator, type Placement, type Rect, resolveCanvasDrop } from './geometry.js';
+import { AREA_HIT, type Indicator, type Placement, type Rect, resolveCanvasDrop } from './geometry.js';
 
 import {
 	canvasTextTargets,
@@ -75,9 +77,8 @@ export function editableRoot(d: Document): Element | null {
 function renderJson(document: TapestryDocument): string {
 	const strip = (nodes: TapestryNode[]): TapestryNode[] =>
 		nodes.map(({ label: _label, children, ...rest }) => (children ? { ...rest, children: strip(children) } : rest));
-	// The template choice isn't rendered here (a template change reloads the canvas).
-	const { template: _template, ...rest } = document;
-	return JSON.stringify({ ...rest, root: strip(document.root) });
+	// The template choice stays: the render endpoint renders the page inside its template (ADR 0041).
+	return JSON.stringify({ ...document, root: strip(document.root) });
 }
 
 /** Debounce for re-rendering after edits (ms). Typing produces many edits. */
@@ -162,6 +163,17 @@ const CANVAS_CSS = `
 [${REGION_ATTR}]:not([${EDITING_PART_ATTR}]) { pointer-events: none !important; }
 [${REGION_ATTR}]:not([${EDITING_PART_ATTR}]) [${ROOT_ATTR}] > [${NODE_ATTR}] > * { opacity: 0.5;
 	outline: 1px dashed rgb(162 155 184 / 0.8); outline-offset: -1px; }
+/* A page using a template (ADR 0041): the template's own components are shown but not interactive;
+   the page's components inside its content areas are. Template components without an area inside are
+   faded (fading a container would fade the page's content too). */
+[${NODE_ATTR}^="tpl_"] { pointer-events: none; }
+[${NODE_ATTR}^="tpl_"] [${NODE_ATTR}]:not([${NODE_ATTR}^="tpl_"]),
+[${NODE_ATTR}^="tpl_"] tapestry-canvas-drop { pointer-events: auto; }
+[${NODE_ATTR}^="tpl_"]:not(:has([${AREA_ATTR}])) > * { opacity: 0.5; }
+[${AREA_ATTR}] { outline: 2px dashed rgb(139 92 246 / 0.55); outline-offset: 2px; min-height: 3rem; pointer-events: auto; }
+tapestry-area-label { display: block; width: fit-content; margin: 0 0 0.25rem; padding: 0.15rem 0.5rem; border-radius: 4px;
+	background: #6d4ed6; color: #fff; font: 600 12px/1.4 system-ui, sans-serif; }
+.tc-template-editing [${AREA_ATTR}] tapestry-canvas-drop { display: none; }
 tapestry-canvas-body { display: block; margin: 1.5rem; padding: 3rem 1rem; border: 2px dashed #a29bb8; border-radius: 8px;
 	text-align: center; font: 15px system-ui, sans-serif; color: #5f5a73; background: rgb(162 155 184 / 0.08); }
 tapestry-canvas-empty { display: block; margin: 2rem; padding: 4rem 1rem; border: 2px dashed #8b5cf6; border-radius: 8px;
@@ -317,17 +329,30 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		});
 	}
 
-	/** Node ids under a point, innermost first. */
+	/**
+	 * Node ids under a point, innermost first. On a page using a template, template components (`tpl_`
+	 * ids) are skipped and its content areas are reported as `area:<key>` (ADR 0041).
+	 */
 	function hitsAt(x: number, y: number): string[] {
 		const ids: string[] = [];
 		let el = doc?.elementFromPoint(x, y) ?? null;
 		if (el && overlay?.contains(el)) return ids;
 		while (el && el !== root) {
 			const id = el.getAttribute(NODE_ATTR);
-			if (id) ids.push(id);
+			if (id && !id.startsWith(TEMPLATE_NODE_PREFIX)) ids.push(id);
+			const area = el.getAttribute(AREA_ATTR);
+			if (area && store.editing === 'page') ids.push(`${AREA_HIT}${area}`);
 			el = el.parentElement;
 		}
 		return ids;
+	}
+
+	/** A content area's rectangle (its element is a real box). */
+	function contentAreaRect(key: string): Rect | null {
+		const el = root?.querySelector(`[${AREA_ATTR}="${CSS.escape(key)}"]`);
+		if (!el) return null;
+		const r = el.getBoundingClientRect();
+		return r.width === 0 && r.height === 0 ? null : { left: r.left, top: r.top, width: r.width, height: r.height };
 	}
 
 	// ----------------------------------------------------------------- overlay
@@ -624,6 +649,7 @@ export function createCanvasController(options: CanvasControllerOptions) {
 			hits: hitsAt(x, y),
 			rectOf,
 			areasOf,
+			contentAreaRect,
 		});
 	}
 
@@ -857,6 +883,8 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		inline.stop();
 		ranScripts = scriptKeys(doc);
 		root = editableRoot(doc);
+		// The template editor: content areas are placeholders (no drop zones inside them).
+		doc.documentElement.classList.toggle('tc-template-editing', store.editing === 'template');
 		// The part editor: the page's own content area becomes a placeholder.
 		if (root && doc.querySelector(`[${EDITING_PART_ATTR}]`)) {
 			const body = Array.from(doc.querySelectorAll(`[${ROOT_ATTR}]`)).find((el) => !el.closest(`[${REGION_ATTR}]`));

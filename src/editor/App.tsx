@@ -1,7 +1,8 @@
 import { effect, type ReadonlySignal, useSignal } from '@preact/signals';
 import { useEffect, useRef } from 'preact/hooks';
-import { PART_PARAM, TEMPLATE_PARAM } from '../runtime/canvas-mode.js';
+import { EDIT_TEMPLATE_PARAM, FOOTER_PARAM, HEADER_PARAM, PART_PARAM, TEMPLATE_PARAM } from '../runtime/canvas-mode.js';
 import type { Language } from '../translations.js';
+import type { TapestryDocument } from '../types.js';
 import type { ValidationIssue } from '../validate.js';
 import { ComparePanel } from './ComparePanel.js';
 import { Canvas } from './canvas/Canvas.js';
@@ -19,7 +20,7 @@ import type { Publishing } from './publishing.js';
 import { formatWhen, SchedulePanel } from './SchedulePanel.js';
 import { openSeo, seoAvailable } from './seo.js';
 import type { EditorStore } from './store.js';
-import { TemplateMenu } from './TemplateMenu.js';
+import { type TemplateCatalog, TemplateMenu } from './TemplateMenu.js';
 import { TranslationsMenu } from './TranslationsMenu.js';
 
 export interface AppProps {
@@ -45,11 +46,23 @@ export interface AppProps {
 	/** The lowest role that may publish (for the explanation). */
 	publishRole?: string;
 	/**
-	 * Editing a template's header or footer part (ADR 0041) instead of a page: saving goes through
-	 * `save` (not StudioCMS's form), the canvas shows the part in a real page, and page-only tools
-	 * (translations, SEO, template, View page) are hidden.
+	 * Editing a header/footer part or a template body (ADR 0041) instead of a page: saving goes through
+	 * `save` (not StudioCMS's form), the canvas shows it on a real page, and page-only tools
+	 * (translations, SEO, template menu, View page) are hidden.
 	 */
-	part?: { id: string; region: 'header' | 'footer'; name: string; save: () => Promise<string | null> };
+	subject?: EditorSubject;
+	/** Templates and parts for the page's Template menu (pages only). */
+	templateCatalog?: TemplateCatalog;
+}
+
+/** What the editor edits when it isn't a page (ADR 0041). */
+export interface EditorSubject {
+	kind: 'part' | 'template';
+	id: string;
+	name: string;
+	/** Parts: which region. */
+	region?: 'header' | 'footer';
+	save: () => Promise<string | null>;
 }
 
 const STATUS_LABEL = {
@@ -57,6 +70,15 @@ const STATUS_LABEL = {
 	published: 'Published',
 	changed: 'Unpublished changes',
 } as const;
+
+/** The canvas page's parameters: the page's layout choice, or the part/template being edited. */
+function canvasParams(doc: TapestryDocument, subject: EditorSubject | undefined): Record<string, string> {
+	if (subject?.kind === 'part') return { [PART_PARAM]: subject.id };
+	if (subject?.kind === 'template') return { [EDIT_TEMPLATE_PARAM]: subject.id };
+	return doc.template
+		? { [TEMPLATE_PARAM]: doc.template }
+		: { [TEMPLATE_PARAM]: 'none', [HEADER_PARAM]: doc.header ?? '', [FOOTER_PARAM]: doc.footer ?? '' };
+}
 
 function isTextEntry(target: EventTarget | null): boolean {
 	const el = target as HTMLElement | null;
@@ -76,8 +98,10 @@ export function App({
 	publishRole = 'admin',
 	languages,
 	pageId,
-	part,
+	subject,
+	templateCatalog,
 }: AppProps) {
+	const part = subject;
 	const publishTitle = canPublish
 		? undefined
 		: `Only ${publishRole === 'owner' ? 'the owner' : `${publishRole}s`} can publish. Save a draft and ask them to publish it.`;
@@ -127,7 +151,13 @@ export function App({
 
 	function publishNow() {
 		publishing.publish();
-		submit(part ? `Published: every page using this ${part.region} shows it now.` : 'Published.');
+		submit(
+			part
+				? part.kind === 'template'
+					? 'Published: every page using this template shows it now.'
+					: `Published: every page using this ${part.region} shows it now.`
+				: 'Published.',
+		);
 		announce('Publishing…');
 	}
 
@@ -287,7 +317,7 @@ export function App({
 			{pageId && (
 				<>
 					<span class="tp-actionbar__separator" aria-hidden="true" />
-					<TemplateMenu store={store} announce={announce} />
+					{templateCatalog && <TemplateMenu store={store} catalog={templateCatalog} announce={announce} />}
 				</>
 			)}
 		</div>
@@ -559,8 +589,15 @@ export function App({
 						afterViewports={fullscreenButton}
 						afterReload={viewPage}
 						footerEnd={saveActions || undefined}
-						params={part ? { [PART_PARAM]: part.id } : { [TEMPLATE_PARAM]: store.doc.value.template ?? 'default' }}
-						{...(part ? { emptyText: `This ${part.region} is empty. Drag components here.` } : {})}
+						params={canvasParams(store.doc.value, part)}
+						{...(part
+							? {
+									emptyText:
+										part.kind === 'template'
+											? 'This template is empty. Add components and at least one Content area.'
+											: `This ${part.region} is empty. Drag components here.`,
+								}
+							: {})}
 					/>
 					<PropsPanel store={store} />
 				</div>

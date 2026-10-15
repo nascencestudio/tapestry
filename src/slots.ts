@@ -5,7 +5,27 @@
  * array reads like the page. Pure functions; used by the validator, the
  * renderer and the editor.
  */
-import type { ComponentManifestEntry, TapestryNode } from './types.js';
+import type { ComponentManifest, ComponentManifestEntry, TapestryNode } from './types.js';
+
+/**
+ * Manifest key describing the document root when a page uses a template (ADR 0041): its slots are
+ * the template's content areas. Not a component type (types are kebab-case), so it never renders.
+ */
+export const ROOT_ENTRY = '#root';
+
+/** The manifest with the root's areas set (a page using a template), or removed (`null`). */
+export function withRootAreas(
+	manifest: ComponentManifest,
+	areas: ReadonlyArray<{ key: string; name: string }> | null,
+): ComponentManifest {
+	const { [ROOT_ENTRY]: _old, ...rest } = manifest;
+	if (!areas || areas.length === 0) return rest;
+	const slots = Object.fromEntries(areas.map((area) => [area.key, { label: area.name }]));
+	return {
+		...rest,
+		[ROOT_ENTRY]: { type: ROOT_ENTRY, label: 'Page', component: '', props: {}, slots } as ComponentManifestEntry,
+	};
+}
 
 /** An area: a slot name, or `undefined` for the default area. */
 export type Area = string | undefined;

@@ -3,10 +3,11 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { definePlugin } from 'studiocms/plugins';
-import { toManifest } from './define.js';
+import { defineComponent, toManifest } from './define.js';
 import { NODE_ELEMENT, ROOT_ELEMENT } from './render.js';
 import { DEFAULT_HISTORY_LIMIT } from './revisions.js';
 import { PAGES_ROUTE, PARTS_ROUTE, PATTERNS_ROUTE, TEMPLATES_ROUTE, TRANSLATIONS_ROUTE } from './routes.js';
+import { AREA_TYPE } from './templates.js';
 import { type Language, parseLanguages } from './translations.js';
 import type { ComponentDefinition } from './types.js';
 import { islandWrapperSource, type MediaLibraryPaths, tapestryVitePlugin } from './vite.js';
@@ -235,9 +236,27 @@ function writeIslandWrappers(definitions: readonly ComponentDefinition[], root: 
  * });
  * ```
  */
+/** The built-in content area for template bodies (ADR 0041); offered only in the template editor. */
+function areaDefinition(): ComponentDefinition {
+	return defineComponent({
+		type: AREA_TYPE,
+		label: 'Content area',
+		description: 'Where pages using this template put their content. Name it (Main, Sidebar…).',
+		category: 'Template',
+		component: resolve('./runtime/Area.astro'),
+		acceptsChildren: true,
+		props: { name: { type: 'text', label: 'Name', required: true, default: 'Main', maxLength: 40 } },
+	});
+}
+
 export function tapestry(options: TapestryOptions): TapestryPlugin {
+	if (options.components.some((definition) => definition.type === AREA_TYPE)) {
+		throw new Error(`[tapestry] "${AREA_TYPE}" is Tapestry's built-in content area; choose another type.`);
+	}
+	// The site's components plus the built-in content area.
+	const components = [...options.components, areaDefinition()];
 	// Validates uniqueness eagerly so config mistakes fail at startup.
-	toManifest(options.components);
+	toManifest(components);
 	if (options.publishPermission !== undefined && !['editor', 'admin', 'owner'].includes(options.publishPermission)) {
 		throw new Error(`[tapestry] publishPermission must be 'editor', 'admin' or 'owner'.`);
 	}
@@ -309,13 +328,13 @@ export function tapestry(options: TapestryOptions): TapestryPlugin {
 							});
 							// Outermost, so it sees every JSON response (see middleware.ts).
 							addMiddleware({ entrypoint: fileURLToPath(resolve('./runtime/middleware.js')), order: 'pre' });
-							const islands = writeIslandWrappers(options.components, config.root);
+							const islands = writeIslandWrappers(components, config.root);
 							updateConfig({
 								vite: {
 									optimizeDeps: { include: EDITOR_DEPS },
 									plugins: [
 										tapestryVitePlugin(
-											options.components,
+											components,
 											config.root,
 											{
 												pageUrlPattern: options.pageUrlPattern ?? '/{slug}',
@@ -346,6 +365,23 @@ export function tapestry(options: TapestryOptions): TapestryPlugin {
 				setDashboard({
 					translations: { en: {} },
 					settingsPage: { fields: [], endpoint: fileURLToPath(resolve('./runtime/settings-onsave.js')) },
+					// Template Management (ADR 0041): in the Dashboard section after the plugins listed
+					// before Tapestry (put the media library first to have it right under Media). StudioCMS
+					// lists only editor-level pages there: editors can look, only admins can change things.
+					dashboardPages: {
+						user: [
+							{
+								title: { en: 'Template Management' },
+								description: 'Headers, footers and page templates.',
+								route: 'templates',
+								icon: 'heroicons:rectangle-group',
+								sidebar: 'double',
+								requiredPermissions: 'editor',
+								innerSidebarComponent: fileURLToPath(resolve('./runtime/TemplateManagementNav.astro')),
+								pageBodyComponent: fileURLToPath(resolve('./runtime/TemplateManagement.astro')),
+							},
+						],
+					},
 				});
 			},
 			'studiocms:rendering': ({ setRendering }) => {

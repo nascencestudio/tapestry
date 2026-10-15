@@ -43,8 +43,11 @@ export const LIMITS = {
 } as const;
 
 const NODE_ID = /^[A-Za-z0-9_-]{1,64}$/;
-/** A template id (ADR 0041). Here rather than in templates.ts, which imports this module. */
+/** Template and part ids (ADR 0041). Here rather than in templates.ts, which imports this module. */
 export const TEMPLATE_ID = /^tt_[a-z0-9]{16}$/;
+export const PART_ID = /^tp_[a-z0-9]{16}$/;
+/** A template content area's key (its name, slugified): the `slot` of a page's top-level nodes. */
+export const AREA_KEY = /^[a-z][a-z0-9-]{0,39}$/;
 
 /** URL schemes allowed in `url` props. Anything else (javascript:, data:, …) is rejected. */
 const SAFE_URL_SCHEMES = new Set(['http:', 'https:', 'mailto:', 'tel:']);
@@ -326,6 +329,8 @@ interface WalkState {
 	issues: ValidationIssue[];
 	ids: Set<string>;
 	nodeCount: number;
+	/** The document uses a template: top-level nodes may name a content area (ADR 0041). */
+	rootAreas?: boolean;
 }
 
 function cleanProps(
@@ -440,11 +445,15 @@ function cleanNodes(
 		let slot: string | undefined;
 		if (item.slot !== undefined) {
 			if (!parent) {
-				state.issues.push({
-					severity: 'warning',
-					path: `${nodePath}.slot`,
-					message: 'top-level nodes have no slot; ignored',
-				});
+				if (state.rootAreas && typeof item.slot === 'string' && AREA_KEY.test(item.slot)) {
+					slot = item.slot;
+				} else {
+					state.issues.push({
+						severity: 'warning',
+						path: `${nodePath}.slot`,
+						message: state.rootAreas ? 'not a content area name; ignored' : 'top-level nodes have no slot; ignored',
+					});
+				}
 			} else if (typeof item.slot === 'string' && hasArea(parent, item.slot)) {
 				slot = item.slot;
 			} else if (parent.acceptsChildren) {
@@ -539,15 +548,25 @@ export function validateDocument(input: unknown, manifest: ComponentManifest): V
 		});
 	}
 
+	// Key order matters: documents are compared as strings (version, template, header, footer, root).
+	const choice = (key: 'template' | 'header' | 'footer', pattern: RegExp): Record<string, string> => {
+		const value = format.document[key];
+		if (value === undefined) return {};
+		if (typeof value === 'string' && pattern.test(value)) return { [key]: value };
+		state.issues.push({
+			severity: 'warning',
+			path: key,
+			message: `not a ${key === 'template' ? 'template' : 'part'} id; ignored`,
+		});
+		return {};
+	};
+	const template = choice('template', TEMPLATE_ID);
+	// With a template its header and footer apply; the page's own choice only counts without one.
+	const own = template.template ? {} : { ...choice('header', PART_ID), ...choice('footer', PART_ID) };
+	state.rootAreas = Boolean(template.template);
 	const root = cleanNodes(format.document.root, 'root', 1, state);
-	// Key order matters: documents are compared as strings (version, template, root).
-	const template = format.document.template;
-	if (template !== undefined && (typeof template !== 'string' || !TEMPLATE_ID.test(template))) {
-		state.issues.push({ severity: 'warning', path: 'template', message: 'not a template id; the default is used' });
-	}
-	const chosen = typeof template === 'string' && TEMPLATE_ID.test(template) ? { template } : {};
 	return {
-		document: { version: 1, ...chosen, root },
+		document: { version: 1, ...template, ...own, root },
 		issues: state.issues,
 		valid: !state.issues.some((i) => i.severity === 'error'),
 	};

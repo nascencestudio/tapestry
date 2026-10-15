@@ -41,7 +41,12 @@ export interface DropQuery {
 	rectOf: (id: string) => Rect | null;
 	/** For components with named slots: the area each slot occupies (`slot` undefined: the default area). */
 	areasOf?: (id: string) => Array<{ slot: string | undefined; rect: Rect }>;
+	/** A page using a template: the rectangle of a content area (ADR 0041). */
+	contentAreaRect?: (key: string) => Rect | null;
 }
+
+/** Hit marker for a template's content area under the pointer (`area:<key>`), among node ids. */
+export const AREA_HIT = 'area:';
 
 const contains = (r: Rect, p: Point) => p.x >= r.left && p.x <= right(r) && p.y >= r.top && p.y <= bottom(r);
 
@@ -142,6 +147,24 @@ function renderedChildren(query: DropQuery, nodes: TapestryNode[]): Array<{ node
 export function resolveCanvasDrop(query: DropQuery): Placement | null {
 	const { doc, manifest, pointer } = query;
 	for (const id of query.hits) {
+		if (id.startsWith(AREA_HIT)) {
+			// A template's content area (a page using a template): among the page's components there.
+			const key = id.slice(AREA_HIT.length);
+			const areaRect = query.contentAreaRect?.(key);
+			if (!areaRect) continue;
+			const rendered = renderedChildren(
+				query,
+				doc.root.filter((n) => n.slot === key),
+			);
+			const rects = rendered.map((r) => r.rect);
+			const at = insertionIndex(rects, pointer);
+			const before = rendered[at]?.node;
+			const target: Target = { parentId: null, index: before ? doc.root.indexOf(before) : doc.root.length, slot: key };
+			if (isAllowed(query, target)) {
+				return { target, indicator: { line: lineForIndex(rects, at, areaRect), outline: areaRect } };
+			}
+			continue;
+		}
 		if (query.drag.tapestry === 'node' && isSelfOrDescendant(doc, query.drag.id, id)) continue;
 		const location = findNode(doc, id);
 		const rect = query.rectOf(id);
@@ -206,8 +229,12 @@ export function resolveCanvasDrop(query: DropQuery): Placement | null {
 		doc.root.map((n) => n.id),
 	);
 	const last = rootRects[rootRects.length - 1];
+	// A page using a template: the end of its first content area.
+	const firstArea = Object.keys(manifest['#root']?.slots ?? {})[0];
 	return {
-		target: { parentId: null, index: doc.root.length },
+		target: firstArea
+			? { parentId: null, index: doc.root.length, slot: firstArea }
+			: { parentId: null, index: doc.root.length },
 		indicator: {
 			line: last
 				? lineAt(last, 'bottom')

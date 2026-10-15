@@ -360,8 +360,12 @@ export interface TapestryNode {
 export interface TapestryDocument {
 	/** Format version, so stored pages can be migrated later. */
 	version: 1;
-	/** The page's template (`tt_…`, ADR 0041). Missing: the site's default template. Pages only. */
+	/** Pages only (ADR 0041): the template the page inherits (`tt_…`); its top-level nodes then carry
+	 * `slot` = the content area they're in. */
 	template?: string;
+	/** Pages without a template: their own header and footer part (`tp_…`); absent: none. */
+	header?: string;
+	footer?: string;
 	/** Top-level nodes, rendered in order. */
 	root: TapestryNode[];
 }

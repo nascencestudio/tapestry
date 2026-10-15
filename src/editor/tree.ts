@@ -7,7 +7,7 @@
  * itself, children under a component that doesn't accept them) return `null`.
  */
 import { richTextFromPlain, richTextToPlain } from '../richtext.js';
-import { canonicalNode, childAreas, firstArea, hasArea, hasChildAreas, sortByArea } from '../slots.js';
+import { canonicalNode, childAreas, firstArea, hasArea, hasChildAreas, ROOT_ENTRY, sortByArea } from '../slots.js';
 import type {
 	ComponentManifest,
 	FieldDefinition,
@@ -87,14 +87,15 @@ export function acceptsChildren(
 	parentId: string | null,
 	slot?: string,
 ): boolean {
-	if (parentId === null) return slot === undefined;
+	// The root: one area, or a template's content areas (ADR 0041).
+	if (parentId === null) return manifest[ROOT_ENTRY] ? hasArea(manifest[ROOT_ENTRY], slot) : slot === undefined;
 	const parent = findNode(doc, parentId)?.node;
 	return Boolean(parent && hasArea(manifest[parent.type], slot));
 }
 
-/** The manifest entry of a parent (undefined for the root). */
+/** The manifest entry of a parent (for the root: its template areas, if any). */
 function parentEntry(doc: TapestryDocument, manifest: ComponentManifest, parentId: string | null) {
-	if (parentId === null) return undefined;
+	if (parentId === null) return manifest[ROOT_ENTRY];
 	const parent = findNode(doc, parentId)?.node;
 	return parent ? manifest[parent.type] : undefined;
 }
@@ -325,7 +326,13 @@ export function insertionTargetFor(
 	selectedId: string | null,
 ): Target {
 	const selected = selectedId ? findNode(doc, selectedId) : null;
-	if (!selected) return { parentId: null, index: doc.root.length };
+	if (!selected) {
+		// The end of the page, or of its first content area when it uses a template.
+		const area = firstArea(manifest[ROOT_ENTRY]);
+		return area === undefined
+			? { parentId: null, index: doc.root.length }
+			: { parentId: null, index: doc.root.length, slot: area };
+	}
 	const entry = manifest[selected.node.type];
 	if (hasChildAreas(entry)) {
 		// The end of its first area (the default one, if it has one).

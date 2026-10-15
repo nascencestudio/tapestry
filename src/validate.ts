@@ -43,6 +43,8 @@ export const LIMITS = {
 } as const;
 
 const NODE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+/** A template id (ADR 0041). Here rather than in templates.ts, which imports this module. */
+export const TEMPLATE_ID = /^tt_[a-z0-9]{16}$/;
 
 /** URL schemes allowed in `url` props. Anything else (javascript:, data:, …) is rejected. */
 const SAFE_URL_SCHEMES = new Set(['http:', 'https:', 'mailto:', 'tel:']);
@@ -538,8 +540,14 @@ export function validateDocument(input: unknown, manifest: ComponentManifest): V
 	}
 
 	const root = cleanNodes(format.document.root, 'root', 1, state);
+	// Key order matters: documents are compared as strings (version, template, root).
+	const template = format.document.template;
+	if (template !== undefined && (typeof template !== 'string' || !TEMPLATE_ID.test(template))) {
+		state.issues.push({ severity: 'warning', path: 'template', message: 'not a template id; the default is used' });
+	}
+	const chosen = typeof template === 'string' && TEMPLATE_ID.test(template) ? { template } : {};
 	return {
-		document: { version: 1, root },
+		document: { version: 1, ...chosen, root },
 		issues: state.issues,
 		valid: !state.issues.some((i) => i.severity === 'error'),
 	};

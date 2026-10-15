@@ -119,3 +119,45 @@ describe('the editor store refuses changes to locked components', () => {
 		expect(store.commit(published)).toBe(true);
 	});
 });
+
+describe('save rules (pages and template parts)', async () => {
+	const { applySaveRules } = await import('../src/save-rules.js');
+	const stored = (published: TapestryDocument | null, draft: TapestryDocument | null) =>
+		JSON.stringify({
+			version: 2,
+			published,
+			publishedAt: published ? '2026-10-14T00:00:00.000Z' : null,
+			draft,
+			history: [],
+		});
+	const rules = (over: { keepPublishing?: boolean; level?: 'editor' | 'admin' | 'owner' }) => ({
+		keepPublishing: over.keepPublishing ?? false,
+		locked: lockedTypes(manifest, over.level ?? 'owner'),
+		manifest,
+		historyLimit: 5,
+	});
+	const changed: TapestryDocument = { version: 1, root: [{ id: 't', type: 'text', props: { body: 'New' } }] };
+
+	it('let anyone allowed to publish save as sent', () => {
+		const incoming = stored(changed, null);
+		expect(applySaveRules(incoming, stored(doc, null), rules({}))).toEqual({ content: incoming });
+	});
+
+	it('keep the live version for someone not allowed to publish (their change becomes the draft)', () => {
+		const result = applySaveRules(stored(changed, null), stored(doc, null), rules({ keepPublishing: true }));
+		expect('content' in result && JSON.parse(result.content).published).toEqual(doc);
+	});
+
+	it('refuse changes to components locked for the saver', () => {
+		const withoutPricing: TapestryDocument = {
+			version: 1,
+			root: [{ id: 's', type: 'section', props: {}, children: [] }],
+		};
+		const result = applySaveRules(stored(doc, withoutPricing), stored(doc, null), rules({ level: 'editor' }));
+		expect(result).toEqual({ error: expect.stringContaining('Pricing table') });
+		// The same save is fine for someone who may use the component.
+		expect('content' in applySaveRules(stored(doc, withoutPricing), stored(doc, null), rules({ level: 'admin' }))).toBe(
+			true,
+		);
+	});
+});

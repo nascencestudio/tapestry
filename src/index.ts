@@ -6,7 +6,7 @@ import { definePlugin } from 'studiocms/plugins';
 import { toManifest } from './define.js';
 import { NODE_ELEMENT, ROOT_ELEMENT } from './render.js';
 import { DEFAULT_HISTORY_LIMIT } from './revisions.js';
-import { PAGES_ROUTE, PATTERNS_ROUTE, TRANSLATIONS_ROUTE } from './routes.js';
+import { PAGES_ROUTE, PARTS_ROUTE, PATTERNS_ROUTE, TEMPLATES_ROUTE, TRANSLATIONS_ROUTE } from './routes.js';
 import { type Language, parseLanguages } from './translations.js';
 import type { ComponentDefinition } from './types.js';
 import { islandWrapperSource, type MediaLibraryPaths, tapestryVitePlugin } from './vite.js';
@@ -295,6 +295,16 @@ export function tapestry(options: TapestryOptions): TapestryPlugin {
 							injectRoute({
 								pattern: PATTERNS_ROUTE,
 								entrypoint: fileURLToPath(resolve('./runtime/patterns-endpoint.js')),
+								prerender: false,
+							});
+							injectRoute({
+								pattern: TEMPLATES_ROUTE,
+								entrypoint: fileURLToPath(resolve('./runtime/templates-endpoint.js')),
+								prerender: false,
+							});
+							injectRoute({
+								pattern: PARTS_ROUTE,
+								entrypoint: fileURLToPath(resolve('./runtime/parts-endpoint.js')),
 								prerender: false,
 							});
 							// Outermost, so it sees every JSON response (see middleware.ts).

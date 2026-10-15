@@ -11,7 +11,7 @@
  */
 /// <reference types="studiocms/v/types" />
 import { StudioCMSRenderer } from 'studiocms:renderer';
-import { isCanvasMode } from './canvas-mode.js';
+import { EDITING_PART_ATTR, isCanvasMode, REGION_ATTR, REGION_PART_ATTR } from './canvas-mode.js';
 import type { PageResult } from './page.js';
 
 interface Props {
@@ -27,9 +27,9 @@ const content = region?.document ? JSON.stringify(region.document) : null;
 // biome-ignore lint/suspicious/noExplicitAny: minimal page shape the StudioCMS renderer reads
 const data: any = content ? { package: 'tapestry/canvas', augments: [], defaultContent: { content } } : null;
 const markers = {
-	'data-tapestry-region': name,
-	'data-tapestry-part': region?.part ?? '',
-	...(page?.regions?.editingPart && page.regions.editingPart === region?.part ? { 'data-tapestry-editing-part': '' } : {}),
+	[REGION_ATTR]: name,
+	[REGION_PART_ATTR]: region?.part ?? '',
+	...(page?.regions?.editingPart && page.regions.editingPart === region?.part ? { [EDITING_PART_ATTR]: '' } : {}),
 };
 ---
 

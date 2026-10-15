@@ -9,12 +9,10 @@ import config from 'virtual:tapestry/config';
 import manifest from 'virtual:tapestry/manifest';
 import { PART_ID, partDocument, type Region, resolveTemplate, TEMPLATE_ID } from '../templates.js';
 import type { TapestryDocument } from '../types.js';
+import { emptyDocument } from '../validate.js';
 import { getDefaultTemplate, getPart, listTemplates } from './templates-store.js';
 
-/** Query parameter: the page canvas previews a template choice that isn't saved yet. */
-export const TEMPLATE_PARAM = 'tapestry-template';
-/** Query parameter: the part editor's canvas (this part is edited; the page body is a placeholder). */
-export const PART_PARAM = 'tapestry-part';
+export { PART_PARAM, TEMPLATE_PARAM } from './canvas-mode.js';
 
 export interface RegionContent {
 	/** The part shown in this region, or null. */
@@ -39,21 +37,25 @@ export async function loadRegions(options: {
 	doc: Pick<TapestryDocument, 'template'> | null;
 	/** Editors previewing or in the canvas: drafts of parts. */
 	preview: boolean;
-	/** Editors only: a template to show instead of the page's own choice. */
+	/** Editors only: a template to show instead of the page's own choice (`default`: the default). */
 	templateOverride?: string | null;
 	/** Editors only: the part being edited (shown in its region, whatever the template says). */
 	editingPart?: string | null;
 }): Promise<PageRegions> {
 	try {
 		const [templates, defaultId] = await Promise.all([listTemplates(), getDefaultTemplate()]);
-		const override = options.templateOverride && TEMPLATE_ID.test(options.templateOverride) ? options.templateOverride : null;
-		const template = resolveTemplate(override ? { template: override } : options.doc, templates, defaultId);
+		const override = options.templateOverride ?? null;
+		const chosen =
+			override === 'default' ? {} : override && TEMPLATE_ID.test(override) ? { template: override } : options.doc;
+		const template = resolveTemplate(chosen, templates, defaultId);
 		const editing =
 			options.editingPart && PART_ID.test(options.editingPart)
 				? await getPart(options.editingPart, manifest, config.historyLimit)
 				: null;
 		const region = async (name: Region): Promise<RegionContent> => {
-			if (editing?.region === name) return { part: editing.id, document: partDocument(editing, true) };
+			// The part being edited always gets a document (an empty one when new), so the canvas has a root.
+			if (editing?.region === name)
+				return { part: editing.id, document: partDocument(editing, true) ?? emptyDocument() };
 			const id = template?.[name] ?? null;
 			if (!id) return EMPTY;
 			const part = await getPart(id, manifest, config.historyLimit);

@@ -18,6 +18,20 @@ export const PREVIEW_PARAM = 'tapestry-preview';
  */
 export const VERSION_PARAM = 'tapestry-version';
 
+/**
+ * Query parameter: the page canvas shows this template (`tt_…`, or `default`) instead of the saved
+ * choice, so an unsaved change shows at once (ADR 0041).
+ */
+export const TEMPLATE_PARAM = 'tapestry-template';
+
+/** Query parameter: the part editor's canvas (this part is edited in place; the body is a placeholder). */
+export const PART_PARAM = 'tapestry-part';
+
+/** Attributes on `<tapestry-region>` (canvas mode): the region's name, its part, and the part being edited. */
+export const REGION_ATTR = 'data-tapestry-region';
+export const REGION_PART_ATTR = 'data-tapestry-part';
+export const EDITING_PART_ATTR = 'data-tapestry-editing-part';
+
 /** Attribute on each node's wrapper in canvas mode; value is the node id. */
 export const NODE_ATTR = 'data-tapestry-node';
 

@@ -1,5 +1,6 @@
 import { effect, type ReadonlySignal, useSignal } from '@preact/signals';
 import { useEffect, useRef } from 'preact/hooks';
+import { TEMPLATE_PARAM } from '../runtime/canvas-mode.js';
 import type { Language } from '../translations.js';
 import type { ValidationIssue } from '../validate.js';
 import { ComparePanel } from './ComparePanel.js';
@@ -18,6 +19,7 @@ import type { Publishing } from './publishing.js';
 import { formatWhen, SchedulePanel } from './SchedulePanel.js';
 import { openSeo, seoAvailable } from './seo.js';
 import type { EditorStore } from './store.js';
+import { TemplateMenu } from './TemplateMenu.js';
 import { TranslationsMenu } from './TranslationsMenu.js';
 
 export interface AppProps {
@@ -191,7 +193,7 @@ export function App({
 	const { issues, valid } = store.validation.value;
 	const problems = valid ? [] : describeProblems(store.doc.value, store.manifest, issues);
 
-	/** The purple bar above the canvas: undo and redo, then language, history, JSON and SEO (with tapestry-seo). */
+	/** The purple bar above the canvas: undo and redo, then language, history, JSON and SEO (with tapestry-seo), then the template. */
 	const editingTools = (
 		<div class="tp-actionbar" role="toolbar" aria-label="Editing tools" data-tapestry-actionbar>
 			<button
@@ -254,6 +256,12 @@ export function App({
 				>
 					SEO
 				</button>
+			)}
+			{pageId && (
+				<>
+					<span class="tp-actionbar__separator" aria-hidden="true" />
+					<TemplateMenu store={store} announce={announce} />
+				</>
 			)}
 		</div>
 	);
@@ -518,6 +526,7 @@ export function App({
 						afterViewports={fullscreenButton}
 						afterReload={viewPage}
 						footerEnd={saveActions || undefined}
+						params={{ [TEMPLATE_PARAM]: store.doc.value.template ?? 'default' }}
 					/>
 					<PropsPanel store={store} />
 				</div>

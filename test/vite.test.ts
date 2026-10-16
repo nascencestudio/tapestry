@@ -78,7 +78,7 @@ describe('media modules', () => {
 	});
 });
 
-describe('companion plugins (editor-bar buttons)', () => {
+describe('companion plugins (editor-bar buttons and sidebar panels)', () => {
 	it('loads each installed companion’s dialog on demand, else nothing', async () => {
 		const { extensionsModuleSource } = await import('../src/vite.js');
 		const source = extensionsModuleSource([
@@ -88,7 +88,9 @@ describe('companion plugins (editor-bar buttons)', () => {
 		]);
 		expect(source).toContain('import("/s/editor/index.js")');
 		expect(source).toContain('m["openSeoEditor"]');
-		expect(source).toContain('m["openMenuEditor"]');
+		expect(source).toContain('kind: "button"');
+		expect(source).toContain('m["mountMenuSettings"]');
+		expect(source).toContain('kind: "panel", label: "Menu settings"');
 		expect(source).not.toContain('/x.js');
 		expect(extensionsModuleSource([])).toBe('export default [];\n');
 		// Paths are written as JSON strings, so quotes can't break out of the import.

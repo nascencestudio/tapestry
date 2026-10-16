@@ -4,6 +4,7 @@ import { EDIT_TEMPLATE_PARAM, FOOTER_PARAM, HEADER_PARAM, PART_PARAM, TEMPLATE_P
 import type { Language } from '../translations.js';
 import type { TapestryDocument } from '../types.js';
 import type { ValidationIssue } from '../validate.js';
+import { CompanionPanels } from './CompanionPanels.js';
 import { ComparePanel } from './ComparePanel.js';
 import { Canvas } from './canvas/Canvas.js';
 import { monitorDrops } from './dnd.js';
@@ -301,7 +302,7 @@ export function App({
 				{'{ }'} JSON
 			</button>
 			{pageId &&
-				editorExtensions().map((extension) => (
+				editorExtensions('button').map((extension) => (
 					<button
 						key={extension.id}
 						type="button"
@@ -604,7 +605,11 @@ export function App({
 								}
 							: {})}
 					/>
-					<PropsPanel store={store} />
+					{/* The settings panel, then companion panels (Menu settings…) below it. */}
+					<div class="tp-inspector">
+						<PropsPanel store={store} />
+						<CompanionPanels pageId={subject ? undefined : pageId} />
+					</div>
 				</div>
 			</div>
 

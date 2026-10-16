@@ -173,7 +173,8 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │       ├── library-previews.ts, LibraryPreview.tsx ← thumbnails + live previews in the library (ADR 0029)
 │       ├── TranslationsMenu.tsx ← toolbar menu: language versions, create
 │       ├── patterns-client.ts ← library list, save/delete, insertPattern() (fresh copies)
-│       ├── extensions.ts  ← companion buttons (SEO, Menu) from virtual:tapestry/extensions (ADRs 0040, 0042); media.ts holds the picker loader
+│       ├── extensions.ts, CompanionPanels.tsx ← companions from virtual:tapestry/extensions (ADRs 0040, 0042): bar buttons (SEO) and
+│       │                    panels under the settings panel (Menu settings; `.tp-inspector` column); media.ts holds the picker loader
 │       ├── TemplateMenu.tsx ← the page's template menu: no template (own header/footer) or a template (ADR 0041)
 │       ├── publishing.ts  ← stored page signal, writes draft/publish into the textarea
 │       ├── icons.tsx      ← toolbar + UI icons (inline SVG, drawn for Tapestry) and letter glyphs
@@ -464,6 +465,6 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 - Companion plugins (tapestry-seo, tapestry-menus) import `virtual:tapestry/config`, `/media`,
   `/media-client`, and the helpers in `/page` and `/links` (ADRs 0040, 0042): changing those exports breaks
   them. Optional companions are detected by resolving their entry from the site root (`findMediaLibrary`,
-  `findCompanions` over `COMPANIONS`); their UI loads on demand. A new companion needs a `COMPANIONS` entry.
+  `findCompanions` over `COMPANIONS`); their UI loads on demand. A new companion needs a `COMPANIONS` entry (`kind`: a bar `button` or a sidebar `panel`).
 - Pragmatic DnD 4.x import paths: `@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter`,
   `/utils/combine`, hitbox `/list-item/attach-instruction` and `/list-item/extract-instruction`.

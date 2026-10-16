@@ -18,7 +18,7 @@ components, with **no client JavaScript unless a component opts in**.
 - SEO with [`@nascencestudio/tapestry-seo`](https://github.com/nascencestudio/tapestry-seo): an **SEO**
   button in the editor for each page's search title, description and social image, robots.txt and a sitemap
 - Menus with [`@nascencestudio/tapestry-menus`](https://github.com/nascencestudio/tapestry-menus): several
-  menus edited in the dashboard, Menu and Breadcrumbs components, and a **Menu** button in the editor
+  menus edited in the dashboard, Menu and Breadcrumbs components, and **Menu settings** under the editor's settings panel
 
 Inspired by [Drupal Canvas](https://www.drupal.org/project/canvas). The editor is built with
 [Preact](https://preactjs.com) (about 35 KB gzipped on first load, dashboard only); page content is
@@ -103,7 +103,7 @@ Optional companions, picked up automatically when installed and registered as St
 in rich text; option `mediaLibrary`) and
 [`@nascencestudio/tapestry-seo`](https://github.com/nascencestudio/tapestry-seo) (the editor's **SEO**
 button; option `seo`) and [`@nascencestudio/tapestry-menus`](https://github.com/nascencestudio/tapestry-menus)
-(the editor's **Menu** button; option `menus`).
+(**Menu settings** under the editor's settings panel; option `menus`).
 
 ## Apply the StudioCMS patch that ships with Tapestry
 

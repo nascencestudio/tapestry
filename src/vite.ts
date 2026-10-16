@@ -37,14 +37,17 @@ export function mediaModuleSources(paths: MediaLibraryPaths | null, fallbackMedi
 }
 
 /**
- * Companion plugins with a button in the editor bar (ADR 0040, 0042): the package entry Tapestry
- * looks for, the button, and the function its module exports (called with `{ pageId, loadPicker }`).
+ * Companion plugins in the page editor (ADR 0040, 0042): the package entry Tapestry looks for, where
+ * they appear, and the function their module exports. A `button` (editor bar) opens a dialog:
+ * `open({ pageId, loadPicker })`. A `panel` (a collapsible section under the settings panel, like
+ * Drupal's node sidebar) fills an element: `mount(element, { pageId, loadPicker })` returns a cleanup.
  */
 export const COMPANIONS = [
 	{
 		id: 'seo',
 		option: 'seo',
 		entry: '@nascencestudio/tapestry-seo/editor',
+		kind: 'button',
 		label: 'SEO',
 		title: 'Search title, description and social image for this page (saved separately, at once)',
 		open: 'openSeoEditor',
@@ -53,22 +56,23 @@ export const COMPANIONS = [
 		id: 'menu',
 		option: 'menus',
 		entry: '@nascencestudio/tapestry-menus/editor',
-		label: 'Menu',
+		kind: 'panel',
+		label: 'Menu settings',
 		title: 'Where this page is linked in the site’s menus',
-		open: 'openMenuEditor',
+		open: 'mountMenuSettings',
 	},
 ] as const;
 
 /**
- * Source of `virtual:tapestry/extensions`: the installed companions' buttons, each loading its
- * module on demand (nothing loads until the button is used).
+ * Source of `virtual:tapestry/extensions`: the installed companions, each loading its module on
+ * demand (nothing loads until the button is used or the panel opened).
  */
 export function extensionsModuleSource(found: ReadonlyArray<{ id: string; path: string }>): string {
 	const entries = found.flatMap(({ id, path }) => {
 		const companion = COMPANIONS.find((c) => c.id === id);
 		if (!companion) return [];
 		return [
-			`{ id: ${JSON.stringify(id)}, label: ${JSON.stringify(companion.label)}, title: ${JSON.stringify(companion.title)}, load: () => import(${JSON.stringify(path)}).then((m) => m[${JSON.stringify(companion.open)}]) }`,
+			`{ id: ${JSON.stringify(id)}, kind: ${JSON.stringify(companion.kind)}, label: ${JSON.stringify(companion.label)}, title: ${JSON.stringify(companion.title)}, load: () => import(${JSON.stringify(path)}).then((m) => m[${JSON.stringify(companion.open)}]) }`,
 		];
 	});
 	return `export default [${entries.join(', ')}];\n`;

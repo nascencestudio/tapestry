@@ -6,7 +6,7 @@
 ## Context
 
 tapestry-menus (its ADR 0001) adds menus edited in the dashboard, Menu and Breadcrumbs components for
-Tapestry's library, and a **Menu** button in the page editor ("add this page to a menu"). It needs
+Tapestry's library, and menu settings in the page editor ("add this page to a menu"). It needs
 three things from Tapestry:
 
 1. A Menu component chooses one of the site's menus, which only exist at runtime: a `select` prop has a
@@ -31,11 +31,15 @@ three things from Tapestry:
    browser (the main entry is the server-side plugin).
    `pageLanguage(Astro)` gives the shown page's language code (menu labels per language).
    `inEditorCanvas(Astro)` tells components they render in the editor's canvas (placeholders).
-3. **Companion buttons**: `COMPANIONS` lists the known companion plugins (entry, button label, the
-   function their editor module exports). At build time Tapestry resolves the installed ones;
-   `virtual:tapestry/extensions` exports them, each loading its module on demand; the editor bar shows
-   a button per companion (SEO, Menu). Options `seo` / `menus` turn one off. A companion's function is
-   called with `{ pageId, loadPicker }` and owns its dialog and data.
+3. **Companions in the page editor**: `COMPANIONS` lists the known companion plugins (entry, kind,
+   label, the function their editor module exports). At build time Tapestry resolves the installed ones;
+   `virtual:tapestry/extensions` exports them, each loading its module on demand. Two kinds:
+   - **button** (SEO): a button in the editor bar; `open({ pageId, loadPicker })` shows its dialog.
+   - **panel** (Menu settings): a collapsible section under the settings panel, closed at first, like
+     the sections of Drupal's node sidebar. The first time it opens, `mount(element, { pageId,
+     loadPicker })` fills it and returns a cleanup. Pages only (not parts or templates).
+   Options `seo` / `menus` turn one off. Each companion owns its UI and data.
+   (Menus first had a **Menu** button with a dialog; the user preferred Drupal's sidebar, 2026-10-16.)
 
 ## Consequences
 

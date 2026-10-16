@@ -99,6 +99,20 @@
 	gap: 0.5rem;
 	min-width: 0;
 }
+/* The settings panel and companion panels (Menu settings…) stacked in one column. */
+.tp-inspector {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	min-width: 0;
+}
+.tp-companion__summary {
+	cursor: pointer;
+	width: fit-content;
+}
+.tp-companion:not([open]) {
+	gap: 0;
+}
 .tp-panel__title {
 	margin: 0;
 	font-size: 0.8125rem;
@@ -163,7 +177,8 @@
 .tp-input:focus-visible,
 .tp-checkbox:focus-visible,
 .tp-row:focus-visible,
-.tp-library__item:focus-visible {
+.tp-library__item:focus-visible,
+.tp-companion__summary:focus-visible {
 	outline: 2px solid var(--tp-primary);
 	outline-offset: 1px;
 }
@@ -827,7 +842,7 @@
 	.tp-side {
 		grid-area: side;
 	}
-	.tp-props {
+	.tp-inspector {
 		grid-area: props;
 		position: sticky;
 		top: 0.75rem;
@@ -887,7 +902,7 @@
 	align-items: stretch;
 }
 .tp-editor--fullscreen .tp-side,
-.tp-editor--fullscreen .tp-props {
+.tp-editor--fullscreen .tp-inspector {
 	overflow: auto;
 	min-height: 0;
 	position: static;

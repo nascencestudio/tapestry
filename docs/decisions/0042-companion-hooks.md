@@ -35,11 +35,12 @@ three things from Tapestry:
    label, the function their editor module exports). At build time Tapestry resolves the installed ones;
    `virtual:tapestry/extensions` exports them, each loading its module on demand. Two kinds:
    - **button** (SEO): a button in the editor bar; `open({ pageId, loadPicker })` shows its dialog.
-   - **panel** (Menu settings): a collapsible section under the settings panel, closed at first, like
+   - **panel** (Navigation settings): a collapsible section under the settings panel, closed at first, like
      the sections of Drupal's node sidebar. The first time it opens, `mount(element, { pageId,
      loadPicker })` fills it and returns a cleanup. Pages only (not parts or templates).
    Options `seo` / `menus` turn one off. Each companion owns its UI and data.
-   (Menus first had a **Menu** button with a dialog; the user preferred Drupal's sidebar, 2026-10-16.)
+   (Menus first had a **Menu** button with a dialog; the user preferred Drupal's sidebar, 2026-10-16. The
+   section is called **Navigation settings**, so it isn't confused with a selected Menu component's settings.)
 
 ## Consequences
 

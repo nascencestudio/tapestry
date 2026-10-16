@@ -122,7 +122,7 @@ export interface TapestryOptions {
 	 */
 	seo?: boolean;
 	/**
-	 * Show **Menu settings** under the editor's settings panel for @nascencestudio/tapestry-menus (this
+	 * Show **Navigation settings** under the editor's settings panel for @nascencestudio/tapestry-menus (this
 	 * page's menu link). Default: on when the package is installed. See docs/decisions/0042-companion-hooks.md.
 	 */
 	menus?: boolean;

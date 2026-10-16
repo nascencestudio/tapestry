@@ -174,7 +174,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │       ├── TranslationsMenu.tsx ← toolbar menu: language versions, create
 │       ├── patterns-client.ts ← library list, save/delete, insertPattern() (fresh copies)
 │       ├── extensions.ts, CompanionPanels.tsx ← companions from virtual:tapestry/extensions (ADRs 0040, 0042): bar buttons (SEO) and
-│       │                    panels under the settings panel (Menu settings; `.tp-inspector` column); media.ts holds the picker loader
+│       │                    panels under the settings panel (Navigation settings; `.tp-inspector` column); media.ts holds the picker loader
 │       ├── TemplateMenu.tsx ← the page's template menu: no template (own header/footer) or a template (ADR 0041)
 │       ├── publishing.ts  ← stored page signal, writes draft/publish into the textarea
 │       ├── icons.tsx      ← toolbar + UI icons (inline SVG, drawn for Tapestry) and letter glyphs

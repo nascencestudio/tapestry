@@ -1,6 +1,6 @@
 /**
  * Companion panels under the settings panel (ADR 0042), like the sections of Drupal's node sidebar:
- * e.g. Menu settings from @nascencestudio/tapestry-menus. Each is a collapsible section, closed at
+ * e.g. Navigation settings from @nascencestudio/tapestry-menus. Each is a collapsible section, closed at
  * first; opening it loads the companion's module, which fills the section (and cleans up when the
  * editor goes). Only for pages (not parts or templates).
  */

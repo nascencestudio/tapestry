@@ -90,7 +90,7 @@ describe('companion plugins (editor-bar buttons and sidebar panels)', () => {
 		expect(source).toContain('m["openSeoEditor"]');
 		expect(source).toContain('kind: "button"');
 		expect(source).toContain('m["mountMenuSettings"]');
-		expect(source).toContain('kind: "panel", label: "Menu settings"');
+		expect(source).toContain('kind: "panel", label: "Navigation settings"');
 		expect(source).not.toContain('/x.js');
 		expect(extensionsModuleSource([])).toBe('export default [];\n');
 		// Paths are written as JSON strings, so quotes can't break out of the import.

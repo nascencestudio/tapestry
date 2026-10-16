@@ -605,7 +605,7 @@ export function App({
 								}
 							: {})}
 					/>
-					{/* The settings panel, then companion panels (Menu settings…) below it. */}
+					{/* The settings panel, then companion panels (Navigation settings…) below it. */}
 					<div class="tp-inspector">
 						<PropsPanel store={store} />
 						<CompanionPanels pageId={subject ? undefined : pageId} />

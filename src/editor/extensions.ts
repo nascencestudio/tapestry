@@ -1,6 +1,6 @@
 /**
  * Companion plugins in the page editor (ADR 0040, 0042): SEO (@nascencestudio/tapestry-seo) is a button
- * in the editor bar that opens its dialog; Menu settings (@nascencestudio/tapestry-menus) is a panel
+ * in the editor bar that opens its dialog; Navigation settings (@nascencestudio/tapestry-menus) is a panel
  * under the settings panel. Each module is loaded on demand and owns its UI and data; Tapestry passes
  * the page and the media picker loader. `Editor.astro` provides the list through `mountEditor()`.
  */
@@ -32,19 +32,26 @@ export function setEditorExtensions(list: readonly EditorExtension[] | null | un
 
 export const editorExtensions = (kind: EditorExtension['kind']) => extensions.filter((e) => e.kind === kind);
 
+/**
+ * The companion's module doesn't export what this Tapestry expects: an older or newer plugin version, or
+ * (in dev) a browser still holding the previous module (Vite caches dependency files until the lockfile
+ * changes, and a local `file:` update doesn't change it).
+ */
+const missing = (extension: EditorExtension, what: string) =>
+	`${extension.label}: the installed plugin has no ${what} for this version of Tapestry. If it was just updated, reload the page without the cache (Shift + reload).`;
+
 const context = (pageId: string): CompanionContext => ({ pageId, loadPicker: mediaPickerLoader() });
 
 /** Open a button companion's dialog for a page; resolves when it closes. */
 export async function openExtension(extension: EditorExtension, pageId: string): Promise<void> {
 	const open = await extension.load();
-	if (typeof open !== 'function')
-		throw new Error(`${extension.label}: this version of the plugin has no editor dialog`);
+	if (typeof open !== 'function') throw new Error(missing(extension, 'editor dialog'));
 	await (open as CompanionOpen)(context(pageId));
 }
 
 /** Fill a panel companion's element for a page; resolves to its cleanup. */
 export async function mountExtension(extension: EditorExtension, element: HTMLElement, pageId: string) {
 	const mount = await extension.load();
-	if (typeof mount !== 'function') throw new Error(`${extension.label}: this version of the plugin has no panel`);
+	if (typeof mount !== 'function') throw new Error(missing(extension, 'panel'));
 	return (mount as CompanionMount)(element, context(pageId));
 }

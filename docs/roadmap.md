@@ -169,7 +169,7 @@ Decision: [ADR 0016](decisions/0016-media-library.md). Moved to its own reposito
   editor's **SEO** button for per-page settings (`seo` option, `virtual:tapestry/seo-client`,
   [ADR 0040](decisions/0040-seo-button.md), 0.4.0, 2026-10-12)
 - [x] Menus: `@nascencestudio/tapestry-menus` (menus edited in Dashboard → Menus, Menu and Breadcrumbs
-  components, **Menu settings** under the editor's settings panel; its ADR 0001, 2026-10-16), on Tapestry 0.6.0's hooks:
+  components, **Navigation settings** under the editor's settings panel; its ADR 0001, 2026-10-16), on Tapestry 0.6.0's hooks:
   `select` `optionsUrl`, `resolveSiteLinks()`, `pageLanguage()`, `inEditorCanvas()`,
   `@nascencestudio/tapestry/links`, companion buttons (`virtual:tapestry/extensions`)
   ([ADR 0042](decisions/0042-companion-hooks.md))

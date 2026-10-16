@@ -57,7 +57,7 @@ export const COMPANIONS = [
 		option: 'menus',
 		entry: '@nascencestudio/tapestry-menus/editor',
 		kind: 'panel',
-		label: 'Menu settings',
+		label: 'Navigation settings',
 		title: 'Where this page is linked in the site’s menus',
 		open: 'mountMenuSettings',
 	},

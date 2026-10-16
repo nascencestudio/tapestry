@@ -99,7 +99,7 @@
 	gap: 0.5rem;
 	min-width: 0;
 }
-/* The settings panel and companion panels (Menu settings…) stacked in one column. */
+/* The settings panel and companion panels (Navigation settings…) stacked in one column. */
 .tp-inspector {
 	display: flex;
 	flex-direction: column;

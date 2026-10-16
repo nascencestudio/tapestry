@@ -62,6 +62,7 @@ export {
 export type * from './types.js';
 export type { ValidationIssue, ValidationResult } from './validate.js';
 export {
+	cleanLinkValue,
 	cleanRichTextProp,
 	emptyDocument,
 	isSafeUrl,

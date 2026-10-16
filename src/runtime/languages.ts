@@ -90,6 +90,11 @@ export async function pageLanguages(
 	return { language, translations };
 }
 
+/** The language code of the page this request shows (set by getPage()); null on single-language sites. */
+export function currentLanguage(locals: object): string | null {
+	return (locals as Record<symbol, RequestState | undefined>)[STATE]?.lang ?? null;
+}
+
 /**
  * For page links on a translated page: the same-language version of a linked
  * page, if there is one the viewer may see (else the page itself). Pages shown

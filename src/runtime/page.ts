@@ -24,7 +24,7 @@ import type { Language } from '../translations.js';
 import type { ResolvedLink } from '../types.js';
 import { emptyDocument } from '../validate.js';
 import { CANVAS_PARAM, enableCanvasMode, enableEmbeddedMode, PREVIEW_PARAM, VERSION_PARAM } from './canvas-mode.js';
-import { localizeFor, localizeStrictFor, type PageTranslation, pageLanguages } from './languages.js';
+import { currentLanguage, localizeFor, localizeStrictFor, type PageTranslation, pageLanguages } from './languages.js';
 import { draftAccessFor, resolveLinks } from './links.js';
 import {
 	EDIT_TEMPLATE_PARAM,
@@ -42,6 +42,14 @@ export type { PublicPage, PublicPageTranslation } from './public-pages.js';
 export { listPublicPages } from './public-pages.js';
 export type { Language, PageRegions, PageTranslation };
 export { getViewer };
+
+/**
+ * The language code of the page being shown (from getPage(), ADR 0042), for companion plugins'
+ * components (menu labels); null on single-language sites or before getPage().
+ */
+export function pageLanguage(context: Pick<AstroGlobal, 'locals'>): string | null {
+	return currentLanguage(context.locals);
+}
 
 type RequestContext = Pick<AstroGlobal, 'cookies' | 'params' | 'response' | 'url' | 'locals'>;
 

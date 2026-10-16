@@ -264,3 +264,30 @@ describe('a page using a template, in the editor', async () => {
 		expect(insertionTargetFor(doc, manifest, null)).toEqual({ parentId: null, index: 2 });
 	});
 });
+
+describe('keyboard moves between content areas', async () => {
+	const { nudgeTarget, moveNode } = await import('../src/editor/tree.js');
+	const { withRootAreas } = await import('../src/slots.js');
+	const m = withRootAreas(manifest, [
+		{ key: 'main', name: 'Main' },
+		{ key: 'sidebar', name: 'Sidebar' },
+	]);
+	const doc: TapestryDocument = {
+		version: 1,
+		template: T1,
+		root: [
+			{ ...hero('a'), slot: 'main' },
+			{ ...hero('b'), slot: 'main' },
+		],
+	};
+
+	it('reach an empty next area from the last component, and come back', () => {
+		const down = nudgeTarget(doc, m, 'b', 'down');
+		expect(down).toEqual({ parentId: null, index: 2, slot: 'sidebar' });
+		const moved = down ? moveNode(doc, m, 'b', down) : null;
+		expect(moved?.root.map((n) => `${n.id}:${n.slot}`)).toEqual(['a:main', 'b:sidebar']);
+		const up = moved ? nudgeTarget(moved, m, 'b', 'up') : null;
+		expect(up).toEqual({ parentId: null, index: 1, slot: 'main' });
+		expect(nudgeTarget(doc, m, 'a', 'up')).toBeNull(); // the first area's first: nowhere to go
+	});
+});

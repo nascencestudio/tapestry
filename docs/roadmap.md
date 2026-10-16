@@ -157,8 +157,9 @@ Decision: [ADR 0016](decisions/0016-media-library.md). Moved to its own reposito
 
 ## Site structure
 
-- [x] Templates: shared header and footer parts built in the editor, combined by templates that pages
-  choose (Template menu), draft/publish/history for parts, `<Region>` for layouts
+- [x] Templates: page layouts (any components + named content areas) that pages inherit, shared header
+  and footer parts, Template Management under Media, the Template menu (or a page's own header and
+  footer), draft/publish/history for parts and templates, `<Region>` for layouts
   ([ADR 0041](decisions/0041-templates.md), 0.5.0, 2026-10-15)
 - [ ] Menus: `@nascencestudio/tapestry-menus` (menus edited in the dashboard; Menu and Breadcrumbs
   components for templates and pages; next)

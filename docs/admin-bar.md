@@ -166,9 +166,10 @@ Tapestry content follow the page's language. See [ADR 0032](decisions/0032-trans
 
 ### 7. Optional: templates (shared header and footer)
 
-Admins build headers and footers once (Dashboard → Plugins → Tapestry → Templates) and combine them
-into templates; editors choose a page's template in the editor. Place the regions in your layout,
-around the page content:
+Admins build headers, footers and page templates in Dashboard → **Template Management** (templates are
+layouts with content areas that pages fill); editors choose a page's template, or its own header and
+footer, in the editor. Place the header and footer regions in your layout, around the page content
+(a template's body arrives with the page content):
 
 ```astro
 ---
@@ -182,7 +183,8 @@ const { result } = Astro.props; // getPage()'s result
 </body>
 ```
 
-Pages of other types (Markdown) get the default template's header and footer. See
+Requires the StudioCMS patch shipped with Tapestry (README): without it, two plugins with dashboard
+pages (Template Management and the media library's Media) take the dashboard down. See
 [ADR 0041](decisions/0041-templates.md).
 
 ### 8. Optional: page URL pattern

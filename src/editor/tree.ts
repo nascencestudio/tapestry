@@ -367,17 +367,26 @@ export function nudgeTarget(
 	const { parentId, index } = location;
 	const slot = location.node.slot;
 	const at = (target: Target): Target => (target.slot === undefined ? { parentId, index: target.index } : target);
+	// The parent's areas in order (named slots, or a template's content areas at the root).
+	const areas = childAreas(parentEntry(doc, manifest, parentId));
+	const area = areas.indexOf(slot);
 	switch (direction) {
 		case 'up': {
 			const previous = siblings[index - 1];
-			if (!previous) return null;
+			// The first of all: into the previous area, even an empty one.
+			if (!previous) return area > 0 ? at({ parentId, index: 0, slot: areas[area - 1] }) : null;
 			// The first in a slot moves to the end of the previous slot.
 			if (previous.slot !== slot) return at({ parentId, index, slot: previous.slot });
 			return at({ parentId, index: index - 1, slot });
 		}
 		case 'down': {
 			const next = siblings[index + 1];
-			if (!next) return null;
+			// The last of all: into the next area, even an empty one.
+			if (!next) {
+				return area >= 0 && area < areas.length - 1
+					? at({ parentId, index: siblings.length, slot: areas[area + 1] })
+					: null;
+			}
 			// The last in a slot moves to the start of the next slot.
 			if (next.slot !== slot) return at({ parentId, index, slot: next.slot });
 			// +2 because move targets are expressed before removal.

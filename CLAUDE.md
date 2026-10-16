@@ -46,8 +46,9 @@ happens across sibling checkouts in `/Volumes/T7/www/`:
 Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in tapestry-playground (`../tapestry-playground/docs/devlog.md`).
 
 **Immediate next steps**
-1. Release Tapestry 0.5.0 (branch `templates`: shared header/footer parts, templates, `<Region>`,
-   ADR 0041): PR → merge (merge commit) → release `v0.5.0` → approve on npm. `main` is protected:
+1. Release Tapestry 0.5.0 (branch `templates`: Template Management, templates as inherited layouts with
+   content areas, header/footer parts, `<Region>`, ADR 0041; the shipped StudioCMS patch gained the
+   dashboard-pages fix, known issue #38): PR → merge (merge commit) → release `v0.5.0` → approve on npm. `main` is protected:
    always work on a branch. Then the playground (branch `templates`) switches to 0.5.0.
 2. Next: `@nascencestudio/tapestry-menus` (decided with the user 2026-10-14: menus edited in the
    dashboard, Menu + Breadcrumbs components for templates/pages, safe CSS classes from labels, link
@@ -128,7 +129,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │   ├── richtext.ts        ← rich text format, cleanRichText() (toolbar allowlist), toRenderTree() (pure)
 │   ├── toolbar-settings.ts← admin toolbar narrowing: parse/apply/form helpers (pure)
 │   ├── translations.ts    ← languages option, translation rows/groups, new-translation slug/title/content (pure, ADR 0032)
-│   ├── templates.ts       ← templates + header/footer parts: ids, parsing, resolveTemplate(), error codes (pure, ADR 0041)
+│   ├── templates.ts       ← templates (layouts with content areas) + parts: ids, parsing, templateAreas(), mergeTemplate(), assignAreas(), error codes (pure, ADR 0041)
 │   ├── save-rules.ts      ← applySaveRules(): publish permission + locked components, for page and part saves (pure)
 │   ├── vite.ts            ← virtual modules: manifest, component imports, runtime config, thumbnails, seo-client (ADR 0040);
 │   │                        islandWrapperSource() (index.ts writes them to node_modules/.tapestry/islands)
@@ -151,9 +152,9 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │   │   ├── translations-endpoint.ts, translations-store.ts, languages.ts ← /_tapestry/translations (list, create), rows, getPage() language/translations + link localizing
 │   │   ├── patterns-endpoint.ts, patterns-store.ts ← /_tapestry/patterns (editors; GET/POST/DELETE), plugin-data rows
 │   │   ├── pages-endpoint.ts ← GET /_tapestry/pages: editors-only page list for the link field (routes.ts has the paths)
-│   │   ├── templates-store.ts, templates-endpoint.ts, parts-endpoint.ts ← templates/parts rows, /_tapestry/templates (list; admin forms), /_tapestry/parts (part editor save)
-│   │   ├── regions.ts, Region.astro ← getPage()'s `regions` (template, header/footer documents); `<Region>` for layouts
-│   │   ├── TemplatesSettings.astro, PartEditor.astro ← Plugins → Tapestry → Templates (`?section=templates`), part editor (`?part=`)
+│   │   ├── templates-store.ts, templates-endpoint.ts, parts-endpoint.ts ← rows, /_tapestry/templates (list; admin forms), /_tapestry/parts (part + template body saves)
+│   │   ├── regions.ts, Region.astro, Area.astro ← loadLayout(): regions + the page merged into its template; `<Region>`; the built-in content area
+│   │   ├── TemplateManagement.astro, TemplateManagementNav.astro, ContentEditor.astro ← the Template Management dashboard page (editors view, admins change), part/template editor (`?edit=`)
 │   │   └── Editor.astro   ← hosts the editor + the page-content textarea
 │   └── editor/            ← Preact dashboard editor (browser only)
 │       ├── mount.tsx      ← entry: parse content, create store, sync textarea
@@ -168,7 +169,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │       ├── TranslationsMenu.tsx ← toolbar menu: language versions, create
 │       ├── patterns-client.ts ← library list, save/delete, insertPattern() (fresh copies)
 │       ├── seo.ts         ← SEO button's loader for tapestry-seo's dialog (ADR 0040); media.ts holds the picker loader
-│       ├── TemplateMenu.tsx ← the page's template menu (ADR 0041); chooseTemplate() keeps the key order
+│       ├── TemplateMenu.tsx ← the page's template menu: no template (own header/footer) or a template (ADR 0041)
 │       ├── publishing.ts  ← stored page signal, writes draft/publish into the textarea
 │       ├── icons.tsx      ← toolbar + UI icons (inline SVG, drawn for Tapestry) and letter glyphs
 │       ├── InfoPopover.tsx ← "i" button + closable help popover, ShortcutList, shortcutText()
@@ -445,12 +446,16 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 - A button's visible text must be part of its accessible name (axe 4.14 `label-content-name-mismatch`
   counts text even inside `aria-hidden`; single letters like B/I/U pass as icons). Toolbar buttons
   named in words ("Subscript") get drawn icons, not text like "X₂".
-- Templates (ADR 0041): the canvas edits the root outside any `<tapestry-region>` (pages) or inside the
-  region marked `data-tapestry-editing-part` (part editor); never `querySelector(ROOT)` alone
-  (`editableRoot()`). Region wrappers are `display: contents`: fade/outline styles go on the components.
-  A page's `template` sits between `version` and `root` (documents are compared as strings); build new
-  documents with `chooseTemplate()`. Template-page errors are codes (`TEMPLATE_ERRORS`), never free text
-  in the URL. Part saves go through `applySaveRules()` like page saves.
+- Templates (ADR 0041): the canvas edits the root outside any `<tapestry-region>` (pages, template
+  bodies) or inside the region marked `data-tapestry-editing-part` (part editor); never
+  `querySelector(ROOT)` alone (`editableRoot()`). Region wrappers are `display: contents`: fade/outline
+  styles go on the components. A templated page's top-level nodes carry `slot` = area key; the root's
+  areas come from a `#root` manifest entry (`withRootAreas`, the store's `manifest` getter follows
+  `doc.template`). On the canvas, template nodes have `tpl_` ids (never selectable; `hitsAt()` skips them
+  and reports `area:<key>`). Document keys: version, template, header, footer, root (`assignAreas()`).
+  Template Management errors are codes (`TEMPLATE_ERRORS`). Part/template saves go through
+  `applySaveRules()` like page saves. StudioCMS lists only editor-level plugin pages under Media:
+  Template Management is visible to editors (read-only) and editable by admins.
 - Companion plugins (tapestry-seo) import `virtual:tapestry/config`, `/media` and `/media-client`
   (ADR 0040): changing those modules' exports breaks them. Optional companions are detected by
   resolving their entry from the site root (`findMediaLibrary`, `findSeoEditor`); their UI loads on demand.

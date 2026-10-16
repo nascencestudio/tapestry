@@ -21,9 +21,11 @@ import {
 	parseVersion,
 } from '../revisions.js';
 import type { Language } from '../translations.js';
+import type { ResolvedLink } from '../types.js';
 import { emptyDocument } from '../validate.js';
 import { CANVAS_PARAM, enableCanvasMode, enableEmbeddedMode, PREVIEW_PARAM, VERSION_PARAM } from './canvas-mode.js';
-import { type PageTranslation, pageLanguages } from './languages.js';
+import { localizeFor, localizeStrictFor, type PageTranslation, pageLanguages } from './languages.js';
+import { draftAccessFor, resolveLinks } from './links.js';
 import {
 	EDIT_TEMPLATE_PARAM,
 	FOOTER_PARAM,
@@ -188,4 +190,42 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 			scheduledAt: stored.scheduled?.at ?? null,
 		},
 	};
+}
+
+/**
+ * Resolve link values (`{ type: 'page', page }` or `{ type: 'url', url }`) the way Tapestry's own link
+ * props are (ADR 0042), for companion plugins such as tapestry-menus: page links get the page's current
+ * path in the page's language (call getPage() first), and are null when the page is gone or, for
+ * visitors, unpublished. `hideUntranslated`: null for pages without a visible version in the current
+ * language (instead of linking the original).
+ */
+export async function resolveSiteLinks(
+	context: Pick<AstroGlobal, 'cookies' | 'locals' | 'url'>,
+	values: readonly unknown[],
+	options: { hideUntranslated?: boolean } = {},
+): Promise<Array<ResolvedLink | null>> {
+	const strict = options.hideUntranslated ? localizeStrictFor(context.locals) : null;
+	let input: unknown[] = [...values];
+	const hidden = new Set<number>();
+	if (strict) {
+		input = await Promise.all(
+			input.map(async (value, index) => {
+				if (!value || typeof value !== 'object' || (value as { type?: unknown }).type !== 'page') return value;
+				const link = value as { type: 'page'; page: string };
+				const page = await strict(link.page).catch(() => link.page);
+				if (page === null) {
+					hidden.add(index);
+					return null;
+				}
+				return page === link.page ? link : { ...link, page };
+			}),
+		);
+	}
+	const resolved = await resolveLinks(
+		input,
+		context.url.host,
+		draftAccessFor(context),
+		strict ? null : localizeFor(context.locals),
+	);
+	return resolved.map((link, index) => (hidden.has(index) ? null : link));
 }

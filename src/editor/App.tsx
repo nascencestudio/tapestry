@@ -7,6 +7,7 @@ import type { ValidationIssue } from '../validate.js';
 import { ComparePanel } from './ComparePanel.js';
 import { Canvas } from './canvas/Canvas.js';
 import { monitorDrops } from './dnd.js';
+import { editorExtensions, openExtension } from './extensions.js';
 import { HistoryPanel } from './HistoryPanel.js';
 import { Popover } from './InfoPopover.js';
 import { UI_ICONS } from './icons.js';
@@ -18,7 +19,6 @@ import { PropsPanel } from './PropsPanel.js';
 import { describeProblems } from './problems.js';
 import type { Publishing } from './publishing.js';
 import { formatWhen, SchedulePanel } from './SchedulePanel.js';
-import { openSeo, seoAvailable } from './seo.js';
 import type { EditorStore } from './store.js';
 import { type TemplateCatalog, TemplateMenu } from './TemplateMenu.js';
 import { TranslationsMenu } from './TranslationsMenu.js';
@@ -300,20 +300,25 @@ export function App({
 			>
 				{'{ }'} JSON
 			</button>
-			{pageId && seoAvailable() && (
-				<button
-					type="button"
-					class="tp-button"
-					aria-haspopup="dialog"
-					title="Search title, description and social image for this page (saved separately, at once)"
-					onClick={() => {
-						openSeo(pageId).catch((error) => console.error('[tapestry] the SEO dialog failed to open', error));
-					}}
-					data-tapestry-seo-toggle
-				>
-					SEO
-				</button>
-			)}
+			{pageId &&
+				editorExtensions().map((extension) => (
+					<button
+						key={extension.id}
+						type="button"
+						class="tp-button"
+						aria-haspopup="dialog"
+						title={extension.title}
+						onClick={() => {
+							openExtension(extension, pageId).catch((error) =>
+								console.error(`[tapestry] the ${extension.label} dialog failed to open`, error),
+							);
+						}}
+						data-tapestry-extension={extension.id}
+						{...(extension.id === 'seo' ? { 'data-tapestry-seo-toggle': '' } : {})}
+					>
+						{extension.label}
+					</button>
+				))}
 			{pageId && (
 				<>
 					<span class="tp-actionbar__separator" aria-hidden="true" />

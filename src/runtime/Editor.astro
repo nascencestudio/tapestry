@@ -63,7 +63,7 @@ const templateCatalog = JSON.stringify({
 <script>
 	import config from 'virtual:tapestry/config';
 	import { loadPicker } from 'virtual:tapestry/media-client';
-	import { loadSeoEditor } from 'virtual:tapestry/seo-client';
+	import extensions from 'virtual:tapestry/extensions';
 	import manifest from 'virtual:tapestry/manifest';
 	import thumbnails from 'virtual:tapestry/thumbnails';
 	import { mountEditor } from '../editor/mount.js';
@@ -101,7 +101,7 @@ const templateCatalog = JSON.stringify({
 			canPublish: host.dataset.canPublish !== 'false',
 			publishRole: host.dataset.publishRole,
 			mediaPicker: loadPicker,
-			seoEditor: loadSeoEditor,
+			extensions,
 			thumbnails,
 			languages: config.languages,
 			userLevel: host.dataset.userLevel,

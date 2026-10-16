@@ -18,11 +18,11 @@ import { PARTS_ROUTE } from '../routes.js';
 import type { Language } from '../translations.js';
 import type { ComponentManifest, TapestryDocument } from '../types.js';
 import { App } from './App.js';
+import { type EditorExtension, setEditorExtensions } from './extensions.js';
 import { configurePreviews } from './library-previews.js';
 import { type PickerModule, setMediaPickerLoader } from './media.js';
 import { createPublishing } from './publishing.js';
 import { preloadRichText } from './richtext-loader.js';
-import { type SeoEditorModule, setSeoEditorLoader } from './seo.js';
 import { createEditorStore } from './store.js';
 import type { TemplateCatalog } from './TemplateMenu.js';
 
@@ -51,8 +51,8 @@ export interface MountOptions {
 	pageId?: string;
 	/** Library thumbnail URLs by component type (`virtual:tapestry/thumbnails`). */
 	thumbnails?: Record<string, string>;
-	/** Loads @nascencestudio/tapestry-seo's SEO dialog (absent when it isn't installed; ADR 0040). */
-	seoEditor?: (() => Promise<SeoEditorModule>) | null;
+	/** Companion plugins' editor-bar buttons (`virtual:tapestry/extensions`; ADR 0040, 0042). */
+	extensions?: readonly EditorExtension[];
 	/**
 	 * Edit a header/footer part or a template body instead of a page (ADR 0041): saved through the
 	 * parts endpoint, shown on the canvas inside `canvasPage` (a real page's path).
@@ -75,7 +75,7 @@ export function mountEditor(
 	host.dataset[MOUNTED] = 'true';
 
 	setMediaPickerLoader(options.mediaPicker ?? null);
-	setSeoEditorLoader(options.seoEditor ?? null);
+	setEditorExtensions(options.extensions);
 	configurePreviews({
 		...(options.thumbnails ? { thumbnails: options.thumbnails } : {}),
 		...(options.renderRoute ? { renderRoute: options.renderRoute } : {}),

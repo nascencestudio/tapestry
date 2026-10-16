@@ -248,23 +248,76 @@ function Field({ id, fieldKey, def, value, onChange, describedBy, invalid }: Fie
 		case 'list':
 			return <ListField id={id} fieldKey={fieldKey} def={def} value={value} onChange={onChange} Row={FieldRow} />;
 		case 'select':
-			return (
-				<select
-					id={id}
-					{...a11y}
-					class="tp-input"
-					value={typeof value === 'string' ? value : ''}
-					onChange={(e) => onChange(e.currentTarget.value || undefined)}
-				>
-					{!def.required && def.default === undefined && <option value="">—</option>}
-					{def.options.map((o) => (
-						<option key={o.value} value={o.value}>
-							{o.label}
-						</option>
-					))}
-				</select>
-			);
+			return <SelectField id={id} a11y={a11y} def={def} value={value} onChange={onChange} />;
 	}
+}
+
+/** Choices loaded from `optionsUrl`, once per URL (ADR 0042). */
+const remoteOptions = new Map<string, Promise<Array<{ value: string; label: string }>>>();
+function loadOptions(url: string): Promise<Array<{ value: string; label: string }>> {
+	let loading = remoteOptions.get(url);
+	if (!loading) {
+		loading = fetch(url, { credentials: 'same-origin' })
+			.then((r) => (r.ok ? r.json() : { options: [] }))
+			.then((body: { options?: unknown }) =>
+				(Array.isArray(body.options) ? body.options : []).filter(
+					(o): o is { value: string; label: string } => typeof o?.value === 'string' && typeof o?.label === 'string',
+				),
+			)
+			.catch(() => {
+				remoteOptions.delete(url); // try again next time
+				return [];
+			});
+		remoteOptions.set(url, loading);
+	}
+	return loading;
+}
+
+function SelectField({
+	id,
+	a11y,
+	def,
+	value,
+	onChange,
+}: {
+	id: string;
+	a11y: Record<string, string | boolean | undefined>;
+	def: Extract<PropDefinition, { type: 'select' }>;
+	value: PropValue | undefined;
+	onChange: (value: PropValue | undefined) => void;
+}) {
+	const [remote, setRemote] = useState<Array<{ value: string; label: string }> | null>(def.optionsUrl ? null : []);
+	useEffect(() => {
+		if (!def.optionsUrl) return;
+		let cancelled = false;
+		void loadOptions(def.optionsUrl).then((options) => !cancelled && setRemote(options));
+		return () => {
+			cancelled = true;
+		};
+	}, [def.optionsUrl]);
+	const options = [...def.options, ...(remote ?? []).filter((o) => !def.options.some((s) => s.value === o.value))];
+	const current = typeof value === 'string' ? value : '';
+	// A value that's no longer offered (e.g. a deleted menu) stays visible instead of silently changing.
+	const missing = current && remote !== null && !options.some((o) => o.value === current);
+	return (
+		<select
+			id={id}
+			{...a11y}
+			class="tp-input"
+			value={current}
+			onChange={(e) => onChange(e.currentTarget.value || undefined)}
+			data-tapestry-options-loading={remote === null ? '' : undefined}
+		>
+			{!def.required && def.default === undefined && <option value="">—</option>}
+			{def.optionsUrl && remote === null && <option value={current}>Loading…</option>}
+			{missing && <option value={current}>Missing: {current}</option>}
+			{options.map((o) => (
+				<option key={o.value} value={o.value}>
+					{o.label}
+				</option>
+			))}
+		</select>
+	);
 }
 
 function problemFor(def: PropDefinition, value: PropValue | undefined): string | null {

@@ -8,6 +8,9 @@ import {
 } from './types.js';
 import { cleanLinkValue, isSafeUrl, LIMITS, validatePropValue } from './validate.js';
 
+/** A select's `optionsUrl`: a path on this site (no scheme, no `//`, no `..`). */
+const OPTIONS_URL = /^\/(?!\/)(?!.*\.\.)[A-Za-z0-9_\-/.]{1,200}$/;
+
 /** Component types are kebab-case: lowercase letter first, then letters/digits, single hyphens. */
 const COMPONENT_TYPE = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
@@ -49,10 +52,13 @@ function assertProp(type: string, name: string, prop: PropDefinition, parent?: s
 		);
 	}
 	if (prop.type === 'select') {
-		if (prop.options.length === 0) {
-			throw new TapestryDefinitionError(`${where}: select props need at least one option.`);
+		if (prop.optionsUrl !== undefined && !OPTIONS_URL.test(prop.optionsUrl)) {
+			throw new TapestryDefinitionError(`${where}: optionsUrl must be a path on this site, like "/_menus/options".`);
 		}
-		if (prop.default !== undefined && !prop.options.some((o) => o.value === prop.default)) {
+		if (prop.options.length === 0 && prop.optionsUrl === undefined) {
+			throw new TapestryDefinitionError(`${where}: select props need at least one option (or an optionsUrl).`);
+		}
+		if (prop.default !== undefined && !prop.optionsUrl && !prop.options.some((o) => o.value === prop.default)) {
 			throw new TapestryDefinitionError(`${where}: default "${prop.default}" is not one of the options.`);
 		}
 	}

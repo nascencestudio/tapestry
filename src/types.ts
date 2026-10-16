@@ -103,6 +103,12 @@ export interface BooleanProp extends PropBase {
 export interface SelectProp extends PropBase {
 	type: 'select';
 	options: ReadonlyArray<{ value: string; label: string }>;
+	/**
+	 * Choices from the server (ADR 0042): a same-site path answering editors with
+	 * `{ options: [{ value, label }] }` (e.g. a companion plugin's menus). Values are then ids
+	 * (letters, digits, `_`, `-`); `options` may be empty.
+	 */
+	optionsUrl?: string;
 	default?: string;
 }
 

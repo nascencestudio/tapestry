@@ -28,10 +28,10 @@ declare module 'virtual:tapestry/media-client' {
 	export const loadPicker: null | (() => Promise<import('./editor/media.js').PickerModule>);
 }
 
-declare module 'virtual:tapestry/seo-client' {
-	/** True when @nascencestudio/tapestry-seo is installed (ADR 0040). */
-	export const enabled: boolean;
-	export const loadSeoEditor: null | (() => Promise<import('./editor/seo.js').SeoEditorModule>);
+declare module 'virtual:tapestry/extensions' {
+	/** Installed companion plugins with an editor-bar button (ADR 0040, 0042). */
+	const extensions: import('./editor/extensions.js').EditorExtension[];
+	export default extensions;
 }
 
 declare module 'virtual:tapestry/thumbnails' {

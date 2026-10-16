@@ -10,7 +10,7 @@ import { PAGES_ROUTE, PARTS_ROUTE, PATTERNS_ROUTE, TEMPLATES_ROUTE, TRANSLATIONS
 import { AREA_TYPE } from './templates.js';
 import { type Language, parseLanguages } from './translations.js';
 import type { ComponentDefinition } from './types.js';
-import { islandWrapperSource, type MediaLibraryPaths, tapestryVitePlugin } from './vite.js';
+import { COMPANIONS, islandWrapperSource, type MediaLibraryPaths, tapestryVitePlugin } from './vite.js';
 
 export type { PageAccess, PermissionLevel, Viewer } from './access.js';
 export { ANONYMOUS, hasPermission, isEditor, pageAccess, pagePath } from './access.js';
@@ -120,6 +120,11 @@ export interface TapestryOptions {
 	 * StudioCMS plugin). See docs/decisions/0040-seo-button.md.
 	 */
 	seo?: boolean;
+	/**
+	 * Show a **Menu** button in the editor bar for @nascencestudio/tapestry-menus (this page's menu
+	 * links). Default: on when the package is installed. See docs/decisions/0042-companion-hooks.md.
+	 */
+	menus?: boolean;
 }
 
 /** Locate @nascencestudio/medialibrary from the site's project root, or null. */
@@ -136,13 +141,17 @@ function findMediaLibrary(root: string): MediaLibraryPaths | null {
 	}
 }
 
-/** Locate @nascencestudio/tapestry-seo's editor entry from the site's project root, or null. */
-function findSeoEditor(root: string): string | null {
-	try {
-		return createRequire(join(root, 'package.json')).resolve('@nascencestudio/tapestry-seo/editor');
-	} catch {
-		return null;
-	}
+/** The companion plugins installed in the site (their editor entries), unless turned off by option. */
+function findCompanions(root: string, options: TapestryOptions): Array<{ id: string; path: string }> {
+	const require = createRequire(join(root, 'package.json'));
+	return COMPANIONS.flatMap((companion) => {
+		if (options[companion.option] === false) return [];
+		try {
+			return [{ id: companion.id, path: require.resolve(companion.entry) }];
+		} catch {
+			return [];
+		}
+	});
 }
 
 function resolve(path: string): string {
@@ -349,7 +358,7 @@ export function tapestry(options: TapestryOptions): TapestryPlugin {
 												fallbackMedia: fileURLToPath(resolve('./runtime/MediaFallback.astro')),
 											},
 											islands,
-											options.seo === false ? null : findSeoEditor(fileURLToPath(config.root)),
+											findCompanions(fileURLToPath(config.root), options),
 										),
 									],
 								},

@@ -48,6 +48,8 @@ export const TEMPLATE_ID = /^tt_[a-z0-9]{16}$/;
 export const PART_ID = /^tp_[a-z0-9]{16}$/;
 /** A template content area's key (its name, slugified): the `slot` of a page's top-level nodes. */
 export const AREA_KEY = /^[a-z][a-z0-9-]{0,39}$/;
+/** A value of a select whose choices come from the server (`optionsUrl`). */
+const OPTION_ID = /^[A-Za-z0-9_-]{1,100}$/;
 
 /** URL schemes allowed in `url` props. Anything else (javascript:, data:, …) is rejected. */
 const SAFE_URL_SCHEMES = new Set(['http:', 'https:', 'mailto:', 'tel:']);
@@ -122,7 +124,10 @@ export function validatePropValue(def: PropDefinition, value: unknown): string |
 			return typeof value === 'boolean' ? null : 'must be true or false';
 		case 'select':
 			if (typeof value !== 'string') return 'must be a string';
-			return def.options.some((o) => o.value === value) ? null : 'is not one of the allowed options';
+			if (def.options.some((o) => o.value === value)) return null;
+			// Choices from the server (ADR 0042): any id; the component handles one that no longer exists.
+			if (def.optionsUrl) return OPTION_ID.test(value) ? null : 'is not a valid choice';
+			return 'is not one of the allowed options';
 		case 'media':
 			if (typeof value !== 'string') return 'must be a media item id';
 			return MEDIA_ID.test(value) ? null : 'is not a valid media item id';

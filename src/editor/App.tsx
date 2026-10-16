@@ -320,10 +320,10 @@ export function App({
 						{extension.label}
 					</button>
 				))}
-			{pageId && (
+			{pageId && templateCatalog && (
 				<>
 					<span class="tp-actionbar__separator" aria-hidden="true" />
-					{templateCatalog && <TemplateMenu store={store} catalog={templateCatalog} announce={announce} />}
+					<TemplateMenu store={store} catalog={templateCatalog} announce={announce} />
 				</>
 			)}
 		</div>

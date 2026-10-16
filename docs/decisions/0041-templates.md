@@ -56,6 +56,8 @@ The user's decisions:
   tree groups top-level components by area, the canvas shows template content faded and locked
   (`tpl_` nodes are never selectable) and each area as a drop zone. Switching templates moves
   content to the area with the same key, else the first area (one undoable change).
+  With no templates, headers or footers yet, the button stays in the bar, disabled, reading "No
+  available templates" (the user, 2026-10-16: before, it disappeared and left its separator behind).
 - **Template editor / part editor:** the full editor on the Template Management page, saving through
   `/_tapestry/parts` (parts and templates; admins; the same save rules as pages). The canvas shows a
   real page: the template body (areas as labelled placeholders) or the part in place.

@@ -461,8 +461,9 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
   Template Management errors are codes (`TEMPLATE_ERRORS`). Part/template saves go through
   `applySaveRules()` like page saves. StudioCMS lists only editor-level plugin pages under Media:
   Template Management is visible to editors (read-only) and editable by admins.
-- Companion plugins (tapestry-seo) import `virtual:tapestry/config`, `/media` and `/media-client`
-  (ADR 0040): changing those modules' exports breaks them. Optional companions are detected by
-  resolving their entry from the site root (`findMediaLibrary`, `findSeoEditor`); their UI loads on demand.
+- Companion plugins (tapestry-seo, tapestry-menus) import `virtual:tapestry/config`, `/media`,
+  `/media-client`, and the helpers in `/page` and `/links` (ADRs 0040, 0042): changing those exports breaks
+  them. Optional companions are detected by resolving their entry from the site root (`findMediaLibrary`,
+  `findCompanions` over `COMPANIONS`); their UI loads on demand. A new companion needs a `COMPANIONS` entry.
 - Pragmatic DnD 4.x import paths: `@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter`,
   `/utils/combine`, hitbox `/list-item/attach-instruction` and `/list-item/extract-instruction`.

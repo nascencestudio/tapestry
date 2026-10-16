@@ -1,6 +1,6 @@
 # Roadmap
 
-_Last updated: 2026-10-06._
+_Last updated: 2026-10-16._
 
 Guiding principle: **start small, ship vertical slices**. Every phase ends with
 something that works end to end in the playground, has tests, and is documented.
@@ -161,8 +161,6 @@ Decision: [ADR 0016](decisions/0016-media-library.md). Moved to its own reposito
   and footer parts, Template Management under Media, the Template menu (or a page's own header and
   footer), draft/publish/history for parts and templates, `<Region>` for layouts
   ([ADR 0041](decisions/0041-templates.md), 0.5.0, 2026-10-15)
-- [ ] Menus: `@nascencestudio/tapestry-menus` (menus edited in the dashboard; Menu and Breadcrumbs
-  components for templates and pages; next)
 
 ## Companion plugins
 
@@ -170,6 +168,11 @@ Decision: [ADR 0016](decisions/0016-media-library.md). Moved to its own reposito
   `listPublicPages()`, [ADR 0039](decisions/0039-public-pages-and-tapestry-seo.md), 2026-10-11); the
   editor's **SEO** button for per-page settings (`seo` option, `virtual:tapestry/seo-client`,
   [ADR 0040](decisions/0040-seo-button.md), 0.4.0, 2026-10-12)
+- [x] Menus: `@nascencestudio/tapestry-menus` (menus edited in Dashboard → Menus, Menu and Breadcrumbs
+  components, the editor's **Menu** button; its ADR 0001, 2026-10-16), on Tapestry 0.6.0's hooks:
+  `select` `optionsUrl`, `resolveSiteLinks()`, `pageLanguage()`, `inEditorCanvas()`,
+  `@nascencestudio/tapestry/links`, companion buttons (`virtual:tapestry/extensions`)
+  ([ADR 0042](decisions/0042-companion-hooks.md))
 
 ## Later / maybe
 

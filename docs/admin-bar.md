@@ -211,6 +211,22 @@ import { listPublicPages } from '@nascencestudio/tapestry/page';
 const pages = await listPublicPages(); // [{ path: '/about', title: 'About', updatedAt: '…', translations: […] }, …]
 ```
 
+## Helpers for companion plugins
+
+Also from `@nascencestudio/tapestry/page`, for plugins that add components or links (Tapestry Menus;
+[ADR 0042](decisions/0042-companion-hooks.md)):
+
+- `resolveSiteLinks(Astro, values, { hideUntranslated })`: link values (`{ type: 'page', page }` or
+  `{ type: 'url', url }`) resolved like link props: the page's current path in the shown page's
+  language, `null` when the page is gone or (for visitors) unpublished. With `hideUntranslated`, `null`
+  too for pages without a visible version in that language.
+- `pageLanguage(Astro)`: the shown page's language code (after `getPage()`), or `null`.
+- `inEditorCanvas(Astro)`: true while the editor's canvas renders the request (show a placeholder
+  that visitors never see).
+
+`@nascencestudio/tapestry/links` has `cleanLinkValue()` and `isSafeUrl()`, the link props' validation,
+safe to use in the browser (the main entry is the server-side plugin).
+
 ## How it works
 
 - **Session check.** StudioCMS only resolves the logged-in user for dashboard

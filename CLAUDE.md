@@ -42,6 +42,7 @@ happens across sibling checkouts in `/Volumes/T7/www/`:
 | Deployment | Docker + Caddy for a Hetzner Cloud server; CI (GitHub Actions, ADR 0020) | ✅ Done (2026-10-06) |
 | 4. Rich content | Images, rich text, links, repeaters, named slots, patterns, library previews | ✅ Done (2026-10-07) |
 | 5. Production | Islands, migrations, i18n, permissions, a11y, perf budget, npm publish, docs site | ✅ Done (2026-10-08) except the actual npm publish: prepared (repos: nascencestudio/tapestry, nascencestudio/medialibrary); the user releases |
+| Companions | tapestry-seo (0.4.0 SEO button), templates (0.5.0), hooks for tapestry-menus (0.6.0, ADR 0042) | ✅ SEO released; 0.5.0 and 0.6.0 built, not released (2026-10-16) |
 
 Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in tapestry-playground (`../tapestry-playground/docs/devlog.md`).
 
@@ -49,10 +50,13 @@ Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in ta
 1. Release Tapestry 0.5.0 (branch `templates`: Template Management, templates as inherited layouts with
    content areas, header/footer parts, `<Region>`, ADR 0041; the shipped StudioCMS patch gained the
    dashboard-pages fix, known issue #38): PR → merge (merge commit) → release `v0.5.0` → approve on npm. `main` is protected:
-   always work on a branch. Then the playground (branch `templates`) switches to 0.5.0.
-2. Next: `@nascencestudio/tapestry-menus` (decided with the user 2026-10-14: menus edited in the
-   dashboard, Menu + Breadcrumbs components for templates/pages, safe CSS classes from labels, link
-   target, unstyled output + getMenu(), links follow the page language, visibility by login, depth).
+   always work on a branch.
+2. Then Tapestry 0.6.0 (branch `companion-hooks`, on top of `templates`: `select` `optionsUrl`,
+   `resolveSiteLinks()`, `pageLanguage()`, `inEditorCanvas()`, `@nascencestudio/tapestry/links`, companion
+   buttons; ADR 0042). It unblocks **@nascencestudio/tapestry-menus** (`../tapestry-menus`, 0.1.0 built
+   2026-10-16, committed locally, not on GitHub): create the repo, switch its `file:` dev dependency to
+   0.6.0, push, first release with a one-time NPM_TOKEN. Then the playground (branch `menus`) switches to
+   npm versions, runs all suites and commits.
    Still open: the StudioCMS issue in tapestry-playground/docs/upstream/ (only when the user asks).
 2. Report upstream (only when the user asks): `bySlug` drafts (#10), ignored config keys (#5),
    dev-toolbar DB viewer errors (#12), empty page type (#15), edit-screen crash/no delete (#16),
@@ -117,6 +121,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │   ├── types.ts           ← component definition + document types
 │   ├── define.ts          ← defineComponent(), toManifest()
 │   ├── validate.ts        ← parseDocument()/validateDocument(), limits, URL safety
+│   ├── links.ts           ← `@nascencestudio/tapestry/links`: cleanLinkValue(), isSafeUrl() for companions (browser-safe)
 │   ├── render.ts          ← document → <tapestry-node> HTML (+ <tapestry-slot> wrappers), splitSlots(), props encoding, sanitizer opts
 │   ├── migrations.ts      ← format + component migrations, resolveType() for `replaces` (pure, ADR 0031)
 │   ├── permissions.ts     ← component permissions: locked types, lockedChanges(), matchesSomeVersion() (pure, ADR 0033)
@@ -131,12 +136,12 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │   ├── translations.ts    ← languages option, translation rows/groups, new-translation slug/title/content (pure, ADR 0032)
 │   ├── templates.ts       ← templates (layouts with content areas) + parts: ids, parsing, templateAreas(), mergeTemplate(), assignAreas(), error codes (pure, ADR 0041)
 │   ├── save-rules.ts      ← applySaveRules(): publish permission + locked components, for page and part saves (pure)
-│   ├── vite.ts            ← virtual modules: manifest, component imports, runtime config, thumbnails, seo-client (ADR 0040);
+│   ├── vite.ts            ← virtual modules: manifest, component imports, runtime config, thumbnails, extensions (COMPANIONS; ADRs 0040, 0042);
 │   │                        islandWrapperSource() (index.ts writes them to node_modules/.tapestry/islands)
 │   ├── virtual.d.ts       ← types for virtual:tapestry/*
 │   ├── runtime/
 │   │   ├── renderer.ts    ← StudioCMS PluginRenderer for the page type
-│   │   ├── page.ts        ← getPage() for site routes (@nascencestudio/tapestry/page); picks published/draft
+│   │   ├── page.ts        ← getPage() for site routes (@nascencestudio/tapestry/page); picks published/draft; companion helpers resolveSiteLinks(), pageLanguage(), inEditorCanvas() (ADR 0042)
 │   │   ├── viewer.ts      ← getViewer(): StudioCMS session check (re-exported from page.ts)
 │   │   ├── middleware.ts  ← Astro middleware: JSON responses carry only published content for non-editors;
 │   │   │                     publish-guard.ts guardSaves(): keeps the live version for non-publishers (ADR 0022), refuses changes to locked components (ADR 0033)
@@ -168,7 +173,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │       ├── library-previews.ts, LibraryPreview.tsx ← thumbnails + live previews in the library (ADR 0029)
 │       ├── TranslationsMenu.tsx ← toolbar menu: language versions, create
 │       ├── patterns-client.ts ← library list, save/delete, insertPattern() (fresh copies)
-│       ├── seo.ts         ← SEO button's loader for tapestry-seo's dialog (ADR 0040); media.ts holds the picker loader
+│       ├── extensions.ts  ← companion buttons (SEO, Menu) from virtual:tapestry/extensions (ADRs 0040, 0042); media.ts holds the picker loader
 │       ├── TemplateMenu.tsx ← the page's template menu: no template (own header/footer) or a template (ADR 0041)
 │       ├── publishing.ts  ← stored page signal, writes draft/publish into the textarea
 │       ├── icons.tsx      ← toolbar + UI icons (inline SVG, drawn for Tapestry) and letter glyphs

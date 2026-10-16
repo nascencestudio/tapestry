@@ -30,8 +30,26 @@ export function TemplateMenu({
 	announce: (message: string) => void;
 }) {
 	const { templates, parts } = catalog;
-	if (templates.length === 0 && parts.length === 0) return null; // nothing to choose yet
 	const doc = store.doc.value;
+	// Nothing to choose yet (no templates, headers or footers): the button stays, disabled, so editors
+	// know templates exist as a feature. A page still pointing at a deleted template keeps the menu.
+	if (templates.length === 0 && parts.length === 0 && !doc.template) {
+		return (
+			<span class="tp-info">
+				<button
+					type="button"
+					class="tp-button tp-info__button tp-info__button--text"
+					disabled
+					title="No templates yet. Admins create them in Template Management."
+					data-tp-info="tp-template"
+					data-tapestry-no-templates
+				>
+					{UI_ICONS.template}
+					<span data-tapestry-current-template>No available templates</span>
+				</button>
+			</span>
+		);
+	}
 	const current = templates.find((t) => t.id === doc.template) ?? null;
 	const partName = (id: string | null) => (id ? (parts.find((p) => p.id === id)?.name ?? 'Missing part') : 'None');
 	const label = current?.name ?? (doc.template ? 'Missing template' : 'No template');

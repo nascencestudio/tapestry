@@ -1,12 +1,13 @@
 ---
 /**
- * Template Management's inner sidebar (ADR 0041): Headers and Footers, Templates. StudioCMS's
+ * Template Management's inner sidebar (ADR 0041): Headers and Footers, Templates. Plain links with
+ * StudioCMS's own inner-sidebar classes (like Content Management), marked active here: StudioCMS's
+ * `SidebarLink` decides by path alone, and both sub-pages share one path (`?view=`). StudioCMS's
  * double-sidebar script expects #back-to-outer and #show-page (mobile navigation).
  */
 /// <reference types="studiocms/v/types" />
 import { Button } from 'studiocms:ui/components/button';
 import { Icon } from 'studiocms:ui/components/icon';
-import SidebarLink from 'studiocms/frontend/components/dashboard/SidebarLink.astro';
 
 const here = Astro.url.pathname;
 const view = Astro.url.searchParams.get('view');
@@ -18,37 +19,30 @@ const links = [
 ] as const;
 ---
 
-<div class="tapestry-tm-nav" data-tapestry-template-management-nav>
-	<div class="tapestry-tm-nav__header">
-		<Button variant="solid" color="primary" size="md" id="back-to-outer" class="mobile-btn mid-size-btn">
-			<Icon name="heroicons:arrow-left" width={24} height={24} slot="start-content" />
-		</Button>
-		<p class="tapestry-tm-nav__title">Template Management</p>
-		<Button variant="solid" color="primary" size="md" id="show-page" class="mobile-btn">
-			<Icon name="heroicons:x-mark" width={24} height={24} slot="start-content" />
-		</Button>
-	</div>
-	<div class="tapestry-tm-nav__links">
-		{links.map((link) => (
-			<SidebarLink icon={link.icon} href={link.href} aria-current={link.id === current ? 'page' : undefined}>
-				{link.label}
-			</SidebarLink>
-		))}
-	</div>
+<div class="inner-sidebar-header">
+	<Button variant="solid" color="primary" size="md" id="back-to-outer" class="mobile-btn mid-size-btn">
+		<Icon name="heroicons:arrow-left" width={24} height={24} slot="start-content" />
+	</Button>
+	<p class="tapestry-tm-nav__title">Template Management</p>
+	<Button variant="solid" color="primary" size="md" id="show-page" class="mobile-btn">
+		<Icon name="heroicons:x-mark" width={24} height={24} slot="start-content" />
+	</Button>
 </div>
+<nav class="tapestry-tm-nav__links" aria-label="Template Management" data-tapestry-template-management-nav>
+	{links.map((link) => (
+		<a
+			class:list={['inner-sidebar-link', { active: link.id === current }]}
+			href={link.href}
+			aria-current={link.id === current ? 'page' : undefined}
+			data-tapestry-tm-link={link.id}
+		>
+			<Icon name={link.icon} class="sidebar-link-icon" width={24} height={24} />
+			<span>{link.label}</span>
+		</a>
+	))}
+</nav>
 
 <style>
-	.tapestry-tm-nav {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		padding: 1.5rem;
-	}
-	.tapestry-tm-nav__header {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-	}
 	.tapestry-tm-nav__title {
 		flex: 1;
 		margin: 0;
@@ -58,6 +52,7 @@ const links = [
 	.tapestry-tm-nav__links {
 		display: flex;
 		flex-direction: column;
-		gap: 0.375rem;
+		gap: 0.4rem;
+		width: 100%;
 	}
 </style>

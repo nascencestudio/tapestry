@@ -174,8 +174,9 @@ const CANVAS_CSS = `
 tapestry-area-label { display: block; width: fit-content; margin: 0 0 0.25rem; padding: 0.15rem 0.5rem; border-radius: 4px;
 	background: #6d4ed6; color: #fff; font: 600 12px/1.4 system-ui, sans-serif; }
 .tc-template-editing [${AREA_ATTR}] tapestry-canvas-drop { display: none; }
-tapestry-canvas-body { display: block; margin: 1.5rem; padding: 3rem 1rem; border: 2px dashed #a29bb8; border-radius: 8px;
-	text-align: center; font: 15px system-ui, sans-serif; color: #5f5a73; background: rgb(162 155 184 / 0.08); }
+tapestry-canvas-body { display: block; margin: 1.5rem; padding: 2.5rem 1rem; border: 1px solid rgb(162 155 184 / 0.6);
+	border-radius: 8px; text-align: center; font: italic 15px/1.5 system-ui, sans-serif; color: inherit; opacity: 0.8; cursor: not-allowed;
+	background: repeating-linear-gradient(135deg, rgb(162 155 184 / 0.12) 0 10px, rgb(162 155 184 / 0.04) 10px 20px); }
 tapestry-canvas-empty { display: block; margin: 2rem; padding: 4rem 1rem; border: 2px dashed #8b5cf6; border-radius: 8px;
 	text-align: center; font: 16px system-ui, sans-serif; color: #6d4ed6; }
 tapestry-canvas-drop { display: flex; align-items: center; justify-content: center; min-height: 4.5rem; margin: 0.5rem 0;
@@ -890,7 +891,7 @@ export function createCanvasController(options: CanvasControllerOptions) {
 			const body = Array.from(doc.querySelectorAll(`[${ROOT_ATTR}]`)).find((el) => !el.closest(`[${REGION_ATTR}]`));
 			if (body && !body.querySelector('tapestry-canvas-body')) {
 				const placeholder = doc.createElement('tapestry-canvas-body');
-				placeholder.textContent = 'Page content';
+				placeholder.textContent = 'Page content goes here. It’s edited on each page, not here.';
 				body.append(placeholder);
 			}
 		}

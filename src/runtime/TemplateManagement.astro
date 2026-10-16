@@ -122,7 +122,7 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 														<input type="hidden" name="id" value={part.id} />
 														<button
 															type="submit"
-															class="tapestry-templates__button"
+															class="tapestry-templates__button tapestry-templates__button--danger"
 															disabled={users > 0}
 															title={users > 0 ? 'Used by a template: choose another part there first' : undefined}
 															data-tapestry-part-delete
@@ -171,58 +171,60 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 						{templates.map((template) => {
 							const areas = templateAreas(template.page.published ?? template.page.draft);
 							return (
-								<li class="tapestry-templates__item" data-tapestry-template-row={template.id}>
+								<li class="tapestry-templates__item tapestry-templates__item--with-bar" data-tapestry-template-row={template.id}>
 									<div class="tapestry-templates__row">
 										<strong class="tapestry-templates__name">{template.name}</strong>
 										<span class="tapestry-templates__status" data-status={pageStatus(template.page)}>
 											{STATUS[pageStatus(template.page)]}
 										</span>
-										<span class="tapestry-templates__muted" data-tapestry-template-areas>
+									</div>
+									{isAdmin && (
+										<form method="post" action={TEMPLATES_ROUTE} class="tapestry-templates__inline tapestry-templates__inline--wrap">
+											<input type="hidden" name="return" value={returnTo} />
+											<input type="hidden" name="action" value="update-template" />
+											<input type="hidden" name="id" value={template.id} />
+											<label class="tapestry-templates__field">
+												<span>Name</span>
+												<input class="tapestry-templates__input" name="name" value={template.name} maxlength="80" required />
+											</label>
+											{REGIONS.map((region) => (
+												<label class="tapestry-templates__field">
+													<span>{LABEL[region]}</span>
+													<select class="tapestry-templates__input" name={region} data-tapestry-template-region={region}>
+														<option value="">None</option>
+														{parts
+															.filter((p) => p.region === region)
+															.map((p) => (
+																<option value={p.id} selected={template[region] === p.id}>
+																	{p.name}
+																</option>
+															))}
+													</select>
+												</label>
+											))}
+											<button type="submit" class="tapestry-templates__button">Save</button>
+										</form>
+									)}
+									<div class="tapestry-templates__bar">
+										<span class="tapestry-templates__bar-status" data-tapestry-template-areas>
 											{areas.length === 0 ? 'No content areas yet' : `Areas: ${areas.map((a) => a.name).join(', ')}`}
 										</span>
 										{isAdmin && (
-<a class="tapestry-templates__button tapestry-templates__button--primary" href={`${here}?edit=${template.id}`} data-tapestry-template-edit>
-											Edit layout
-										</a>
-)}
+											<>
+												<a class="tapestry-templates__button tapestry-templates__button--primary" href={`${here}?edit=${template.id}`} data-tapestry-template-edit>
+													Edit layout
+												</a>
+												<form method="post" action={TEMPLATES_ROUTE}>
+													<input type="hidden" name="return" value={returnTo} />
+													<input type="hidden" name="action" value="delete-template" />
+													<input type="hidden" name="id" value={template.id} />
+													<button type="submit" class="tapestry-templates__button tapestry-templates__button--danger" data-tapestry-template-delete>
+														Delete template
+													</button>
+												</form>
+											</>
+										)}
 									</div>
-									{isAdmin && (
-<>
-<form method="post" action={TEMPLATES_ROUTE} class="tapestry-templates__inline tapestry-templates__inline--wrap">
-										<input type="hidden" name="return" value={returnTo} />
-										<input type="hidden" name="action" value="update-template" />
-										<input type="hidden" name="id" value={template.id} />
-										<label class="tapestry-templates__field">
-											<span>Name</span>
-											<input class="tapestry-templates__input" name="name" value={template.name} maxlength="80" required />
-										</label>
-										{REGIONS.map((region) => (
-											<label class="tapestry-templates__field">
-												<span>{LABEL[region]}</span>
-												<select class="tapestry-templates__input" name={region} data-tapestry-template-region={region}>
-													<option value="">None</option>
-													{parts
-														.filter((p) => p.region === region)
-														.map((p) => (
-															<option value={p.id} selected={template[region] === p.id}>
-																{p.name}
-															</option>
-														))}
-												</select>
-											</label>
-										))}
-										<button type="submit" class="tapestry-templates__button">Save</button>
-									</form>
-									<form method="post" action={TEMPLATES_ROUTE}>
-										<input type="hidden" name="return" value={returnTo} />
-										<input type="hidden" name="action" value="delete-template" />
-										<input type="hidden" name="id" value={template.id} />
-										<button type="submit" class="tapestry-templates__button" data-tapestry-template-delete>
-											Delete template
-										</button>
-									</form>
-</>
-)}
 								</li>
 							);
 						})}
@@ -368,6 +370,33 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 	.tapestry-templates__button:disabled {
 		opacity: 0.55;
 		cursor: default;
+	}
+	.tapestry-templates__button--danger {
+		color: #fff;
+		background: var(--danger-base, hsl(339 80% 45%));
+		border-color: var(--danger-base, hsl(339 80% 45%));
+	}
+	.tapestry-templates__button--danger:hover:not(:disabled) {
+		filter: brightness(1.1);
+	}
+	.tapestry-templates__item--with-bar {
+		padding-bottom: 0;
+		overflow: hidden;
+	}
+	.tapestry-templates__bar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem 0.75rem;
+		margin: 0.25rem -0.75rem 0;
+		padding: 0.6rem 0.75rem;
+		background: var(--background-step-2, rgb(0 0 0 / 0.08));
+		border-top: 1px solid var(--border, hsl(263 5% 68%));
+	}
+	.tapestry-templates__bar-status {
+		margin-right: auto;
+		color: var(--text-muted, inherit);
+		font-size: 0.875rem;
 	}
 	.tapestry-templates__button--primary {
 		color: var(--text-inverted, #fff);

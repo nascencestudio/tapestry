@@ -29,6 +29,7 @@ three things from Tapestry:
    `cleanLinkValue()` (the link props' validation) is exported too, so menus store links in the same
    canonical form.
    `pageLanguage(Astro)` gives the shown page's language code (menu labels per language).
+   `inEditorCanvas(Astro)` tells components they render in the editor's canvas (placeholders).
 3. **Companion buttons**: `COMPANIONS` lists the known companion plugins (entry, button label, the
    function their editor module exports). At build time Tapestry resolves the installed ones;
    `virtual:tapestry/extensions` exports them, each loading its module on demand; the editor bar shows

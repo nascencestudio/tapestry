@@ -23,7 +23,14 @@ import {
 import type { Language } from '../translations.js';
 import type { ResolvedLink } from '../types.js';
 import { emptyDocument } from '../validate.js';
-import { CANVAS_PARAM, enableCanvasMode, enableEmbeddedMode, PREVIEW_PARAM, VERSION_PARAM } from './canvas-mode.js';
+import {
+	CANVAS_PARAM,
+	enableCanvasMode,
+	enableEmbeddedMode,
+	isCanvasMode,
+	PREVIEW_PARAM,
+	VERSION_PARAM,
+} from './canvas-mode.js';
 import { currentLanguage, localizeFor, localizeStrictFor, type PageTranslation, pageLanguages } from './languages.js';
 import { draftAccessFor, resolveLinks } from './links.js';
 import {
@@ -49,6 +56,14 @@ export { getViewer };
  */
 export function pageLanguage(context: Pick<AstroGlobal, 'locals'>): string | null {
 	return currentLanguage(context.locals);
+}
+
+/**
+ * True while the editor's visual canvas renders this request (ADR 0042): companion components can show
+ * a placeholder there (e.g. a menu block without a menu) that visitors never see.
+ */
+export function inEditorCanvas(context: Pick<AstroGlobal, 'locals'>): boolean {
+	return isCanvasMode(context.locals);
 }
 
 type RequestContext = Pick<AstroGlobal, 'cookies' | 'params' | 'response' | 'url' | 'locals'>;

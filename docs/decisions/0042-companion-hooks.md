@@ -27,7 +27,8 @@ three things from Tapestry:
    language). With `hideUntranslated`, a page link without a visible version in the current language
    resolves to null instead of the original (menus leave such links out).
    `cleanLinkValue()` (the link props' validation) is exported too, so menus store links in the same
-   canonical form.
+   canonical form; with `isSafeUrl()` also from `@nascencestudio/tapestry/links`, which is safe in the
+   browser (the main entry is the server-side plugin).
    `pageLanguage(Astro)` gives the shown page's language code (menu labels per language).
    `inEditorCanvas(Astro)` tells components they render in the editor's canvas (placeholders).
 3. **Companion buttons**: `COMPANIONS` lists the known companion plugins (entry, button label, the

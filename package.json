@@ -27,6 +27,10 @@
       "types": "./dist/runtime/page.d.ts",
       "default": "./dist/runtime/page.js"
     },
+    "./links": {
+      "types": "./dist/links.d.ts",
+      "default": "./dist/links.js"
+    },
     "./AdminBar.astro": "./dist/runtime/AdminBar.astro",
     "./Region.astro": "./dist/runtime/Region.astro",
     "./RichText.astro": "./dist/runtime/RichText.astro"

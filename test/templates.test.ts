@@ -8,6 +8,7 @@ import {
 	mergeTemplate,
 	newId,
 	PART_ID,
+	pagesUsingTemplates,
 	parsePart,
 	parseTemplate,
 	TEMPLATE_ID,
@@ -289,5 +290,58 @@ describe('keyboard moves between content areas', async () => {
 		const up = moved ? nudgeTarget(moved, m, 'b', 'up') : null;
 		expect(up).toEqual({ parentId: null, index: 1, slot: 'main' });
 		expect(nudgeTarget(doc, m, 'a', 'up')).toBeNull(); // the first area's first: nowhere to go
+	});
+});
+
+describe('the pages using a template', () => {
+	const T2 = 'tt_bbbbbbbbbbbbbbbb';
+	const doc = (template?: string) => ({ version: 1, ...(template ? { template } : {}), root: [] });
+	const stored = (published: object | null, draft: object | null = null) =>
+		JSON.stringify({ version: 2, published, draft, history: [] });
+	const page = (id: string, title: string, content: string, pkg = 'tapestry/canvas') => ({
+		id,
+		title,
+		slug: id,
+		package: pkg,
+		content,
+	});
+	const options = { manifest, historyLimit: 5, pageUrlPattern: '/{slug}', pageType: 'tapestry/canvas' };
+
+	it('counts the published version and the draft, says which, and sorts by title', () => {
+		const uses = pagesUsingTemplates(
+			[
+				page('b', 'Beta', stored(doc(T1))),
+				page('a', 'Alpha', stored(doc(T1), doc(T1))),
+				page('c', 'Gamma', stored(doc(), doc(T1))),
+				page('d', 'Delta', stored(doc(T1), doc(T2))),
+				page('e', 'None', stored(doc())),
+			],
+			options,
+		);
+		expect(uses.get(T1)?.map((u) => [u.title, u.version, u.path])).toEqual([
+			['Alpha', 'both', '/a'],
+			['Beta', 'published', '/b'],
+			['Delta', 'published', '/d'],
+			['Gamma', 'draft', '/c'],
+		]);
+		expect(uses.get(T2)?.map((u) => [u.title, u.version])).toEqual([['Delta', 'draft']]);
+		expect(uses.has('tt_cccccccccccccccc')).toBe(false);
+	});
+
+	it('ignores other page types, empty and unreadable content, and invalid template ids', () => {
+		const uses = pagesUsingTemplates(
+			[
+				page('m', 'Markdown', stored(doc(T1)), 'studiocms/markdown'),
+				page('x', 'Empty', ''),
+				page('y', 'Broken', '{not json'),
+				page('z', 'Bad id', stored({ version: 1, template: '../tt', root: [] })),
+			],
+			options,
+		);
+		expect(uses.size).toBe(0);
+	});
+
+	it('names untitled pages by their slug', () => {
+		expect(pagesUsingTemplates([page('about', '', stored(doc(T1)))], options).get(T1)?.[0]?.title).toBe('about');
 	});
 });

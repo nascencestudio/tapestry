@@ -62,6 +62,12 @@ The user's decisions:
   narrow editor doesn't cut it off); "No template" and the page's own header and footer pickers form
   one grey, bordered group; then "Available templates" and the list. The help is behind an "i" button
   in the menu's header.
+- **Usage and deleting** (2026-10-19, the user): each template in Template Management shows **Used on N
+  pages** (pages whose published version or draft uses it, `pagesUsingTemplates()`), which opens a
+  dialog listing them as links to their editors ("Draft only" when only the draft uses it). Deleting a
+  template in use opens a dialog that warns and asks for the template's name, like StudioCMS's page
+  delete; the endpoint refuses without it (`confirm-name`), and refuses when the pages can't be read.
+  Unused templates delete as before.
 - **Template editor / part editor:** the full editor on the Template Management page, saving through
   `/_tapestry/parts` (parts and templates; admins; the same save rules as pages). The canvas shows a
   real page: the template body (areas as labelled placeholders) or the part in place.

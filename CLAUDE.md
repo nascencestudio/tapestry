@@ -459,6 +459,10 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 - Companion plugins (tapestry-seo) import `virtual:tapestry/config`, `/media` and `/media-client`
   (ADR 0040): changing those modules' exports breaks them. Optional companions are detected by
   resolving their entry from the site root (`findMediaLibrary`, `findSeoEditor`); their UI loads on demand.
+- Template Management's dialogs are native `<dialog>`s opened by a small inline script; the typed-name
+  check is reset when a dialog **opens**: headless Chrome 156 on dashboard pages never fired `close`.
+  Deleting a template in use needs `confirm` = its name (the endpoint checks; `loadTemplateUsage()` throws
+  rather than report no use when pages can't be read).
 - `Popover` takes `align="end"` (always right-aligned; menus at the right of a narrow area) and
   `headerExtra` (e.g. an `InfoPopover` beside the title). Popovers can nest: Escape closes the innermost
   first (a popover ignores Escape while one is open inside its panel).

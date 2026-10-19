@@ -23,7 +23,7 @@ import {
 	templatesUsing,
 } from '../templates.js';
 import ContentEditor from './ContentEditor.astro';
-import { getPart, getTemplate, listParts, listTemplates } from './templates-store.js';
+import { getPart, getTemplate, listParts, listTemplates, templateUsage } from './templates-store.js';
 import { getViewer } from './viewer.js';
 
 const here = Astro.url.pathname;
@@ -38,10 +38,19 @@ const editing = !isAdmin
 		: TEMPLATE_ID.test(editId)
 			? await getTemplate(editId, manifest, config.historyLimit)
 			: null;
-const [templates, parts] = await Promise.all([
+const [templates, parts, usage] = await Promise.all([
 	listTemplates(manifest, config.historyLimit),
 	listParts(manifest, config.historyLimit),
+	templateUsage(manifest, config.historyLimit, config.pageUrlPattern),
 ]);
+// Page editor links: the dashboard's base path is this page's first segment.
+const editPageUrl = (id: string) => `/${here.split('/')[1]}/content-management/edit?edit=${encodeURIComponent(id)}`;
+const pagesText = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
+const deleteWarning = (n: number) =>
+	n === 1
+		? 'This template is used on 1 page. The page keeps its content, but it will show without the template’s layout, header and footer.'
+		: `This template is used on ${n} pages. They keep their content, but they will show without the template’s layout, header and footer.`;
+const VERSION = { published: '', draft: 'Draft only', both: '' } as const;
 const returnTo = view === 'templates' ? `${here}?view=templates` : here;
 const saved = Astro.url.searchParams.has('saved');
 const errorCode = Astro.url.searchParams.get('error');
@@ -170,6 +179,9 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 					<ul class="tapestry-templates__list">
 						{templates.map((template) => {
 							const areas = templateAreas(template.page.published ?? template.page.draft);
+							const uses = usage.get(template.id) ?? [];
+							const usageDialog = `tp-usage-${template.id}`;
+							const deleteDialog = `tp-delete-${template.id}`;
 							return (
 								<li class="tapestry-templates__item tapestry-templates__item--with-bar" data-tapestry-template-row={template.id}>
 									<div class="tapestry-templates__row">
@@ -177,7 +189,38 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 										<span class="tapestry-templates__status" data-status={pageStatus(template.page)}>
 											{STATUS[pageStatus(template.page)]}
 										</span>
+										<button
+											type="button"
+											class="tapestry-templates__status tapestry-templates__usage"
+											disabled={uses.length === 0}
+											aria-haspopup="dialog"
+											data-tapestry-open-dialog={usageDialog}
+											data-tapestry-template-usage={uses.length}
+										>
+											Used on {pagesText(uses.length)}
+										</button>
 									</div>
+									{uses.length > 0 && (
+										<dialog class="tapestry-templates__dialog" id={usageDialog} aria-labelledby={`${usageDialog}-title`} data-tapestry-usage-dialog>
+											<div class="tapestry-templates__dialog-head">
+												<h3 class="tapestry-templates__dialog-title" id={`${usageDialog}-title`}>
+													Pages using “{template.name}”
+												</h3>
+												<button type="button" class="tapestry-templates__button" data-tapestry-close-dialog>
+													Close
+												</button>
+											</div>
+											<ul class="tapestry-templates__pages">
+												{uses.map((use) => (
+													<li>
+														<a href={editPageUrl(use.id)} data-tapestry-usage-page={use.id}>{use.title}</a>
+														<span class="tapestry-templates__muted"> {use.path}</span>
+														{VERSION[use.version] && <span class="tapestry-templates__status">{VERSION[use.version]}</span>}
+													</li>
+												))}
+											</ul>
+										</dialog>
+									)}
 									{isAdmin && (
 										<form method="post" action={TEMPLATES_ROUTE} class="tapestry-templates__inline tapestry-templates__inline--wrap">
 											<input type="hidden" name="return" value={returnTo} />
@@ -214,14 +257,66 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 												<a class="tapestry-templates__button tapestry-templates__button--primary" href={`${here}?edit=${template.id}`} data-tapestry-template-edit>
 													Edit layout
 												</a>
-												<form method="post" action={TEMPLATES_ROUTE}>
-													<input type="hidden" name="return" value={returnTo} />
-													<input type="hidden" name="action" value="delete-template" />
-													<input type="hidden" name="id" value={template.id} />
-													<button type="submit" class="tapestry-templates__button tapestry-templates__button--danger" data-tapestry-template-delete>
-														Delete template
-													</button>
-												</form>
+												{uses.length === 0 ? (
+													<form method="post" action={TEMPLATES_ROUTE}>
+														<input type="hidden" name="return" value={returnTo} />
+														<input type="hidden" name="action" value="delete-template" />
+														<input type="hidden" name="id" value={template.id} />
+														<button type="submit" class="tapestry-templates__button tapestry-templates__button--danger" data-tapestry-template-delete>
+															Delete template
+														</button>
+													</form>
+												) : (
+													<>
+														{/* In use: a dialog asks for the template's name first (like StudioCMS's page delete). */}
+														<button
+															type="button"
+															class="tapestry-templates__button tapestry-templates__button--danger"
+															aria-haspopup="dialog"
+															data-tapestry-open-dialog={deleteDialog}
+															data-tapestry-template-delete
+														>
+															Delete template
+														</button>
+														<dialog class="tapestry-templates__dialog" id={deleteDialog} aria-labelledby={`${deleteDialog}-title`} data-tapestry-delete-dialog>
+															<form method="post" action={TEMPLATES_ROUTE} class="tapestry-templates__dialog-form">
+																<h3 class="tapestry-templates__dialog-title" id={`${deleteDialog}-title`}>
+																	Delete “{template.name}”?
+																</h3>
+																<p class="tapestry-templates__warning">
+																	{deleteWarning(uses.length)}
+																</p>
+																<input type="hidden" name="return" value={returnTo} />
+																<input type="hidden" name="action" value="delete-template" />
+																<input type="hidden" name="id" value={template.id} />
+																<label class="tapestry-templates__field">
+																	<span>Type <strong>{template.name}</strong> to confirm</span>
+																	<input
+																		class="tapestry-templates__input"
+																		name="confirm"
+																		autocomplete="off"
+																		spellcheck="false"
+																		required
+																		data-tapestry-confirm-name={template.name}
+																	/>
+																</label>
+																<div class="tapestry-templates__dialog-actions">
+																	<button type="button" class="tapestry-templates__button" data-tapestry-close-dialog>
+																		Cancel
+																	</button>
+																	<button
+																		type="submit"
+																		class="tapestry-templates__button tapestry-templates__button--danger"
+																		disabled
+																		data-tapestry-confirm-submit
+																	>
+																		Delete template
+																	</button>
+																</div>
+															</form>
+														</dialog>
+													</>
+												)}
 											</>
 										)}
 									</div>
@@ -415,4 +510,101 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 		clip: rect(0, 0, 0, 0);
 		white-space: nowrap;
 	}
+	/* "Used on N pages": a badge that opens the list (disabled at 0). */
+	.tapestry-templates__usage {
+		font: inherit;
+		font-size: 0.75rem;
+		color: inherit;
+		background: none;
+		cursor: pointer;
+	}
+	.tapestry-templates__usage:hover:not(:disabled) {
+		border-color: var(--primary-base, hsl(259 74% 45%));
+	}
+	.tapestry-templates__usage:disabled {
+		cursor: default;
+		color: var(--text-muted, inherit);
+	}
+	.tapestry-templates__usage:focus-visible {
+		outline: 2px solid var(--primary-base, hsl(259 74% 45%));
+		outline-offset: 2px;
+	}
+	.tapestry-templates__dialog {
+		width: min(32rem, calc(100vw - 2rem));
+		padding: 1.25rem;
+		color: var(--text-normal, inherit);
+		background: var(--background-base, #fff);
+		border: 1px solid var(--border, hsl(263 5% 68%));
+		border-radius: var(--radius-md, 0.5rem);
+		box-shadow: 0 16px 48px rgb(0 0 0 / 0.4);
+	}
+	.tapestry-templates__dialog::backdrop {
+		background: rgb(0 0 0 / 0.55);
+	}
+	.tapestry-templates__dialog-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin-bottom: 0.75rem;
+	}
+	.tapestry-templates__dialog-title {
+		margin: 0;
+		font-size: 1.0625rem;
+	}
+	.tapestry-templates__dialog-form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.875rem;
+	}
+	.tapestry-templates__dialog-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.5rem;
+	}
+	.tapestry-templates__pages {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin: 0;
+		padding-left: 1.1rem;
+	}
+	.tapestry-templates__pages a {
+		color: inherit;
+		font-weight: 600;
+	}
+	.tapestry-templates__warning {
+		margin: 0;
+		padding: 0.6rem 0.75rem;
+		border: 1px solid var(--border, hsl(263 5% 68%));
+		border-left: 4px solid var(--danger-base, hsl(339 80% 45%));
+		border-radius: var(--radius-md, 0.5rem);
+	}
 </style>
+
+<script>
+	// Dialogs (the pages using a template; deleting one in use) and the typed-name check.
+	const syncConfirm = (input: HTMLInputElement) => {
+		const submit = input.form?.querySelector<HTMLButtonElement>('[data-tapestry-confirm-submit]');
+		if (submit) submit.disabled = input.value !== input.dataset.tapestryConfirmName;
+	};
+	for (const button of document.querySelectorAll<HTMLElement>('[data-tapestry-open-dialog]')) {
+		button.addEventListener('click', () => {
+			const dialog = document.getElementById(button.dataset.tapestryOpenDialog ?? '');
+			if (!(dialog instanceof HTMLDialogElement)) return;
+			// Each opening starts empty (cleared here rather than on close, which isn't reliable everywhere).
+			for (const input of dialog.querySelectorAll<HTMLInputElement>('[data-tapestry-confirm-name]')) {
+				input.value = '';
+				syncConfirm(input);
+			}
+			dialog.showModal();
+		});
+	}
+	for (const button of document.querySelectorAll<HTMLElement>('[data-tapestry-close-dialog]')) {
+		button.addEventListener('click', () => button.closest('dialog')?.close());
+	}
+	for (const input of document.querySelectorAll<HTMLInputElement>('[data-tapestry-confirm-name]')) {
+		input.addEventListener('input', () => syncConfirm(input));
+		syncConfirm(input);
+	}
+</script>

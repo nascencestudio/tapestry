@@ -4,6 +4,7 @@
  * bodies are documents edited like pages (stored page format, ADR 0011). A page names its template
  * (`template`), or, without one, its own `header`/`footer`. Pure: parsing, validation, areas, merging.
  */
+import { pagePath } from './access.js';
 import { parseStoredPage, type StoredPage } from './revisions.js';
 import { canonicalNode } from './slots.js';
 import type { ComponentManifest, TapestryDocument, TapestryNode } from './types.js';
@@ -199,12 +200,63 @@ export const TEMPLATE_ERRORS = {
 	'part-not-found': 'That part no longer exists.',
 	'region-required': 'Choose header or footer.',
 	'part-in-use': 'A template uses that part. Choose another part in that template first.',
+	'confirm-name': 'Pages use that template. Type its name exactly to delete it.',
 	'too-many-templates': `A site can have up to ${MAX_TEMPLATES} templates.`,
 	'too-many-parts': `A site can have up to ${MAX_PARTS} headers and footers.`,
 	unknown: 'Unknown action.',
 	failed: 'Saving failed. Please try again.',
 } as const;
 export type TemplateError = keyof typeof TEMPLATE_ERRORS;
+
+/** A page that uses a template, for Template Management's "Used on" list. */
+export interface TemplateUse {
+	id: string;
+	title: string;
+	/** The page's public path. */
+	path: string;
+	/** Which version uses it: the live one, the unpublished draft, or both. */
+	version: 'published' | 'draft' | 'both';
+}
+
+/** What `pagesUsingTemplates()` needs of a page. */
+export interface UsagePage {
+	id: string;
+	title: string;
+	slug: string;
+	package: string;
+	content: string;
+}
+
+/**
+ * The pages using each template (published version or draft), by template id, pages by title (to show
+ * the count, list them, and ask before deleting a template in use).
+ */
+export function pagesUsingTemplates(
+	pages: readonly UsagePage[],
+	options: { manifest: ComponentManifest; historyLimit: number; pageUrlPattern: string; pageType: string },
+): Map<string, TemplateUse[]> {
+	const uses = new Map<string, TemplateUse[]>();
+	for (const page of pages) {
+		if (page.package !== options.pageType || !page.content) continue;
+		const stored = parseStoredPage(page.content, options.manifest, options.historyLimit).page;
+		const live = stored.published?.template ?? null;
+		const draft = stored.draft?.template ?? null;
+		for (const id of new Set([live, draft])) {
+			if (!id) continue;
+			const version = live === id ? (draft === id ? 'both' : 'published') : 'draft';
+			const list = uses.get(id) ?? [];
+			list.push({
+				id: page.id,
+				title: page.title || page.slug,
+				path: pagePath(options.pageUrlPattern, page.slug),
+				version,
+			});
+			uses.set(id, list);
+		}
+	}
+	for (const list of uses.values()) list.sort((a, b) => a.title.localeCompare(b.title));
+	return uses;
+}
 
 /** Which templates use a part (to warn before deleting it). */
 export const templatesUsing = (partId: string, templates: readonly TemplateMeta[]) =>

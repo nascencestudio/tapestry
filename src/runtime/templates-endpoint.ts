@@ -33,6 +33,7 @@ import {
 	getTemplate,
 	listParts,
 	listTemplates,
+	loadTemplateUsage,
 	savePart,
 	saveTemplate,
 } from './templates-store.js';
@@ -112,7 +113,12 @@ async function act(form: URLSearchParams): Promise<TemplateError | null> {
 		}
 		case 'delete-template': {
 			if (!TEMPLATE_ID.test(id)) return 'template-missing';
-			// Pages using it render without a template (their content stays in the document).
+			const existing = await getTemplate(id, manifest, config.historyLimit);
+			if (!existing) return 'template-missing';
+			// In use: the name must be typed to confirm (the dialog asks; checked here too). Pages using it
+			// then render without a template (their content stays in the document).
+			const uses = (await loadTemplateUsage(manifest, config.historyLimit, config.pageUrlPattern)).get(id) ?? [];
+			if (uses.length > 0 && form.get('confirm') !== existing.name) return 'confirm-name';
 			await deleteTemplate(id);
 			return null;
 		}

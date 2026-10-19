@@ -8,7 +8,14 @@
  */
 import { runSDK, SDKCoreJs } from 'studiocms:sdk';
 import type { StoredPage } from '../revisions.js';
-import { type PartRecord, parsePart, parseTemplate, type TemplateRecord } from '../templates.js';
+import {
+	type PartRecord,
+	pagesUsingTemplates,
+	parsePart,
+	parseTemplate,
+	type TemplateRecord,
+	type TemplateUse,
+} from '../templates.js';
 import type { ComponentManifest } from '../types.js';
 
 const TEMPLATE_PREFIX = '@nascencestudio/tapestry-template:';
@@ -117,3 +124,37 @@ export async function getStoredContent(id: string): Promise<string | null> {
 export const savePart = (part: { id: string; region: string; name: string; page: StoredPage }) =>
 	upsert(`${PART_PREFIX}${part.id}`, part);
 export const deletePart = (id: string) => remove(`${PART_PREFIX}${id}`);
+
+/**
+ * The pages using each template (published or draft): every page, drafts included, with its content.
+ * Throws when the pages can't be read (the delete check then refuses rather than skip the confirmation).
+ */
+export async function loadTemplateUsage(
+	manifest: ComponentManifest,
+	historyLimit: number,
+	pageUrlPattern: string,
+): Promise<Map<string, TemplateUse[]>> {
+	const raw = (await runSDK(SDKCoreJs.GET.pages(true, false))) as unknown;
+	const pages = (Array.isArray(raw) ? raw : []).map((page: Record<string, unknown>) => ({
+		id: String(page.id),
+		title: String(page.title ?? ''),
+		slug: String(page.slug ?? ''),
+		package: String(page.package ?? ''),
+		content: String((page.defaultContent as { content?: unknown } | null)?.content ?? ''),
+	}));
+	return pagesUsingTemplates(pages, { manifest, historyLimit, pageUrlPattern, pageType: 'tapestry/canvas' });
+}
+
+/** For Template Management's display: like `loadTemplateUsage()`, but empty (counts of 0) on failure. */
+export async function templateUsage(
+	manifest: ComponentManifest,
+	historyLimit: number,
+	pageUrlPattern: string,
+): Promise<Map<string, TemplateUse[]>> {
+	try {
+		return await loadTemplateUsage(manifest, historyLimit, pageUrlPattern);
+	} catch (error) {
+		console.warn('[tapestry] could not list the pages using templates', error);
+		return new Map();
+	}
+}

@@ -466,5 +466,8 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
   `/media-client`, and the helpers in `/page` and `/links` (ADRs 0040, 0042): changing those exports breaks
   them. Optional companions are detected by resolving their entry from the site root (`findMediaLibrary`,
   `findCompanions` over `COMPANIONS`); their UI loads on demand. A new companion needs a `COMPANIONS` entry (`kind`: a bar `button` or a sidebar `panel`).
+- `Popover` takes `align="end"` (always right-aligned; menus at the right of a narrow area) and
+  `headerExtra` (e.g. an `InfoPopover` beside the title). Popovers can nest: Escape closes the innermost
+  first (a popover ignores Escape while one is open inside its panel).
 - Pragmatic DnD 4.x import paths: `@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter`,
   `/utils/combine`, hitbox `/list-item/attach-instruction` and `/list-item/extract-instruction`.

@@ -1466,6 +1466,11 @@
 .tp-info__title {
 	font-weight: 600;
 }
+/* Header extras (an "i" help button) sit after the title, before the close button. */
+.tp-info__extra {
+	margin-left: auto;
+	display: inline-flex;
+}
 .tp-info__close {
 	width: 1.5rem;
 	height: 1.5rem;
@@ -1831,9 +1836,32 @@
 	flex-direction: column;
 	gap: 0.25rem;
 	min-width: 18rem;
+}
+.tp-templates__list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
 	margin: 0;
 	padding: 0;
 	list-style: none;
+}
+/* "No template" and the page's own header and footer belong together: one grey, bordered group. */
+.tp-templates__own {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	padding: 0.75rem;
+	background: var(--tp-surface);
+	border: 1px solid var(--tp-border);
+	border-radius: var(--tp-radius);
+}
+.tp-templates__heading {
+	margin: 0.875rem 0 0.25rem;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--tp-muted);
 }
 .tp-templates__item {
 	all: unset;
@@ -1868,13 +1896,9 @@
 	color: inherit;
 	opacity: 0.85;
 }
-.tp-templates {
-	gap: 0.4rem;
-}
 .tp-templates__parts {
 	display: flex;
 	gap: 0.5rem;
-	margin: 0.5rem 0 0.25rem;
 }
 .tp-templates__parts .tp-field {
 	flex: 1;

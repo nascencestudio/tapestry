@@ -6,7 +6,7 @@
  */
 import { assignAreas, type ContentArea } from '../templates.js';
 import type { TapestryDocument } from '../types.js';
-import { Popover } from './InfoPopover.js';
+import { InfoPopover, Popover } from './InfoPopover.js';
 import { UI_ICONS } from './icons.js';
 import type { EditorStore } from './store.js';
 
@@ -81,70 +81,86 @@ export function TemplateMenu({
 			title="Template"
 			icon={UI_ICONS.template}
 			text={<span data-tapestry-current-template>{label}</span>}
-		>
-			{(close) => (
-				<>
-					<ul class="tp-templates" data-tapestry-templates>
-						<li>
-							<button
-								type="button"
-								class="tp-templates__item"
-								aria-pressed={!doc.template}
-								onClick={() => chooseNone(close)}
-								data-tapestry-template=""
-							>
-								<span class="tp-templates__name">No template</span>
-								<span class="tp-muted">A one-off page: its own layout, header and footer</span>
-							</button>
-							{!doc.template && (
-								<div class="tp-templates__parts" data-tapestry-own-parts>
-									{(['header', 'footer'] as const).map((region) => (
-										<label class="tp-field" key={region}>
-											<span class="tp-field__label">{region === 'header' ? 'Header' : 'Footer'}</span>
-											<select
-												class="tp-input"
-												form="tapestry-detached"
-												value={doc[region] ?? ''}
-												onChange={(event) => setPart(region, event.currentTarget.value)}
-												data-tapestry-own-part={region}
-											>
-												<option value="">None</option>
-												{parts
-													.filter((p) => p.region === region)
-													.map((p) => (
-														<option key={p.id} value={p.id}>
-															{p.name}
-														</option>
-													))}
-											</select>
-										</label>
-									))}
-								</div>
-							)}
-						</li>
-						{templates.map((template) => (
-							<li key={template.id}>
-								<button
-									type="button"
-									class="tp-templates__item"
-									aria-pressed={doc.template === template.id}
-									onClick={() => chooseTemplate(template.id, close)}
-									data-tapestry-template={template.id}
-								>
-									<span class="tp-templates__name">{template.name}</span>
-									<span class="tp-muted">
-										Header: {partName(template.header)} · Footer: {partName(template.footer)} · Areas:{' '}
-										{template.areas.map((a) => a.name).join(', ') || 'none'}
-									</span>
-								</button>
-							</li>
-						))}
-					</ul>
-					<p class="tp-field__help">
+			// Right-aligned: the bar's last button, so a narrow editor doesn't cut the menu off.
+			align="end"
+			headerExtra={
+				<InfoPopover id="tp-template-help" label="About templates" title="About templates" align="end">
+					<p class="tp-field__help" data-tapestry-template-help>
 						Templates, headers and footers are built in Template Management. Changing them here is part of this page’s
 						draft.
 					</p>
-				</>
+				</InfoPopover>
+			}
+		>
+			{(close) => (
+				<div class="tp-templates" data-tapestry-templates>
+					{/* No template: a one-off page, with its own header and footer chosen below. */}
+					<div class="tp-templates__own" data-tapestry-own-group>
+						<button
+							type="button"
+							class="tp-templates__item"
+							aria-pressed={!doc.template}
+							onClick={() => chooseNone(close)}
+							data-tapestry-template=""
+						>
+							<span class="tp-templates__name">No template</span>
+							<span class="tp-muted">A one-off page: its own layout, header and footer</span>
+						</button>
+						{!doc.template && (
+							<div class="tp-templates__parts" data-tapestry-own-parts>
+								{(['header', 'footer'] as const).map((region) => (
+									<label class="tp-field" key={region}>
+										<span class="tp-field__label">{region === 'header' ? 'Header' : 'Footer'}</span>
+										<select
+											class="tp-input"
+											form="tapestry-detached"
+											value={doc[region] ?? ''}
+											onChange={(event) => setPart(region, event.currentTarget.value)}
+											data-tapestry-own-part={region}
+										>
+											<option value="">None</option>
+											{parts
+												.filter((p) => p.region === region)
+												.map((p) => (
+													<option key={p.id} value={p.id}>
+														{p.name}
+													</option>
+												))}
+										</select>
+									</label>
+								))}
+							</div>
+						)}
+					</div>
+					<p class="tp-templates__heading" id="tp-templates-available">
+						Available templates
+					</p>
+					{templates.length === 0 ? (
+						<p class="tp-muted" data-tapestry-no-templates-yet>
+							None yet. Admins build them in Template Management.
+						</p>
+					) : (
+						<ul class="tp-templates__list" aria-labelledby="tp-templates-available">
+							{templates.map((template) => (
+								<li key={template.id}>
+									<button
+										type="button"
+										class="tp-templates__item"
+										aria-pressed={doc.template === template.id}
+										onClick={() => chooseTemplate(template.id, close)}
+										data-tapestry-template={template.id}
+									>
+										<span class="tp-templates__name">{template.name}</span>
+										<span class="tp-muted">
+											Header: {partName(template.header)} · Footer: {partName(template.footer)} · Areas:{' '}
+											{template.areas.map((a) => a.name).join(', ') || 'none'}
+										</span>
+									</button>
+								</li>
+							))}
+						</ul>
+					)}
+				</div>
 			)}
 		</Popover>
 	);

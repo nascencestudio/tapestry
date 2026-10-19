@@ -58,6 +58,10 @@ The user's decisions:
   content to the area with the same key, else the first area (one undoable change).
   With no templates, headers or footers yet, the button stays in the bar, disabled, reading "No
   available templates" (the user, 2026-10-16: before, it disappeared and left its separator behind).
+  The menu (2026-10-19, the user's layout) is right-aligned with its button (the bar's last one, so a
+  narrow editor doesn't cut it off); "No template" and the page's own header and footer pickers form
+  one grey, bordered group; then "Available templates" and the list. The help is behind an "i" button
+  in the menu's header.
 - **Template editor / part editor:** the full editor on the Template Management page, saving through
   `/_tapestry/parts` (parts and templates; admins; the same save rules as pages). The canvas shows a
   real page: the template body (areas as labelled placeholders) or the part in place.

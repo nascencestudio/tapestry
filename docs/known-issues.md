@@ -359,26 +359,28 @@ resolved, and note the resolution in the devlog.
 
 ### 40. With mail on, a failed notification email fails every dashboard save
 - **Found:** 2026-10-20 (webforms e2e) · **Affects:** studiocms 0.6.1 and 0.7.0 · **Severity:** high when SMTP
-  is wrong or down
+  is wrong or down · **Patched**
 - With `enableMailer` on, StudioCMS's dashboard handlers (`_handlers/dashboard/content.ts`, `create.ts`,
   `profile.ts`, `taxonomy.ts`, `users.ts`, …) email admins about changes and turn a failed email into
   `DashboardAPIError('Failed to send notification')`: the save answers **HTTP 400** although the change may
   already be stored. A wrong SMTP host, a closed port or a provider outage breaks saving pages for editors.
-- **Workaround:** send a test email right after entering SMTP settings (webforms README); turning mail off
-  in the site configuration restores saving. The webforms e2e suite turns mail back off before its test SMTP
-  server stops.
+- **Fix:** the patch Tapestry ships (`patches/studiocms@0.6.1.patch`, README; also the playground's and the
+  mail-only patch in `@nascencestudio/webforms`) wraps the notifier's three send functions so any failure is
+  logged (`Notification "…" was not sent`) and the action succeeds. Without the patch: send a test email
+  right after entering SMTP settings; turning mail off restores saving. Tested by the webforms e2e suite
+  (`E2E_MAIL_SINK=1`: a folder created while SMTP points at a closed port).
 - **Todo:** report upstream (when the user asks): notification failures should be logged, not fail the save.
 
 ### 39. SMTP settings can be saved only once
-- **Found:** 2026-10-19 · **Affects:** studiocms 0.6.1 and 0.7.0 · **Severity:** medium
+- **Found:** 2026-10-19 · **Affects:** studiocms 0.6.1 and 0.7.0 · **Severity:** medium · **Patched**
 - `POST /studiocms_api/dashboard/mailer/config` calls `Mailer.createMailerConfigTable()` for both "create"
   and "update" (`_handlers/dashboard/mailer.ts`); it inserts row `SCMS_MAILER_CONFIG_1` again, so changing
   saved settings fails ("Database query failed"). `updateMailerConfigTable()` exists and is never used.
-- **Workaround:** delete the `SCMS_MAILER_CONFIG_1` row in `StudioCMSDynamicConfigSettings` (server stopped
-  or not, then save again in Dashboard → SMTP Configuration). The webforms e2e suite does this on scratch
-  sites only.
-- **Todo:** report upstream (when the user asks); a small patch is possible if clients need to change
-  providers often.
+- **Fix:** the same patch: the mailer handler updates the saved configuration
+  (`SDKCoreJs.CONFIG.mailerConfig.update`) and creates it only the first time, for both endpoints. Without
+  the patch: delete the `SCMS_MAILER_CONFIG_1` row in `StudioCMSDynamicConfigSettings`, then save again.
+  Tested by the webforms e2e suite (`E2E_MAIL_SINK=1`: set up, then updated, the new port stored).
+- **Todo:** report upstream (when the user asks).
 
 ### 38. Two plugins with dashboard pages take the whole dashboard down
 - **Found:** 2026-10-15 · **Affects:** studiocms 0.6.1 · **Severity:** breaking (every dashboard route 404s)

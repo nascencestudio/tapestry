@@ -97,3 +97,52 @@ index 528e1349bb35191171ae0c9312a1549b22e517b9..a396444c8c4725aec8842b44836adb84
    if (args.postProcessorAugments && args.postProcessorAugments.length > 0) {
      for (const postProcessorAugment of args.postProcessorAugments) {
        try {
+diff --git a/dist/virtuals/notifier/index.js b/dist/virtuals/notifier/index.js
+index ad9dfbe..74aae46 100644
+--- a/dist/virtuals/notifier/index.js
++++ b/dist/virtuals/notifier/index.js
+@@ -159,10 +159,16 @@ class Notifications extends Effect.Service()(
+         });
+         return;
+       });
++      // Patched (Tapestry known issue #40): a notification that can't be sent is logged. It must not fail the
++      // dashboard action that triggered it (the change is already saved; the editor saw "Failed to send
++      // notification" and a failed save whenever SMTP was wrong or down).
++      const logIfNotSent = (notification) => Effect.catchAllCause(
++        (cause) => Effect.logError(`Notification "${notification}" was not sent`, cause)
++      );
+       return {
+-        sendUserNotification,
+-        sendEditorNotification,
+-        sendAdminNotification
++        sendUserNotification: (notification, userId) => sendUserNotification(notification, userId).pipe(logIfNotSent(notification)),
++        sendEditorNotification: (notification, data) => sendEditorNotification(notification, data).pipe(logIfNotSent(notification)),
++        sendAdminNotification: (notification, data) => sendAdminNotification(notification, data).pipe(logIfNotSent(notification))
+       };
+     }),
+     dependencies: [Mailer.Default]
+diff --git a/frontend/pages/studiocms_api/_handlers/dashboard/mailer.ts b/frontend/pages/studiocms_api/_handlers/dashboard/mailer.ts
+index 37e173b..646209a 100644
+--- a/frontend/pages/studiocms_api/_handlers/dashboard/mailer.ts
++++ b/frontend/pages/studiocms_api/_handlers/dashboard/mailer.ts
+@@ -1,5 +1,6 @@
+ import { developerConfig } from 'studiocms:config';
+ import { Mailer } from 'studiocms:mailer';
++import { SDKCoreJs } from 'studiocms:sdk';
+ import routeConfig from 'virtual:studiocms/route-config';
+ import { HttpApiBuilder } from '@effect/platform';
+ import { StudioCMSDashboardApiSpec } from '@withstudiocms/api-spec';
+@@ -46,7 +47,12 @@ const mailerEffect = (type: 'setup' | 'update') =>
+ 				return yield* new DashboardAPIError({ error: 'Invalid port number' });
+ 			}
+ 
+-			const config = yield* mailer.createMailerConfigTable(payload);
++			// Patched (Tapestry known issue #39): both endpoints inserted the configuration row, so saving
++			// settings a second time failed. Update the saved configuration; create it the first time.
++			const existing = yield* mailer.getMailerConfigTable;
++			const config = existing
++				? yield* SDKCoreJs.CONFIG.mailerConfig.update(payload)
++				: yield* mailer.createMailerConfigTable(payload);
+ 
+ 			if (!config) {
+ 				return yield* new DashboardAPIError({

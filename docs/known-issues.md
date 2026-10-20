@@ -373,9 +373,10 @@ resolved, and note the resolution in the devlog.
 
 ### 39. SMTP settings can be saved only once
 - **Found:** 2026-10-19 · **Affects:** studiocms 0.6.1 and 0.7.0 · **Severity:** medium · **Patched**
-- `POST /studiocms_api/dashboard/mailer/config` calls `Mailer.createMailerConfigTable()` for both "create"
-  and "update" (`_handlers/dashboard/mailer.ts`); it inserts row `SCMS_MAILER_CONFIG_1` again, so changing
-  saved settings fails ("Database query failed"). `updateMailerConfigTable()` exists and is never used.
+- `/studiocms_api/dashboard/mailer/config` has a setup (`POST`) and an update (`PATCH`, what the SMTP
+  Configuration page sends once settings exist); both call `Mailer.createMailerConfigTable()`
+  (`_handlers/dashboard/mailer.ts`), which inserts row `SCMS_MAILER_CONFIG_1` again, so changing saved
+  settings fails ("Database query failed"). `updateMailerConfigTable()` exists and is never used.
 - **Fix:** the same patch: the mailer handler updates the saved configuration
   (`SDKCoreJs.CONFIG.mailerConfig.update`) and creates it only the first time, for both endpoints. Without
   the patch: delete the `SCMS_MAILER_CONFIG_1` row in `StudioCMSDynamicConfigSettings`, then save again.

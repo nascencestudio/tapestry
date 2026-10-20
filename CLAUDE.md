@@ -106,7 +106,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 ├── package.json               ← the plugin's manifest + repo scripts (lint, docs:*)
 ├── pnpm-workspace.yaml        ← supply-chain hardening (read the comments); workspace = root + website
 ├── LICENSE                    ← MIT © Nascence Studio
-├── patches/studiocms@0.6.1.patch ← shipped to users for islands/component scripts (#37); not applied here
+├── patches/studiocms@0.6.1.patch ← shipped to users: component scripts (#37), dashboard pages (#38), mail (#39, #40); not applied here
 ├── .github/workflows/         ← ci.yml (lint, audit, build, types, tests, pack, docs build; ADR 0020),
 │                                release.yml (stages an npm release with provenance; approve on npmjs.com; ADR 0035),
 │                                docs.yml (GitHub Pages; ADR 0036); dependabot.yml

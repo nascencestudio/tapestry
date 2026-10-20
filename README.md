@@ -104,7 +104,7 @@ button; option `seo`).
 
 ## Apply the StudioCMS patch that ships with Tapestry
 
-StudioCMS 0.6.1 and 0.7.0 have two bugs this package's small patch fixes (one file per version):
+StudioCMS 0.6.1 and 0.7.0 have bugs this package's small patch fixes (one file per version):
 
 - It removes every `<script>` that components render from page content, so islands
   (`client: 'visible'` etc.) never become interactive and `<script>`s in your components
@@ -112,6 +112,10 @@ StudioCMS 0.6.1 and 0.7.0 have two bugs this package's small patch fixes (one fi
 - When two plugins add dashboard pages (Tapestry's Template Management and the media
   library's Media), the whole dashboard answers 404. The fix names each plugin page by its
   own address.
+- Mail (Dashboard → SMTP Configuration): saving the settings a second time fails, and with mail
+  on, any dashboard save fails ("Failed to send notification") whenever a notification email
+  can't be sent. The fix updates saved settings, and logs failed notifications instead of
+  failing the save.
 
 Copy the one for your StudioCMS version (here 0.7.0; for 0.6.1 use `studiocms@0.6.1.patch`):
 

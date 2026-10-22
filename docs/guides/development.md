@@ -123,6 +123,7 @@ document any exception in `pnpm-workspace.yaml` (inline reason), an ADR, and the
 | `ERR_PNPM_IGNORED_BUILDS` | A new dependency wants an install script. Decide, then add it to `allowBuilds` (true or false) with a comment. |
 | Trust downgrade error | See ADR 0003; check provenance history before adding any exception. |
 | `Unknown at rule: @keyframes` in build | StudioCMS CSS bug. Keep `cssMinify: 'esbuild'` in `astro.config.mjs`. |
+| `Cannot find native binding` (or `Cannot find package 'satteri'`) from a production server | StudioCMS 0.7's Markdown parser bundled into the build (known issue #41). Add `satteri` as a direct dependency and `vite.ssr.external: ['satteri']`. |
 | Playground doesn't reflect plugin changes | Rebuild the plugin (`dist/` is what's consumed), run `pnpm install` in the playground (its `file:` copy), restart its dev server. |
 | `No rendering plugins found` | StudioCMS needs at least one page-type plugin; Tapestry counts. |
 | `pnpm seed` changes don't show | StudioCMS caches pages for 5 minutes. Restart the dev server, or edit through the dashboard. |

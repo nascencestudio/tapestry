@@ -59,10 +59,11 @@ verifyDepsBeforeRun: error
 
 # Forced versions of transitive dependencies. Every entry needs a reason and an exit condition.
 overrides:
-  # GHSA-68fv-2mgg-jv7q (high, event-loop DoS via crafted source maps; build-time only
-  # here, via postcss/css-tree). 1.2.2 is the fix, same maintainer, published 2026-09-30.
-  # Remove once vite/postcss/css-tree resolve >=1.2.2 on their own.
-  source-map-js: 1.2.2
+  # GHSA-4qx8-w7c3-pj3p, GHSA-9j65-hcg3-gc64, GHSA-9qmh-m7c6-f92p (high, CPU DoS in toml <=5.0.0; every
+  # 4.x is affected). Via StudioCMS → @withstudiocms/effect → @effect/cli, which parses config files with
+  # Toml.parse() and asks for ^4.3.0. 5.0.1 (2026-10-12) keeps parse() the same (checked: same exports, no
+  # dependencies, no install scripts, integrity verified). Remove when @effect/cli moves to toml >=5.0.1.
+  '@effect/cli>toml': 5.0.1
   # GHSA-rj75-hqrm-r3gf (moderate, quadratic selector parsing in postcss-selector-parser <7.1.6;
   # build-time only, docs site, parsing our own CSS). Expressive Code (Starlight's code blocks)
   # uses postcss-nested 6, which pins the 6.x parser (no fix); postcss-nested 8.0.1 uses

@@ -74,7 +74,7 @@ resolved, and note the resolution in the devlog.
   `verify-session` but only logged. Superseded for Tapestry sites by the admin bar.
 
 ### 12. StudioCMS dev-toolbar "DB viewer" logs errors on every dev page
-- **Found:** 2026-10-04 · **Diagnosed:** 2026-10-05 · **Affects:** dev only (studiocms 0.6.x)
+- **Found:** 2026-10-04 · **Diagnosed:** 2026-10-05 · **Affects:** dev only (studiocms 0.6.x; still in 0.7.0, checked 2026-10-19)
 - StudioCMS adds an Astro dev-toolbar app (`studiocms/dist/toolbar/db-viewer/viewer.js`)
   that queries `/studiocms_api/integrations/db-studio/query`. That endpoint
   intermittently returns 500, and the app logs `Error executing query: ParseError …`
@@ -302,7 +302,7 @@ resolved, and note the resolution in the devlog.
 
 ### 32. Dashboard CSS on every page (production) and every page's CSS on every page (dev)
 - **Found:** 2026-10-06 (user report: dozens of `<style data-vite-dev-id>` tags on the
-  public home page) · **Affects:** studiocms 0.6.1 with astro 7.3.5 · **Severity:** performance
+  public home page) · **Affects:** studiocms 0.6.1 (still in 0.7.0) with astro 7.3.5 · **Severity:** performance
 - **Production:** the public page linked `DashboardLayout.css` (54 KB), `BaseLayout.css`
   (13 KB) and the media library's `library.css` (8 KB). Chain (traced in the build graph):
   public page → StudioCMS SDK/renderer/effect → `astro:config/server` or Astro's middleware
@@ -321,7 +321,7 @@ resolved, and note the resolution in the devlog.
   Astro (dev collector and script mapping cross the manifest).
 
 ### 33. @studiocms/md adds its CSS to every page
-- **Found:** 2026-10-06 · **Affects:** @studiocms/md 0.5.0 · **Severity:** performance
+- **Found:** 2026-10-06 · **Affects:** @studiocms/md 0.5.0 and 0.5.1 (same code) · **Severity:** performance
 - `injectScript('page-ssr', 'import "studiocms:md/styles"')` puts the heading-anchor and
   callout CSS (~1.9 KB) on every page, Markdown or not; no option turns it off
   (`callouts: false` only drops the callout part).
@@ -341,7 +341,7 @@ resolved, and note the resolution in the devlog.
   Tapestry should do the same (site guide).
 
 ### 35. StudioCMS can't delete users (inverted ghost-user check)
-- **Found:** 2026-10-07 (e2e cleanup) · **Affects:** @withstudiocms/sdk 0.4.2 · **Severity:** functional
+- **Found:** 2026-10-07 (e2e cleanup) · **Affects:** @withstudiocms/sdk 0.4.2 (StudioCMS 0.6.1 and 0.7.0) · **Severity:** functional
 - Deleting any real user fails with "User with ID … is an internal user and cannot be
   deleted.": `_isNotGhostUser` fails when the id is **not** the ghost user's (`!==`
   instead of `===`), so only the internal ghost user would be deletable.
@@ -364,7 +364,7 @@ resolved, and note the resolution in the devlog.
   `profile.ts`, `taxonomy.ts`, `users.ts`, …) email admins about changes and turn a failed email into
   `DashboardAPIError('Failed to send notification')`: the save answers **HTTP 400** although the change may
   already be stored. A wrong SMTP host, a closed port or a provider outage breaks saving pages for editors.
-- **Fix:** the patch Tapestry ships (`patches/studiocms@0.6.1.patch`, README; also the playground's and the
+- **Fix:** the patch Tapestry ships (`patches/studiocms@0.6.1.patch` and `@0.7.0.patch`, README; also the playground's and the
   mail-only patch in `@nascencestudio/webforms`) wraps the notifier's three send functions so any failure is
   logged (`Notification "…" was not sent`) and the action succeeds. Without the patch: send a test email
   right after entering SMTP settings; turning mail off restores saving. Tested by the webforms e2e suite
@@ -384,17 +384,17 @@ resolved, and note the resolution in the devlog.
 - **Todo:** report upstream (when the user asks).
 
 ### 38. Two plugins with dashboard pages take the whole dashboard down
-- **Found:** 2026-10-15 · **Affects:** studiocms 0.6.1 · **Severity:** breaking (every dashboard route 404s)
+- **Found:** 2026-10-15 · **Affects:** studiocms 0.6.1 and 0.7.0 · **Severity:** breaking (every dashboard route 404s)
 - StudioCMS names each plugin page's components `item.title + 'pageBodyComponent'` in a generated
   module. Titles must be translation objects (`{ en: 'Media' }`), so every page becomes
   `"[object Object]pageBodyComponent"`: with two plugin pages (the media library's Media and Tapestry's
   Template Management) the module exports the same name twice and the dashboard fails to load.
-- **Fix:** the patch Tapestry ships (`patches/studiocms@0.6.1.patch`) and the playground's name them by
+- **Fix:** the patch Tapestry ships (`patches/studiocms@0.6.1.patch`, `@0.7.0.patch`) and the playground's name them by
   `item.slug` (plugin id + route, unique). Sites must apply the patch (README).
 - **Todo:** report upstream (when the user asks).
 
 ### 37. StudioCMS strips every `<script>` that components render
-- **Found:** 2026-10-07 · **Upstream** (StudioCMS 0.6.1) · **Patched**
+- **Found:** 2026-10-07 · **Upstream** (StudioCMS 0.6.1; still in 0.7.0) · **Patched**
 - `renderFn` (`dist/virtuals/components/renderFn.js`) runs `transformHTML()` twice more over the
   page's **rendered** output (augment components, storage URLs). `transformHTML()` always adds
   ultrahtml's sanitizer, and with default options it drops `<script>`. So Astro's island
@@ -406,7 +406,7 @@ resolved, and note the resolution in the devlog.
   ADR 0030. The user approved reporting it (2026-10-08): issue text in
   [docs/upstream/studiocms-component-scripts.md](https://github.com/nascencestudio/tapestry-playground/blob/main/docs/upstream/studiocms-component-scripts.md), to file once
   the project is on GitHub. Sites installing Tapestry apply the same fix with the patch it ships
-  (`patches/studiocms@0.6.1.patch`, README).
+  (`patches/studiocms@0.6.1.patch` or `@0.7.0.patch`, README).
 
 ## Resolved
 

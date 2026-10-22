@@ -1,0 +1,148 @@
+diff --git a/dist/handlers/pluginHandler.js b/dist/handlers/pluginHandler.js
+index fbe7f981e9629a093dba91e37a8ee9c95b7ddff9..4c59aecd6dd26640cbf32bc75ff084fc67f46606 100644
+--- a/dist/handlers/pluginHandler.js
++++ b/dist/handlers/pluginHandler.js
+@@ -749,7 +749,7 @@ const pluginHandler = async (params, options) => {
+             components.pageActionsComponent = pageActionsComponent;
+           }
+           const remappedComps = Object.entries(components).map(
+-            ([key, value]) => `export { default as ${convertToSafeString(item.title + key)} } from ${toModuleSpecifier(value)};`
++            ([key, value]) => `export { default as ${convertToSafeString(item.slug + key)} } from ${toModuleSpecifier(value)};`
+           );
+           return remappedComps.join("\n");
+         }).join("\n") || ""
+@@ -767,7 +767,7 @@ const pluginHandler = async (params, options) => {
+             components.pageActionsComponent = pageActionsComponent;
+           }
+           const remappedComps = Object.entries(components).map(
+-            ([key, value]) => `export { default as ${convertToSafeString(item.title + key)} } from ${toModuleSpecifier(value)};`
++            ([key, value]) => `export { default as ${convertToSafeString(item.slug + key)} } from ${toModuleSpecifier(value)};`
+           );
+           return remappedComps.join("\n");
+         }).join("\n") || ""
+@@ -784,9 +784,9 @@ const pluginHandler = async (params, options) => {
+ 							const page = {
+ 								...item,
+ 								components: {
+-									PageBodyComponent: components[convertToSafeString(item.title + 'pageBodyComponent')],
+-									PageActionsComponent: components[convertToSafeString(item.title + 'pageActionsComponent')] || null,
+-									InnerSidebarComponent: item.sidebar === 'double' ? components[convertToSafeString(item.title + 'innerSidebarComponent')] || null : null,
++									PageBodyComponent: components[convertToSafeString(item.slug + 'pageBodyComponent')],
++									PageActionsComponent: components[convertToSafeString(item.slug + 'pageActionsComponent')] || null,
++									InnerSidebarComponent: item.sidebar === 'double' ? components[convertToSafeString(item.slug + 'innerSidebarComponent')] || null : null,
+ 								},
+ 							};
+ 
+@@ -808,9 +808,9 @@ const pluginHandler = async (params, options) => {
+ 							const page = {
+ 								...item,
+ 								components: {
+-									PageBodyComponent: components[convertToSafeString(item.title + 'pageBodyComponent')],
+-									PageActionsComponent: components[convertToSafeString(item.title + 'pageActionsComponent')] || null,
+-									InnerSidebarComponent: item.sidebar === 'double' ? components[convertToSafeString(item.title + 'innerSidebarComponent')] || null : null,
++									PageBodyComponent: components[convertToSafeString(item.slug + 'pageBodyComponent')],
++									PageActionsComponent: components[convertToSafeString(item.slug + 'pageActionsComponent')] || null,
++									InnerSidebarComponent: item.sidebar === 'double' ? components[convertToSafeString(item.slug + 'innerSidebarComponent')] || null : null,
+ 								},
+ 							};
+ 
+diff --git a/dist/virtuals/components/Renderer.astro b/dist/virtuals/components/Renderer.astro
+index 2bbc47488dce5ce44ecb26c41a15171d20437a3a..9ce364b08a8428b517b150f9769b191b5efeff9f 100644
+--- a/dist/virtuals/components/Renderer.astro
++++ b/dist/virtuals/components/Renderer.astro
+@@ -63,6 +63,8 @@ const renderedContent = await renderFn({
+ 		result: $$result as SSRResult,
+ 		sanitizeOpts: RendererModule.sanitizeOpts,
+ 		preRenderer: RendererModule.renderer,
++		// Patched (known issue #37): keep scripts that components render (islands) for renderers that opt in.
++		componentScripts: (RendererModule as { componentScripts?: boolean }).componentScripts === true,
+ 	},
+ });
+ ---
+diff --git a/dist/virtuals/components/renderFn.js b/dist/virtuals/components/renderFn.js
+index 528e1349bb35191171ae0c9312a1549b22e517b9..a396444c8c4725aec8842b44836adb848ba4afe1 100644
+--- a/dist/virtuals/components/renderFn.js
++++ b/dist/virtuals/components/renderFn.js
+@@ -2,10 +2,12 @@ import { site } from "astro:config/server";
+ import { createRenderer } from "studiocms:component-registry/runtime";
+ import { createComponentProxy, transformHTML } from "@withstudiocms/component-registry";
+ import transformStorageAPI from "./ultrahtml-transformers/storage-api.js";
++import { transform } from "ultrahtml";
++import swap from "ultrahtml/transformers/swap";
+ const handlePrefixSuffix = (augment, content) => augment.type === "prefix" ? augment.html + content : content + augment.html;
+ const renderFn = async (args) => {
+   const { renderOpts, content, augments = [] } = args;
+-  const { result, sanitizeOpts, preRenderer } = renderOpts;
++  const { result, sanitizeOpts, preRenderer, componentScripts } = renderOpts;
+   const render = await createRenderer(result, sanitizeOpts, preRenderer);
+   let renderedContent = await render(content);
+   const componentsCollection = {};
+@@ -28,8 +30,17 @@ const renderFn = async (args) => {
+   for (const suffixAugment of augmentCollections.suffix) {
+     renderedContent = handlePrefixSuffix(suffixAugment, renderedContent);
+   }
+-  renderedContent = await transformHTML(renderedContent, components);
+-  renderedContent = await transformHTML(renderedContent, {}, {}, [transformStorageAPI({ site })]);
++  // Patched (known issue #37): these passes run over the *rendered* output, and transformHTML()
++  // always sanitizes with default options, which drop every <script>: Astro islands and
++  // component scripts never reached the page. Renderers that opt in (`componentScripts`, e.g.
++  // Tapestry, whose content can't contain HTML) skip the sanitizer here; the content itself
++  // was already sanitized before components were swapped in. Other page types are unchanged.
++  const postProcess = (html, swapComponents, transformers = []) =>
++    componentScripts === true
++      ? transform(html, [swap(swapComponents), ...transformers])
++      : transformHTML(html, swapComponents, {}, transformers);
++  renderedContent = await postProcess(renderedContent, components);
++  renderedContent = await postProcess(renderedContent, {}, [transformStorageAPI({ site })]);
+   if (args.postProcessorAugments && args.postProcessorAugments.length > 0) {
+     for (const postProcessorAugment of args.postProcessorAugments) {
+       try {
+diff --git a/dist/virtuals/notifier/index.js b/dist/virtuals/notifier/index.js
+index ad9dfbe..74aae46 100644
+--- a/dist/virtuals/notifier/index.js
++++ b/dist/virtuals/notifier/index.js
+@@ -159,10 +159,16 @@ class Notifications extends Effect.Service()(
+         });
+         return;
+       });
++      // Patched (Tapestry known issue #40): a notification that can't be sent is logged. It must not fail the
++      // dashboard action that triggered it (the change is already saved; the editor saw "Failed to send
++      // notification" and a failed save whenever SMTP was wrong or down).
++      const logIfNotSent = (notification) => Effect.catchAllCause(
++        (cause) => Effect.logError(`Notification "${notification}" was not sent`, cause)
++      );
+       return {
+-        sendUserNotification,
+-        sendEditorNotification,
+-        sendAdminNotification
++        sendUserNotification: (notification, userId) => sendUserNotification(notification, userId).pipe(logIfNotSent(notification)),
++        sendEditorNotification: (notification, data) => sendEditorNotification(notification, data).pipe(logIfNotSent(notification)),
++        sendAdminNotification: (notification, data) => sendAdminNotification(notification, data).pipe(logIfNotSent(notification))
+       };
+     }),
+     dependencies: [Mailer.Default]
+diff --git a/frontend/pages/studiocms_api/_handlers/dashboard/mailer.ts b/frontend/pages/studiocms_api/_handlers/dashboard/mailer.ts
+index 37e173b..646209a 100644
+--- a/frontend/pages/studiocms_api/_handlers/dashboard/mailer.ts
++++ b/frontend/pages/studiocms_api/_handlers/dashboard/mailer.ts
+@@ -1,5 +1,6 @@
+ import { developerConfig } from 'studiocms:config';
+ import { Mailer } from 'studiocms:mailer';
++import { SDKCoreJs } from 'studiocms:sdk';
+ import routeConfig from 'virtual:studiocms/route-config';
+ import { HttpApiBuilder } from '@effect/platform';
+ import { StudioCMSDashboardApiSpec } from '@withstudiocms/api-spec';
+@@ -46,7 +47,12 @@ const mailerEffect = (type: 'setup' | 'update') =>
+ 				return yield* new DashboardAPIError({ error: 'Invalid port number' });
+ 			}
+ 
+-			const config = yield* mailer.createMailerConfigTable(payload);
++			// Patched (Tapestry known issue #39): both endpoints inserted the configuration row, so saving
++			// settings a second time failed. Update the saved configuration; create it the first time.
++			const existing = yield* mailer.getMailerConfigTable;
++			const config = existing
++				? yield* SDKCoreJs.CONFIG.mailerConfig.update(payload)
++				: yield* mailer.createMailerConfigTable(payload);
+ 
+ 			if (!config) {
+ 				return yield* new DashboardAPIError({

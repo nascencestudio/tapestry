@@ -27,7 +27,7 @@ allowlists and an element allowlist on the rendered output ([security](docs/secu
 
 ## Requirements
 
-- Node ≥ 22.12, Astro 7, StudioCMS 0.6
+- Node ≥ 22.12, Astro 7, StudioCMS 0.6 or 0.7
 - An on-demand (SSR) Astro adapter, as StudioCMS requires
 
 ## Install
@@ -107,7 +107,7 @@ button; option `seo`) and [`@nascencestudio/tapestry-menus`](https://github.com/
 
 ## Apply the StudioCMS patch that ships with Tapestry
 
-StudioCMS 0.6.1 has bugs this package's small patch fixes:
+StudioCMS 0.6.1 and 0.7.0 have bugs this package's small patch fixes (one file per version):
 
 - It removes every `<script>` that components render from page content, so islands
   (`client: 'visible'` etc.) never become interactive and `<script>`s in your components
@@ -120,16 +120,21 @@ StudioCMS 0.6.1 has bugs this package's small patch fixes:
   can't be sent. The fix updates saved settings, and logs failed notifications instead of
   failing the save.
 
+Copy the one for your StudioCMS version (here 0.7.0; for 0.6.1 use `studiocms@0.6.1.patch`):
+
 ```sh
 mkdir -p patches
-cp node_modules/@nascencestudio/tapestry/patches/studiocms@0.6.1.patch patches/
+cp node_modules/@nascencestudio/tapestry/patches/studiocms@0.7.0.patch patches/
 ```
 
 ```yaml
 # pnpm-workspace.yaml
 patchedDependencies:
-  studiocms@0.6.1: patches/studiocms@0.6.1.patch
+  studiocms@0.7.0: patches/studiocms@0.7.0.patch
 ```
+
+When you upgrade StudioCMS, switch to the matching file: pnpm stops the install if a patch's
+version is no longer installed.
 
 Then `pnpm install`. (With npm, use [patch-package](https://github.com/ds300/patch-package)
 with the same file.)

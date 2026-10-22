@@ -71,7 +71,8 @@ Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in ta
    - Never weaken `pnpm-workspace.yaml` hardening without an ADR or devlog entry
      explaining why. Every `overrides` / `allowBuilds` / `peerDependencyRules`
      entry has a written reason.
-   - Pin exact versions (`saveExact: true`). After editing a `package.json` by
+   - Pin exact versions (`saveExact: true`), except `preact` and `@preact/signals` (ranges: one runtime per
+     site, ADR 0044). After editing a `package.json` by
      hand, run `pnpm install` (`verifyDepsBeforeRun` will refuse to run scripts otherwise).
    - Treat page content as untrusted input. All content goes through
      `validateDocument()` before rendering. See [docs/security.md](docs/security.md).
@@ -262,8 +263,8 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 | vitest | 5.0.5 | pins `why-is-node-running@3.2.1` itself |
 | @astrojs/starlight | 0.42.6 | docs site only (ADR 0036); `postcss-nested` override for an audit fix |
 | @biomejs/biome | 2.5.15 | |
-| preact | 10.29.8 | not 11: `@astrojs/preact@6` peer is `^10.6.5` (we don't use the integration, but stay compatible) |
-| @preact/signals | 2.11.2 | the same version as the media library's (two copies break its picker: update both together) |
+| preact | ^10.29.8 (10.29.8 locked) | not 11: `@astrojs/preact@6` peer is `^10.6.5` (we don't use the integration, but stay compatible) |
+| @preact/signals | ^2.11.2 (2.11.2 locked) | a range, like `preact` (ADR 0044): two copies on a site break the media picker |
 | @atlaskit/pragmatic-drag-and-drop | 4.0.0 | + `-hitbox` 3.0.0; no provenance (ADR 0007) |
 | prosemirror-* | model 1.25.12, state 1.4.4, view 1.42.6, transform 1.12.2, commands 1.7.2, keymap 1.2.3, history 1.5.1, schema-list 1.5.1 | rich text editor; no provenance; no Meta libraries (user preference) (ADR 0012) |
 

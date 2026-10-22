@@ -177,10 +177,10 @@ importers:
         specifier: 3.0.0
         version: 3.0.0
       '@preact/signals':
-        specifier: 2.11.2
+        specifier: ^2.11.2
         version: 2.11.2(preact@10.29.8)
       preact:
-        specifier: 10.29.8
+        specifier: ^10.29.8
         version: 10.29.8(preact-render-to-string@6.8.0)
       prosemirror-commands:
         specifier: 1.7.2

@@ -1,7 +1,6 @@
 # 0043. StudioCMS 0.7.0: supported alongside 0.6, after the release-age gate
 
-- Status: Accepted (the user's decisions, 2026-10-19); install and full test run on or after
-  2026-10-22 19:47 UTC (the release-age gate)
+- Status: Accepted (the user's decisions, 2026-10-19); installed and tested 2026-10-22 (below)
 - Date: 2026-10-19
 
 ## Context
@@ -45,3 +44,12 @@ excludes 0.7. The playground and Tapestry carry StudioCMS patches (known issues 
 - New releases needed: media library 0.2.1 and tapestry-seo 0.2.1 (peer range); Tapestry's range goes
   into its next release; tapestry-menus starts with it.
 - The search API fix closes a draft-listing gap that we hadn't recorded.
+
+## Done (2026-10-22)
+
+Installed after the gate: StudioCMS 0.7.0 (dev) in every repo, `@studiocms/md` 0.5.1 in the playground, Astro
+7.4.1. The patches applied unchanged (renamed for the new versions); the playground's Astro patch was dropped
+because Astro 7.4 fixed the dev CSS leak itself. The audit found new advisories in StudioCMS's tree (dompurify,
+toml via `@effect/cli`, ip-address): fixed by refreshed lockfiles and an override for toml (reasons in
+`pnpm-workspace.yaml`). The playground's e2e suites pass; details in its devlog (session 47).
+

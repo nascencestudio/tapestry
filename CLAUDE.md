@@ -249,21 +249,21 @@ Dev site, e2e (`pnpm e2e`), budget and Docker: see `../tapestry-playground/CLAUD
 checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, then after each
 `pnpm build` here run `pnpm install` there (a `file:` dependency is a copy) and restart its dev server.
 
-## Pinned stack (2026-10-09; the playground's own site dependencies are in its CLAUDE.md)
+## Pinned stack (2026-10-22; the playground's own site dependencies are in its CLAUDE.md)
 
 | Package | Version | Note |
 | --- | --- | --- |
-| Node | ≥ 22.12 (dev: 22.23.3) | `.nvmrc`; 22.23.x has the 2026 security releases |
+| Node | ≥ 22.12 for sites (dev: 22.23.3; astro 7.4 needs ≥ 22.22) | `.nvmrc`; 22.23.x has the 2026 security releases |
 | pnpm | 12.4.2 | `packageManager` field |
-| astro | 7.3.5 | |
-| studiocms | 0.6.1 | |
-| @libsql/client | 0.18.0 | dev dependency; matches StudioCMS 0.6.1's database layer |
+| astro | 7.4.1 | |
+| studiocms | 0.7.0 | peers `^0.6.0 \|\| ^0.7.0` (ADR 0043) |
+| @libsql/client | 0.18.0 | dev dependency; matches StudioCMS 0.7.0's database layer |
 | typescript | 6.0.3 | not 7: `@astrojs/check` (playground) supports ≤ 6; keep the repos aligned |
-| vitest | 5.0.3 | pins `why-is-node-running@3.2.1` itself |
-| @astrojs/starlight | 0.42.5 | docs site only (ADR 0036); `postcss-nested` override for an audit fix |
-| @biomejs/biome | 2.5.14 | |
+| vitest | 5.0.5 | pins `why-is-node-running@3.2.1` itself |
+| @astrojs/starlight | 0.42.6 | docs site only (ADR 0036); `postcss-nested` override for an audit fix |
+| @biomejs/biome | 2.5.15 | |
 | preact | 10.29.8 | not 11: `@astrojs/preact@6` peer is `^10.6.5` (we don't use the integration, but stay compatible) |
-| @preact/signals | 2.11.2 | |
+| @preact/signals | 2.11.2 | the same version as the media library's (two copies break its picker: update both together) |
 | @atlaskit/pragmatic-drag-and-drop | 4.0.0 | + `-hitbox` 3.0.0; no provenance (ADR 0007) |
 | prosemirror-* | model 1.25.12, state 1.4.4, view 1.42.6, transform 1.12.2, commands 1.7.2, keymap 1.2.3, history 1.5.1, schema-list 1.5.1 | rich text editor; no provenance; no Meta libraries (user preference) (ADR 0012) |
 
@@ -359,7 +359,7 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 - Rich text components use `<RichText value={…} />` and style its output with `:global()`.
 - Python/sed edits that don't `assert` the old text exists can silently do nothing
   (a config edit was lost this way); check, or use the Edit tool.
-- StudioCMS `usePluginData()` insert/update don't persist in 0.6.1 (known issue #25); use
+- StudioCMS `usePluginData()` insert/update don't persist in 0.6.1 or 0.7.0 (known issue #25); use
   `SDKCoreJs.dbService.db` (Kysely) like `toolbar-store.ts`.
 - Plugin dashboard pages (`dashboardPages`) appear under Admin, not Plugins. The Plugins section
   lists only plugins with a `settingsPage`, linking to `/dashboard/plugins@<id>` (missing slash,

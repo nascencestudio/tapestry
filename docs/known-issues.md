@@ -357,6 +357,21 @@ resolved, and note the resolution in the devlog.
 - **Handled:** constrained editor inputs are detached from the form
   (`form="tapestry-detached"`); validation happens in the editor.
 
+### 41. StudioCMS 0.7's Markdown parser fails in production builds ("Cannot find native binding")
+- **Found:** 2026-10-22 (playground budget) · **Affects:** studiocms 0.7.0 with `@astrojs/node` (Astro 7.4) ·
+  **Severity:** breaking in production (logins and anything that loads StudioCMS's Markdown module fail)
+- StudioCMS 0.7.0 (and `@astrojs/markdown-satteri`) parse Markdown with `satteri`, which loads a per-platform
+  prebuilt binary (`@bruits/satteri-<platform>`) relative to its own package. The SSR build bundles `satteri`
+  into a server chunk (`dist/server/chunks/markdown_*.mjs`), where that lookup fails. Dev is fine (Vite
+  loads dependencies from `node_modules`). Same class of problem as the media library's sharp (#30).
+- Keeping it external alone isn't enough: pnpm doesn't hoist StudioCMS's dependencies, so `dist/` can't
+  resolve `satteri` ("Cannot find package 'satteri'").
+- **Workaround:** `satteri` as a direct site dependency at StudioCMS's version (0.10.5), plus
+  `vite.ssr.external: ['satteri']` (README, "Production builds on StudioCMS 0.7"). Checked in the playground
+  (macOS build + budget) and in `node:22.23.3-bookworm-slim` on linux/amd64 (the `linux-x64-gnu` binary
+  installs and loads). Keep the direct dependency's version in step with StudioCMS's.
+- **Todo:** report upstream (when the user asks); remove when StudioCMS keeps `satteri` external itself.
+
 ### 40. With mail on, a failed notification email fails every dashboard save
 - **Found:** 2026-10-20 (webforms e2e) · **Affects:** studiocms 0.6.1 and 0.7.0 · **Severity:** high when SMTP
   is wrong or down · **Patched**

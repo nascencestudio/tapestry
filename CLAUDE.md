@@ -299,6 +299,8 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
   `tapestryComponentRegistry()` into their config (one line).
 - Production builds need `vite.build.cssMinify: 'esbuild'` because of a StudioCMS
   CSS bug (see [known issues](docs/known-issues.md)).
+- StudioCMS 0.7 sites need `satteri` as a direct dependency plus `vite.ssr.external: ['satteri']`, or the
+  production server can't load its native binary (#41, README). Dev doesn't show it: test with a production build.
 - New StudioCMS pages show their content editor only after the page is created
   (create first, then edit), and the editor sits on the **Page Content** tab.
 - StudioCMS saves any unknown **named** form field as plugin data, so editor

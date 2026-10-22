@@ -53,3 +53,9 @@ because Astro 7.4 fixed the dev CSS leak itself. The audit found new advisories 
 toml via `@effect/cli`, ip-address): fixed by refreshed lockfiles and an override for toml (reasons in
 `pnpm-workspace.yaml`). The playground's e2e suites pass; details in its devlog (session 47).
 
+The production build then failed: `satteri` bundled into the server can't find its native binary (known issue
+#41). Sites add `satteri` as a direct dependency (the version reviewed above) and keep it external
+(`vite.ssr.external`); the README says so. With that, the playground's performance budget passes, and the
+binary loads on the Docker image's base (linux/amd64). The full Docker image build waits until the playground
+uses the released plugins (its `file:` dependencies are outside the build context).
+

@@ -139,6 +139,25 @@ version is no longer installed.
 Then `pnpm install`. (With npm, use [patch-package](https://github.com/ds300/patch-package)
 with the same file.)
 
+## Production builds on StudioCMS 0.7
+
+StudioCMS 0.7 parses Markdown with `satteri`, which loads a prebuilt native binary. Bundled into
+the server build, it can't find that binary, and the server fails with "Cannot find native binding"
+(logging in fails too). Install it as a direct dependency, at the version StudioCMS uses, and keep it
+out of the bundle:
+
+```sh
+pnpm add satteri@0.10.5
+```
+
+```js
+// astro.config.mjs
+export default defineConfig({
+  vite: { ssr: { external: ["satteri"] } },
+  // …
+});
+```
+
 ## Documentation
 
 - [Defining components](docs/guides/defining-components.md): prop types, slots, lists, links, media, islands, migrations, permissions

@@ -357,6 +357,22 @@ resolved, and note the resolution in the devlog.
 - **Handled:** constrained editor inputs are detached from the form
   (`form="tapestry-detached"`); validation happens in the editor.
 
+### 43. A page with a tag or category fails to load (and so does every page list)
+- **Found:** 2026-10-22 (the user) · **Affects:** `@withstudiocms/sdk` 0.4.2 (studiocms 0.6.1 and 0.7.0) ·
+  **Severity:** breaking for sites using taxonomy · **Patched** (playground only)
+- Saving a page with a tag shows "Failed to parse data during page update", but the save went through: the page
+  form and its payload schema use `string[]` for `tags` / `categories`, so the page stores `["475320160"]`. The
+  SDK's page collector reads them with `parseIdNumberArray` (numbers only), so from then on the page fails to
+  load (public page and editor: 500), and so does anything that lists pages (with the playground's data, even
+  logins). The update handler reports any `ParseError` with that one message.
+- **Fix:** the playground's `@withstudiocms/sdk` patch: `parseIdNumberArray` accepts integers and numeric
+  strings (only page tags and categories use it). Already stored pages load again; no data change needed.
+  `e2e/taxonomy.e2e.mjs` saves a page with a tag and a category through the edit form and checks the stored row,
+  the public page and the form.
+- Not in the patch Tapestry ships (it has no SDK part); sites using taxonomy need this fix.
+- **Todo:** report upstream (when the user asks). Upstream fix: one id type for page tags/categories (the
+  payload, the form and the collector).
+
 ### 42. New tags and categories can't be created (Dashboard → Taxonomy)
 - **Found:** 2026-10-22 (the user) · **Affects:** studiocms 0.6.1 and 0.7.0 · **Severity:** high for sites using
   taxonomy (nothing can be created; editing works) · **Patched** (playground only)

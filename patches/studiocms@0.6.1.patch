@@ -146,3 +146,28 @@ index 37e173b..646209a 100644
  
  			if (!config) {
  				return yield* new DashboardAPIError({
+diff --git a/frontend/pages/[dashboard]/taxonomy/shared-client.ts b/frontend/pages/[dashboard]/taxonomy/shared-client.ts
+index ccab9aeee0aad1e01327f01d6d413e3d38598e07..e7e5ac43c089075f1f0f89e24105e91444694e12 100644
+--- a/frontend/pages/[dashboard]/taxonomy/shared-client.ts
++++ b/frontend/pages/[dashboard]/taxonomy/shared-client.ts
+@@ -113,10 +113,16 @@ export const parseFormDataToJson = <
+ 	// Add the type to the entry
+ 	entry.type = type;
+ 
+-	if ('id' in entry) {
+-		if (entry.id === 0) {
+-			entry.id = undefined;
+-		}
++	// A new entry has an empty id field (0 here). Keep 0: the payload schema requires a number, so
++	// undefined failed to encode ("Expected number, actual undefined") and nothing could be created.
++	// The taxonomy handler gives an id of 0 or less a new random id.
++	if (!('id' in entry) || entry.id === null) {
++		entry.id = 0;
++	}
++	// The meta field (MetaContainer) only reaches the form after an entry changes, and the schema requires
++	// it: without meta entries the form failed with `["meta"] is missing`.
++	if (!('meta' in entry) || entry.meta === null) {
++		entry.meta = {};
+ 	}
+ 
+ 	// Type assertion to the expected return type

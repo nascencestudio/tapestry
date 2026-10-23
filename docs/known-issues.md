@@ -345,7 +345,8 @@ resolved, and note the resolution in the devlog.
 - Deleting any real user fails with "User with ID … is an internal user and cannot be
   deleted.": `_isNotGhostUser` fails when the id is **not** the ghost user's (`!==`
   instead of `===`), so only the internal ghost user would be deletable.
-- **Handled (patch):** the comparison is flipped (`patches/@withstudiocms__sdk@0.4.2.patch`).
+- **Handled (patch):** the comparison is flipped (`patches/@withstudiocms__sdk@0.4.2.patch`; shipped with Tapestry
+  since 2026-10-22 together with #43's fix, README).
   Report upstream (when the user asks).
 
 ### 36. Editor inputs inside StudioCMS's form can silently block Save
@@ -359,23 +360,23 @@ resolved, and note the resolution in the devlog.
 
 ### 43. A page with a tag or category fails to load (and so does every page list)
 - **Found:** 2026-10-22 (the user) · **Affects:** `@withstudiocms/sdk` 0.4.2 (studiocms 0.6.1 and 0.7.0) ·
-  **Severity:** breaking for sites using taxonomy · **Patched** (playground only)
+  **Severity:** breaking for sites using taxonomy · **Patched** (shipped)
 - Saving a page with a tag shows "Failed to parse data during page update", but the save went through: the page
   form and its payload schema use `string[]` for `tags` / `categories`, so the page stores `["475320160"]`. The
   SDK's page collector reads them with `parseIdNumberArray` (numbers only), so from then on the page fails to
   load (public page and editor: 500), and so does anything that lists pages (with the playground's data, even
   logins). The update handler reports any `ParseError` with that one message.
-- **Fix:** the playground's `@withstudiocms/sdk` patch: `parseIdNumberArray` accepts integers and numeric
+- **Fix:** `patches/@withstudiocms__sdk@0.4.2.patch` (shipped with Tapestry since 2026-10-22, README; the playground uses the same file): `parseIdNumberArray` accepts integers and numeric
   strings (only page tags and categories use it). Already stored pages load again; no data change needed.
   `e2e/taxonomy.e2e.mjs` saves a page with a tag and a category through the edit form and checks the stored row,
   the public page and the form.
-- Not in the patch Tapestry ships (it has no SDK part); sites using taxonomy need this fix.
+- Not known upstream (2026-10-22: no issue or PR; `main` still reads numbers only).
 - **Todo:** report upstream (when the user asks). Upstream fix: one id type for page tags/categories (the
   payload, the form and the collector).
 
 ### 42. New tags and categories can't be created (Dashboard → Taxonomy)
 - **Found:** 2026-10-22 (the user) · **Affects:** studiocms 0.6.1 and 0.7.0 · **Severity:** high for sites using
-  taxonomy (nothing can be created; editing works) · **Patched** (playground only)
+  taxonomy (nothing can be created; editing works) · **Patched** (shipped)
 - The create form fails in the browser with "Taxonomy Tag Data └─ ["id"] └─ Expected number, actual undefined".
   The payload schema (`TaxonomyTagData` / `TaxonomyCategoryData` in `@withstudiocms/api-spec`) spreads the
   tables' `Select` fields, so `id` and `meta` are required. The form's `parseFormDataToJson()`
@@ -383,9 +384,10 @@ resolved, and note the resolution in the devlog.
   the typed API client refuses to encode it. The server handler would give an id of 0 or less a new random
   id, but never gets the request. Second bug behind it: the meta field (`MetaContainer`, a form-associated
   element) sets its value only after an entry changes, so without meta entries `meta` is missing too.
-- **Fix:** the playground's StudioCMS patch: the form sends `id: 0` and `meta: {}` when they're empty.
-  `e2e/taxonomy.e2e.mjs` creates a tag and a category through the real forms and edits one. Not in the
-  patch Tapestry ships (unrelated to Tapestry); sites using taxonomy can copy the hunk.
+- **Fix:** the StudioCMS patches Tapestry ships (`patches/studiocms@0.6.1.patch`, `@0.7.0.patch`, since
+  2026-10-22) and the playground's: the form sends `id: 0` and `meta: {}` when they're empty.
+  `e2e/taxonomy.e2e.mjs` creates a tag and a category through the real forms and edits one. Not known
+  upstream (2026-10-22: no issue or PR; `main` unchanged).
 - **Todo:** report upstream (when the user asks). Upstream fix: make `id` optional (and `meta` default to
   `{}`) in the create payload, or fix the form.
 

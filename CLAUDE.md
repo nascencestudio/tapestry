@@ -104,7 +104,9 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 ├── pnpm-workspace.yaml        ← supply-chain hardening (read the comments); workspace = root + website
 ├── LICENSE                    ← MIT © Nascence Studio
 ├── patches/studiocms@0.6.1.patch, studiocms@0.7.0.patch ← shipped to users (component scripts #37, dashboard pages #38,
-│                                mail #39/#40); same changes for each supported StudioCMS version; not applied here
+│                                mail #39/#40, taxonomy create #42); same changes for each supported StudioCMS version; not applied here
+├── patches/@withstudiocms__sdk@0.4.2.patch ← shipped too (page tags/categories #43, user deletion #35); a copy of the
+│                                playground's (pnpm allows one patch per package: keep them identical)
 ├── .github/workflows/         ← ci.yml (lint, audit, build, types, tests, pack, docs build; ADR 0020),
 │                                release.yml (stages an npm release with provenance; approve on npmjs.com; ADR 0035),
 │                                docs.yml (GitHub Pages; ADR 0036); dependabot.yml

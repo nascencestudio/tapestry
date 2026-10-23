@@ -102,9 +102,10 @@ in rich text; option `mediaLibrary`) and
 [`@nascencestudio/tapestry-seo`](https://github.com/nascencestudio/tapestry-seo) (the editor's **SEO**
 button; option `seo`).
 
-## Apply the StudioCMS patch that ships with Tapestry
+## Apply the StudioCMS patches that ship with Tapestry
 
-StudioCMS 0.6.1 and 0.7.0 have bugs this package's small patch fixes (one file per version):
+StudioCMS 0.6.1 and 0.7.0 have bugs that the small patches in this package fix. One patch is for
+StudioCMS itself (one file per version):
 
 - It removes every `<script>` that components render from page content, so islands
   (`client: 'visible'` etc.) never become interactive and `<script>`s in your components
@@ -116,25 +117,35 @@ StudioCMS 0.6.1 and 0.7.0 have bugs this package's small patch fixes (one file p
   on, any dashboard save fails ("Failed to send notification") whenever a notification email
   can't be sent. The fix updates saved settings, and logs failed notifications instead of
   failing the save.
+- Taxonomy: new tags and categories can't be created ("Expected number, actual undefined").
 
-Copy the one for your StudioCMS version (here 0.7.0; for 0.6.1 use `studiocms@0.6.1.patch`):
+The other is for StudioCMS's SDK, `@withstudiocms/sdk` 0.4.2 (used by both StudioCMS versions):
+
+- Once a page has a tag or category, it fails to load (error 500), and so can every page that
+  lists pages, the dashboard login included. Saving shows "Failed to parse data during page update".
+- Users can't be deleted ("is an internal user and cannot be deleted").
+
+Copy the StudioCMS patch for your version (here 0.7.0; for 0.6.1 use `studiocms@0.6.1.patch`)
+and the SDK patch:
 
 ```sh
 mkdir -p patches
 cp node_modules/@nascencestudio/tapestry/patches/studiocms@0.7.0.patch patches/
+cp node_modules/@nascencestudio/tapestry/patches/@withstudiocms__sdk@0.4.2.patch patches/
 ```
 
 ```yaml
 # pnpm-workspace.yaml
 patchedDependencies:
   studiocms@0.7.0: patches/studiocms@0.7.0.patch
+  '@withstudiocms/sdk@0.4.2': patches/@withstudiocms__sdk@0.4.2.patch
 ```
 
-When you upgrade StudioCMS, switch to the matching file: pnpm stops the install if a patch's
+When you upgrade StudioCMS, switch to the matching files: pnpm stops the install if a patch's
 version is no longer installed.
 
 Then `pnpm install`. (With npm, use [patch-package](https://github.com/ds300/patch-package)
-with the same file.)
+with the same files.)
 
 ## Production builds on StudioCMS 0.7
 

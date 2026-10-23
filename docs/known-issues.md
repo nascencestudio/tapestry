@@ -357,6 +357,22 @@ resolved, and note the resolution in the devlog.
 - **Handled:** constrained editor inputs are detached from the form
   (`form="tapestry-detached"`); validation happens in the editor.
 
+### 42. New tags and categories can't be created (Dashboard → Taxonomy)
+- **Found:** 2026-10-22 (the user) · **Affects:** studiocms 0.6.1 and 0.7.0 · **Severity:** high for sites using
+  taxonomy (nothing can be created; editing works) · **Patched** (playground only)
+- The create form fails in the browser with "Taxonomy Tag Data └─ ["id"] └─ Expected number, actual undefined".
+  The payload schema (`TaxonomyTagData` / `TaxonomyCategoryData` in `@withstudiocms/api-spec`) spreads the
+  tables' `Select` fields, so `id` and `meta` are required. The form's `parseFormDataToJson()`
+  (`frontend/pages/[dashboard]/taxonomy/shared-client.ts`) turns the empty id field into `undefined`, and
+  the typed API client refuses to encode it. The server handler would give an id of 0 or less a new random
+  id, but never gets the request. Second bug behind it: the meta field (`MetaContainer`, a form-associated
+  element) sets its value only after an entry changes, so without meta entries `meta` is missing too.
+- **Fix:** the playground's StudioCMS patch: the form sends `id: 0` and `meta: {}` when they're empty.
+  `e2e/taxonomy.e2e.mjs` creates a tag and a category through the real forms and edits one. Not in the
+  patch Tapestry ships (unrelated to Tapestry); sites using taxonomy can copy the hunk.
+- **Todo:** report upstream (when the user asks). Upstream fix: make `id` optional (and `meta` default to
+  `{}`) in the create payload, or fix the form.
+
 ### 41. StudioCMS 0.7's Markdown parser fails in production builds ("Cannot find native binding")
 - **Found:** 2026-10-22 (playground budget) · **Affects:** studiocms 0.7.0 with `@astrojs/node` (Astro 7.4) ·
   **Severity:** breaking in production (logins and anything that loads StudioCMS's Markdown module fail)

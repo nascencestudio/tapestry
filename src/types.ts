@@ -109,7 +109,10 @@ export interface SelectProp extends PropBase {
 	 * (letters, digits, `_`, `-`); `options` may be empty.
 	 */
 	optionsUrl?: string;
-	default?: string;
+	/** Several choices (ADR 0046): the value is a list of option values, in the order picked. */
+	multiple?: boolean;
+	/** One option value; with `multiple`, a list of them. */
+	default?: string | string[];
 }
 
 export interface RichTextProp extends PropBase {
@@ -329,7 +332,7 @@ export type ComponentManifest = Record<string, ComponentManifestEntry>;
 // ---------------------------------------------------------------------------
 
 /** A value of a single-value prop (or of a field in an object or list). */
-export type FieldValue = string | number | boolean | RichTextDoc | LinkValue;
+export type FieldValue = string | number | boolean | RichTextDoc | LinkValue | string[];
 
 /** An `object` prop's value, or one `list` item: field values by field name. */
 export type ObjectValue = { [field: string]: FieldValue };
@@ -356,6 +359,11 @@ export interface TapestryNode {
 	 * slots in the order the parent's definition lists them.
 	 */
 	slot?: string;
+	/**
+	 * Template components only (ADR 0046): the display modes it's shown in (absent: Full only). A content
+	 * area in several modes holds separate content for each. Ignored outside template bodies.
+	 */
+	modes?: string[];
 	/** Prop values keyed by prop name. */
 	props: Record<string, PropValue>;
 	/** Child nodes. Only allowed when the component sets `acceptsChildren` or has `slots`. */

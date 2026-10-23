@@ -5,6 +5,7 @@
  * (`template`), or, without one, its own `header`/`footer`. Pure: parsing, validation, areas, merging.
  */
 import { pagePath } from './access.js';
+import { FULL, modeSlot, nodeModes, parseModeSlot } from './modes.js';
 import { parseStoredPage, type StoredPage } from './revisions.js';
 import { canonicalNode } from './slots.js';
 import type { ComponentManifest, TapestryDocument, TapestryNode } from './types.js';
@@ -46,10 +47,15 @@ export interface PartRecord extends PartMeta {
 	page: StoredPage;
 }
 
-/** A content area of a template: its key (the slot pages use) and its name. */
+/** A content area of a template: its key (the slot pages use), its name, and its display modes. */
 export interface ContentArea {
 	key: string;
 	name: string;
+	/**
+	 * The display modes it's shown in (ADR 0046), within its containers' modes, in the order set; absent:
+	 * Full only. Pages hold separate content for each (`modeSlot()`).
+	 */
+	modes?: string[];
 }
 
 /** A new id: prefix + 16 lowercase base-36 characters from `random` (crypto in practice). */
@@ -115,16 +121,22 @@ export function versionFor(record: { page: StoredPage }, preview: boolean): Tape
 /** The content areas of a template body, in document order (one per key). */
 export function templateAreas(doc: TapestryDocument | null): ContentArea[] {
 	const areas: ContentArea[] = [];
-	const walk = (nodes: readonly TapestryNode[]) => {
+	// A node shows only in the modes its containers show in too.
+	const walk = (nodes: readonly TapestryNode[], within: readonly string[] | null) => {
 		for (const node of nodes) {
+			const modes = within ? nodeModes(node).filter((m) => within.includes(m)) : [...nodeModes(node)];
 			if (node.type === AREA_TYPE) {
 				const key = areaKey(node.props.name);
-				if (!areas.some((a) => a.key === key)) areas.push({ key, name: cleanName(node.props.name) || 'Main' });
+				if (!areas.some((a) => a.key === key)) {
+					const area: ContentArea = { key, name: cleanName(node.props.name) || 'Main' };
+					if (!(modes.length === 1 && modes[0] === FULL)) area.modes = modes;
+					areas.push(area);
+				}
 			}
-			if (node.children) walk(node.children);
+			if (node.children) walk(node.children, modes);
 		}
 	};
-	if (doc) walk(doc.root);
+	if (doc) walk(doc.root, null);
 	return areas;
 }
 
@@ -134,7 +146,17 @@ export function templateAreas(doc: TapestryDocument | null): ContentArea[] {
  * collisions with page ids; the canvas never selects them). Page nodes in an area the template
  * doesn't have are left out. Areas' own children in the template are replaced by the page's.
  */
-export function mergeTemplate(template: TapestryDocument, page: TapestryDocument): TapestryDocument {
+export function mergeTemplate(
+	template: TapestryDocument,
+	page: TapestryDocument,
+	options: {
+		/** The display mode to render (ADR 0046): template components not shown in it are left out. */
+		mode?: string;
+		/** The editor's canvas: the mode each area shows (its tab), by area key; others show `mode`. */
+		tabs?: Readonly<Record<string, string>>;
+	} = {},
+): TapestryDocument {
+	const mode = options.mode ?? FULL;
 	const byArea = new Map<string, TapestryNode[]>();
 	for (const node of page.root) {
 		if (node.slot === undefined) continue;
@@ -142,19 +164,33 @@ export function mergeTemplate(template: TapestryDocument, page: TapestryDocument
 		byArea.set(node.slot, [...(byArea.get(node.slot) ?? []), canonicalNode(rest)]);
 	}
 	const used = new Set<string>();
-	const copy = (nodes: readonly TapestryNode[]): TapestryNode[] =>
-		nodes.map((node) => {
+	// Template nodes keep their `modes` (the canvas labels area tabs from them); page nodes never carry any.
+	const copy = (nodes: readonly TapestryNode[], within: readonly string[] | null): TapestryNode[] =>
+		nodes.flatMap((node) => {
 			const id = `${TEMPLATE_NODE_PREFIX}${node.id}`.slice(0, 64);
+			const modes = within ? nodeModes(node).filter((m) => within.includes(m)) : [...nodeModes(node)];
 			if (node.type === AREA_TYPE) {
 				const key = areaKey(node.props.name);
+				// The area's tab in the canvas, if it's one of its modes; else the mode being rendered.
+				const tab = options.tabs?.[key];
+				const shown = tab && modes.includes(tab) ? tab : mode;
+				if (!modes.includes(shown)) return [];
 				// One area per key gets the content (a duplicate shows empty).
-				const children = used.has(key) ? [] : (byArea.get(key) ?? []);
+				const children = used.has(key) ? [] : (byArea.get(modeSlot(key, shown)) ?? []);
 				used.add(key);
-				return canonicalNode({ ...node, id, children });
+				return [canonicalNode({ ...node, id, children })];
 			}
-			return canonicalNode({ ...node, id, ...(node.children ? { children: copy(node.children) } : {}) });
+			if (!modes.includes(mode)) return [];
+			return [canonicalNode({ ...node, id, ...(node.children ? { children: copy(node.children, modes) } : {}) })];
 		});
-	return { version: 1, root: copy(template.root) };
+	return { version: 1, root: copy(template.root, null) };
+}
+
+/** Whether a page has anything in `mode`'s content areas of this template (an empty teaser shows a card). */
+export function hasModeContent(template: TapestryDocument, page: TapestryDocument, mode: string): boolean {
+	const areas = templateAreas(template).filter((a) => (a.modes ?? [FULL]).includes(mode));
+	const slots = new Set(areas.map((a) => modeSlot(a.key, mode)));
+	return page.root.some((node) => node.slot !== undefined && slots.has(node.slot));
 }
 
 /**
@@ -170,9 +206,12 @@ export function assignAreas(
 		const keys = new Set(choice.areas.map((a) => a.key));
 		const first = choice.areas[0]?.key;
 		const root = doc.root.map((node) => {
-			if (node.slot !== undefined && keys.has(node.slot)) return node;
+			// A display mode's content (`main.teaser`, ADR 0046) stays with its area, or moves with it to the
+			// first area: a teaser never becomes Full content. It's kept even if the area lacks the mode.
+			const parsed = node.slot !== undefined ? parseModeSlot(node.slot) : null;
+			if (parsed && keys.has(parsed.area)) return node;
 			if (!first) return node;
-			return canonicalNode({ ...node, slot: first });
+			return canonicalNode({ ...node, slot: modeSlot(first, parsed?.mode ?? FULL) });
 		});
 		return { version: 1, template: choice.template, root };
 	}

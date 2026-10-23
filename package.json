@@ -1,6 +1,6 @@
 {
   "name": "@nascencestudio/tapestry",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Drag-and-drop component page building for Astro + StudioCMS",
   "license": "MIT",
   "author": "Nascence Studio",
@@ -31,7 +31,12 @@
       "types": "./dist/links.d.ts",
       "default": "./dist/links.js"
     },
+    "./modes": {
+      "types": "./dist/runtime/modes-store.d.ts",
+      "default": "./dist/runtime/modes-store.js"
+    },
     "./AdminBar.astro": "./dist/runtime/AdminBar.astro",
+    "./Document.astro": "./dist/runtime/Document.astro",
     "./Region.astro": "./dist/runtime/Region.astro",
     "./RichText.astro": "./dist/runtime/RichText.astro"
   },

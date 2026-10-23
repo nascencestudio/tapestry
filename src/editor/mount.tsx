@@ -12,9 +12,11 @@
 import { signal } from '@preact/signals';
 import { render } from 'preact';
 import { pagePath } from '../access.js';
+import type { DisplayMode } from '../modes.js';
 import { lockedTypes } from '../permissions.js';
 import { applyDueSchedule, DEFAULT_HISTORY_LIMIT, parseStoredPage, workingDocument } from '../revisions.js';
 import { PARTS_ROUTE } from '../routes.js';
+import { PAGE_PARAM } from '../runtime/canvas-mode.js';
 import type { Language } from '../translations.js';
 import type { ComponentManifest, TapestryDocument } from '../types.js';
 import { App } from './App.js';
@@ -62,6 +64,16 @@ export interface MountOptions {
 	canvasPage?: string | null;
 	/** Templates and parts for the page editor's Template menu (and the templates' content areas). */
 	templateCatalog?: TemplateCatalog;
+	/** The site's display modes (ADR 0046; absent or empty when they're off). */
+	modes?: readonly DisplayMode[];
+}
+
+/** The render endpoint, with the page being edited (lists leave it out, ADR 0046). */
+function renderUrlFor(route: string, pageId: string | undefined): string {
+	if (!pageId) return route;
+	const url = new URL(route, window.location.origin);
+	url.searchParams.set(PAGE_PARAM, pageId);
+	return `${url.pathname}${url.search}`;
 }
 
 /** Mount the editor. Safe to call repeatedly; returns a cleanup function (or undefined if already mounted). */
@@ -93,6 +105,7 @@ export function mountEditor(
 		knownVersions: () => knownVersions(),
 		templateAreas: new Map((options.templateCatalog?.templates ?? []).map((t) => [t.id, t.areas])),
 		editing: options.subject?.kind ?? 'page',
+		modes: options.modes ?? [],
 	});
 	const publishing = createPublishing({
 		store,
@@ -150,7 +163,7 @@ export function mountEditor(
 			unreadableContent={parsed.unreadable ? raw : undefined}
 			publishing={publishing}
 			pageUrl={pageUrl}
-			renderUrl={options.renderRoute ?? '/_tapestry/render'}
+			renderUrl={renderUrlFor(options.renderRoute ?? '/_tapestry/render', options.subject ? undefined : options.pageId)}
 			form={field.form}
 			canPublish={options.canPublish ?? true}
 			publishRole={options.publishRole}

@@ -1,6 +1,6 @@
 # 0046. Display modes: templates that show a page in more than one way
 
-- Status: Proposed (2026-10-23, for the user's review)
+- Status: Accepted (the user, 2026-10-23); built in Tapestry 0.7.0 (below)
 - Date: 2026-10-23
 
 ## Context
@@ -71,3 +71,27 @@ the renderer. So the machinery lives here, inert until a companion supplies the 
   (Shown in, tabs, foreign content) and a11y states (tabs).
 - Template Management's body editor gains a "Preview as: Full | Teaser" switch later, if wanted (discussed; not
   in this step).
+
+## Built (2026-10-23)
+
+As decided, with these details settled while building:
+
+- **Where the modes live:** in Tapestry's plugin data (`@nascencestudio/tapestry-display-modes`, only the added
+  modes), switched on by `config.displayModes` when `@nascencestudio/tapestry-fabric` is installed (option
+  `displayModes: false` turns it off). Fabric's page edits them through `@nascencestudio/tapestry/modes`
+  (`loadModes`, `addMode`, `renameMode`, `deleteMode`, `loadModeUsage`, `listTemplateChoices`). So the editor,
+  validator and renderer never load Fabric's code.
+- **`modes` on nodes** is validated wherever it appears (unique keys, Full alone not stored) and only used in
+  template bodies: a component copied from a template to a page keeps it harmlessly.
+- **Tabs** are drawn by the canvas script on the area labels (`Area.astro` is unchanged); the server only picks
+  each area's content from `tapestry-tabs`. Switching a tab clears a selection in the area's other tab, and
+  click-to-add goes into the tab shown. Selecting a component in a mode's content switches its area's tab.
+- **Lists' items** are rendered with `@nascencestudio/tapestry/Document.astro`; after each render the canvas
+  strips editor markers inside `<tapestry-foreign>`.
+- **For companions** (`@nascencestudio/tapestry/page`): `listPagesForLists()` (visible pages with categories,
+  tags, template, published date, language group, published document), `pageInMode()`, `pageText()`, and
+  `currentPageId()` (set by `getPage()`; the editor's render requests send `tapestry-page`). `nodesText()` from
+  the main entry.
+- **`select` with `multiple`:** chips with an autocompleting box (`ChipsField`, a native `<datalist>`); also
+  used for "Shown in".
+- **Not built:** the "Preview as" switch in the template editor (later, if wanted).

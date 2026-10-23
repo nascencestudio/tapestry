@@ -1,0 +1,26 @@
+---
+/**
+ * `<Document document={…} />`: renders a Tapestry document inside a component (ADR 0046), e.g. a page
+ * shown in a list, through the same pipeline as page content (StudioCMS renderer → sanitizer → registry →
+ * Node.astro). In the editor's canvas it's wrapped in `<tapestry-foreign>` (`display: contents`): it
+ * belongs to another page, so the canvas never selects, edits or drops into anything inside.
+ */
+/// <reference types="studiocms/v/types" />
+import { StudioCMSRenderer } from 'studiocms:renderer';
+import type { TapestryDocument } from '../types.js';
+import { FOREIGN_ELEMENT, isCanvasMode } from './canvas-mode.js';
+
+interface Props {
+	document: TapestryDocument | null | undefined;
+}
+
+const { document } = Astro.props;
+const Foreign = FOREIGN_ELEMENT;
+const canvas = isCanvasMode(Astro.locals);
+// biome-ignore lint/suspicious/noExplicitAny: minimal page shape the StudioCMS renderer reads
+const data: any = document
+	? { package: 'tapestry/canvas', augments: [], defaultContent: { content: JSON.stringify(document) } }
+	: null;
+---
+
+{data && (canvas ? <Foreign style="display: contents"><StudioCMSRenderer data={data} /></Foreign> : <StudioCMSRenderer data={data} />)}

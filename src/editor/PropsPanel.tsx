@@ -1,7 +1,9 @@
 import { createContext } from 'preact';
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { FULL, nodeModes } from '../modes.js';
 import type { MediaItem, MediaProp, PropDefinition, PropValue, TapestryNode } from '../types.js';
 import { LIMITS, validatePropValue } from '../validate.js';
+import { ChipsField } from './ChipsField.js';
 import { canvasTextTargets } from './canvas/inline.js';
 import { UI_ICONS } from './icons.js';
 import { LinkField } from './LinkField.js';
@@ -10,7 +12,7 @@ import { savePattern } from './patterns-client.js';
 import { preloadRichText, type RichTextModule, richTextModule } from './richtext-loader.js';
 import { ListField, ObjectField } from './StructuredFields.js';
 import type { EditorStore } from './store.js';
-import { findNode, nodeSummary, setNodeLabel, updateProps } from './tree.js';
+import { findNode, nodeSummary, setNodeLabel, setNodeModes, updateProps } from './tree.js';
 
 /**
  * `coalesce`: a key that merges quick successive changes into one undo step
@@ -296,6 +298,24 @@ function SelectField({
 		};
 	}, [def.optionsUrl]);
 	const options = [...def.options, ...(remote ?? []).filter((o) => !def.options.some((s) => s.value === o.value))];
+	if (def.multiple) {
+		// Several choices (ADR 0046): chips, added through an autocompleting text box.
+		const chosen = Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+		return (
+			<div {...(remote === null ? { 'data-tapestry-options-loading': '' } : {})}>
+				<ChipsField
+					id={id}
+					options={options}
+					value={remote === null ? [] : chosen}
+					onChange={(next) => onChange(next.length > 0 ? next : undefined)}
+					labelledBy={`${id}-label`}
+					{...(typeof a11y['aria-describedby'] === 'string' ? { describedBy: a11y['aria-describedby'] } : {})}
+					placeholder={remote === null ? 'Loading…' : options.length === 0 ? 'Nothing to choose' : 'Type to add…'}
+					disabled={remote === null}
+				/>
+			</div>
+		);
+	}
 	const current = typeof value === 'string' ? value : '';
 	// A value that's no longer offered (e.g. a deleted menu) stays visible instead of silently changing.
 	const missing = current && remote !== null && !options.some((o) => o.value === current);
@@ -435,6 +455,36 @@ function NodeLabelField({ store, node }: { store: EditorStore; node: TapestryNod
 }
 
 /**
+ * "Shown in" (ADR 0046): the display modes a template component is shown in. Only in the template
+ * editor, and only when display modes are on. At least one; new components are in Full.
+ */
+function NodeModesField({ store, node }: { store: EditorStore; node: TapestryNode }) {
+	const id = `tp-node-modes-${node.id}`;
+	const isArea = node.type === 'tapestry-area';
+	return (
+		<div class="tp-field tp-field--modes" data-tapestry-modes-field>
+			<span id={`${id}-label`} class="tp-field__label">
+				Shown in
+			</span>
+			<ChipsField
+				id={id}
+				options={store.modes.map((m) => ({ value: m.key, label: m.name }))}
+				value={nodeModes(node)}
+				minimum={1}
+				labelledBy={`${id}-label`}
+				describedBy={`${id}-help`}
+				onChange={(next) => store.commit(setNodeModes(store.doc.peek(), node.id, next.length > 0 ? next : [FULL]))}
+			/>
+			<p id={`${id}-help`} class="tp-field__help">
+				{isArea
+					? 'Pages fill in this area for each display mode (a tab per mode). Full is the page itself.'
+					: 'Display modes this component appears in. Full is the page itself; Teaser is how it looks in lists.'}
+			</p>
+		</div>
+	);
+}
+
+/**
  * "Save as pattern…": saves the selected component (with everything inside it)
  * to the library's Patterns, under a name. The page itself doesn't change.
  */
@@ -557,6 +607,9 @@ export function PropsPanel({ store }: { store: EditorStore }) {
 			{path && <p class="tp-muted tp-props__path">In {path}</p>}
 			{entry?.description && <p class="tp-muted">{entry.description}</p>}
 			<NodeLabelField key={node.id} store={store} node={node} />
+			{store.editing === 'template' && store.modes.length > 0 && (
+				<NodeModesField key={`modes-${node.id}`} store={store} node={node} />
+			)}
 			<SavePattern key={`pattern-${node.id}`} store={store} node={node} />
 			{props.length === 0 && <p class="tp-muted">This component has no settings.</p>}
 			{locked && (

@@ -6,6 +6,7 @@
  * old documents. Operations that would produce an invalid tree (a node inside
  * itself, children under a component that doesn't accept them) return `null`.
  */
+import { cleanNodeModes, modeSlot, parseModeSlot } from '../modes.js';
 import { richTextFromPlain, richTextToPlain } from '../richtext.js';
 import { canonicalNode, childAreas, firstArea, hasArea, hasChildAreas, ROOT_ENTRY, sortByArea } from '../slots.js';
 import type {
@@ -324,11 +325,16 @@ export function insertionTargetFor(
 	doc: TapestryDocument,
 	manifest: ComponentManifest,
 	selectedId: string | null,
+	/** The canvas's area tabs (ADR 0046): the first area's content for the mode its tab shows. */
+	tabs: Readonly<Record<string, string>> = {},
 ): Target {
 	const selected = selectedId ? findNode(doc, selectedId) : null;
 	if (!selected) {
 		// The end of the page, or of its first content area when it uses a template.
-		const area = firstArea(manifest[ROOT_ENTRY]);
+		let area = firstArea(manifest[ROOT_ENTRY]);
+		const base = area !== undefined ? parseModeSlot(area)?.area : undefined;
+		const tab = base !== undefined ? tabs[base] : undefined;
+		if (base !== undefined && tab && hasArea(manifest[ROOT_ENTRY], modeSlot(base, tab))) area = modeSlot(base, tab);
 		return area === undefined
 			? { parentId: null, index: doc.root.length }
 			: { parentId: null, index: doc.root.length, slot: area };
@@ -446,6 +452,17 @@ export function setNodeLabel(doc: TapestryDocument, id: string, label: string): 
 	if ((location.node.label ?? '') === clean) return null;
 	const { label: _old, ...rest } = location.node;
 	const next = canonicalNode(clean ? { ...rest, label: clean } : rest);
+	return withChildren(doc, location.parentId, (siblings) => siblings.map((n) => (n.id === id ? next : n)));
+}
+
+/** Set the display modes a template component is shown in (ADR 0046); Full alone is the default (not stored). */
+export function setNodeModes(doc: TapestryDocument, id: string, modes: readonly string[]): TapestryDocument | null {
+	const location = findNode(doc, id);
+	if (!location) return null;
+	const clean = cleanNodeModes([...modes]);
+	if (JSON.stringify(location.node.modes ?? null) === JSON.stringify(clean ?? null)) return null;
+	const { modes: _old, ...rest } = location.node;
+	const next = canonicalNode(clean ? { ...rest, modes: clean } : rest);
 	return withChildren(doc, location.parentId, (siblings) => siblings.map((n) => (n.id === id ? next : n)));
 }
 

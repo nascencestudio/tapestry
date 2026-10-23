@@ -15,6 +15,17 @@ import { COMPANIONS, islandWrapperSource, type MediaLibraryPaths, tapestryVitePl
 export type { PageAccess, PermissionLevel, Viewer } from './access.js';
 export { ANONYMOUS, hasPermission, isEditor, pageAccess, pagePath } from './access.js';
 export { defineComponent, TapestryDefinitionError, toManifest } from './define.js';
+export type { DisplayMode } from './modes.js';
+export {
+	BUILT_IN_MODES,
+	FULL,
+	MAX_MODES,
+	modeSlot,
+	nodeModes,
+	parseModeSlot,
+	shownIn,
+	TEASER,
+} from './modes.js';
 export {
 	decodeProps,
 	encodeProps,
@@ -51,6 +62,7 @@ export {
 	toRenderTree,
 } from './richtext.js';
 export { CANVAS_PARAM, NODE_ATTR, ROOT_ATTR, TEXT_ATTR, TEXT_PROP_ATTR } from './runtime/canvas-mode.js';
+export { nodesText } from './text.js';
 export type { RichTextField, ToolbarSettings } from './toolbar-settings.js';
 export {
 	applyToolbarSettings,
@@ -126,6 +138,12 @@ export interface TapestryOptions {
 	 * page's menu link). Default: on when the package is installed. See docs/decisions/0042-companion-hooks.md.
 	 */
 	menus?: boolean;
+	/**
+	 * Display modes (Full, Teaser, …) on template components and content areas, for
+	 * @nascencestudio/tapestry-fabric's page lists. Default: on when that package is installed. See
+	 * docs/decisions/0046-display-modes.md.
+	 */
+	displayModes?: boolean;
 }
 
 /** Locate @nascencestudio/medialibrary from the site's project root, or null. */
@@ -140,6 +158,23 @@ function findMediaLibrary(root: string): MediaLibraryPaths | null {
 	} catch {
 		return null;
 	}
+}
+
+/** Companions that turn display modes on (ADR 0046). */
+const DISPLAY_MODE_COMPANIONS = ['@nascencestudio/tapestry-fabric'];
+
+/** Whether a companion that uses display modes is installed (resolvable from the site), unless turned off. */
+function findDisplayModes(root: string, options: TapestryOptions): boolean {
+	if (options.displayModes === false) return false;
+	const require = createRequire(join(root, 'package.json'));
+	return DISPLAY_MODE_COMPANIONS.some((entry) => {
+		try {
+			require.resolve(entry);
+			return true;
+		} catch {
+			return false;
+		}
+	});
 }
 
 /** The companion plugins installed in the site (their editor entries), unless turned off by option. */
@@ -353,6 +388,7 @@ export function tapestry(options: TapestryOptions): TapestryPlugin {
 												settingsRoute: SETTINGS_ROUTE,
 												publishPermission: options.publishPermission ?? 'editor',
 												languages,
+												displayModes: findDisplayModes(fileURLToPath(config.root), options),
 											},
 											{
 												paths: options.mediaLibrary === false ? null : findMediaLibrary(fileURLToPath(config.root)),

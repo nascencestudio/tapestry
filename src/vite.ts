@@ -92,6 +92,8 @@ export interface RuntimeConfig {
 	publishPermission: 'editor' | 'admin' | 'owner';
 	/** Languages pages can be translated into; the first is the default. Empty: one language. */
 	languages: Language[];
+	/** Display modes (ADR 0046): on when a companion that uses them (Tapestry Fabric) is installed. */
+	displayModes: boolean;
 }
 
 export interface MediaSetup {
@@ -207,6 +209,7 @@ export function tapestryVitePlugin(
 		settingsRoute: '/_tapestry/settings',
 		publishPermission: 'editor',
 		languages: [],
+		displayModes: false,
 	},
 	media: MediaSetup = { paths: null, fallbackMedia: '' },
 	islands: ReadonlyMap<string, string> = new Map(),

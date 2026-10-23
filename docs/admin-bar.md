@@ -224,6 +224,22 @@ Also from `@nascencestudio/tapestry/page`, for plugins that add components or li
 - `inEditorCanvas(Astro)`: true while the editor's canvas renders the request (show a placeholder
   that visitors never see).
 
+For lists of pages and display modes (Tapestry Fabric; [ADR 0046](decisions/0046-display-modes.md)):
+
+- `listPagesForLists()`: the pages `listPublicPages()` returns, plus each one's categories and tags (id,
+  name, parent), template, published date, language group (page ids) and published document.
+- `pageInMode(page, mode)`: a listed page inside its template in a display mode (`{ document, empty }`), or
+  `null` (not a Tapestry page, no template, nothing in that mode). `empty`: its areas have nothing in it.
+- `pageText(page)`: the plain text of a listed page's own Full content (for excerpts).
+- `currentPageId(Astro)`: the id of the page being shown (after `getPage()`; in the editor's canvas, the
+  page being edited), to leave it out of its own lists.
+- `<Document document={…} />` (`@nascencestudio/tapestry/Document.astro`) renders a document inside a
+  component; in the editor's canvas it's marked as another page's content (not selectable).
+
+`@nascencestudio/tapestry/modes` (server only) holds the display modes: `loadModes()`, `addMode()`,
+`renameMode()`, `deleteMode()` (takes the mode off template components), `loadModeUsage()` and
+`listTemplateChoices()`. Display modes are on only when a companion that uses them is installed.
+
 `@nascencestudio/tapestry/links` has `cleanLinkValue()` and `isSafeUrl()`, the link props' validation,
 safe to use in the browser (the main entry is the server-side plugin).
 

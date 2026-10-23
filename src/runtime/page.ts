@@ -11,6 +11,7 @@ import config from 'virtual:tapestry/config';
 import manifest from 'virtual:tapestry/manifest';
 import type { AstroGlobal } from 'astro';
 import { isEditor, pageAccess, type Viewer } from '../access.js';
+import { parseTabs } from '../modes.js';
 import {
 	applyDueSchedule,
 	documentFor,
@@ -25,10 +26,13 @@ import type { ResolvedLink } from '../types.js';
 import { emptyDocument } from '../validate.js';
 import {
 	CANVAS_PARAM,
+	currentPage,
 	enableCanvasMode,
 	enableEmbeddedMode,
 	isCanvasMode,
 	PREVIEW_PARAM,
+	setCurrentPage,
+	TABS_PARAM,
 	VERSION_PARAM,
 } from './canvas-mode.js';
 import { currentLanguage, localizeFor, localizeStrictFor, type PageTranslation, pageLanguages } from './languages.js';
@@ -45,6 +49,8 @@ import {
 } from './regions.js';
 import { getViewer } from './viewer.js';
 
+export type { ListedPage, ListedTerm, PageInMode } from './listing.js';
+export { listPagesForLists, pageInMode, pageText } from './listing.js';
 export type { PublicPage, PublicPageTranslation } from './public-pages.js';
 export { listPublicPages } from './public-pages.js';
 export type { Language, PageRegions, PageTranslation };
@@ -56,6 +62,14 @@ export { getViewer };
  */
 export function pageLanguage(context: Pick<AstroGlobal, 'locals'>): string | null {
 	return currentLanguage(context.locals);
+}
+
+/**
+ * The id of the page this request shows (ADR 0046): set by getPage(), and in the editor's canvas the page
+ * being edited. Lists use it to leave their own page out. Null elsewhere (e.g. the template editor).
+ */
+export function currentPageId(context: Pick<AstroGlobal, 'locals'>): string | null {
+	return currentPage(context.locals);
 }
 
 /**
@@ -131,6 +145,7 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 	if (!page) return null;
 	const access = pageAccess(page, viewer);
 	if (!access.visible) return null;
+	setCurrentPage(Astro.locals, String(page.id));
 	for (const [name, value] of Object.entries(access.headers)) Astro.response.headers.set(name, value);
 	const editor = isEditor(viewer);
 	const languages = await pageLanguages(Astro.locals, { id: String(page.id), slug: String(page.slug) }, editor);
@@ -196,7 +211,9 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 	// The page inside its template (or, in the part/template editors' canvas, what they edit).
 	const layout = await loadLayout({ doc: chosen, preview: previewing, overrides });
 	const { regions } = layout;
-	const content = JSON.stringify(layout.body(chosen ?? emptyDocument()) ?? emptyDocument());
+	// The canvas: each content area shows its tab (ADR 0046).
+	const tabs = canvas ? parseTabs(Astro.url.searchParams.get(TABS_PARAM)) : {};
+	const content = JSON.stringify(layout.body(chosen ?? emptyDocument(), { tabs }) ?? emptyDocument());
 	const rendered = {
 		...page,
 		defaultContent: page.defaultContent ? { ...page.defaultContent, content } : page.defaultContent,

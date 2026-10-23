@@ -505,6 +505,60 @@
 	color: var(--tp-danger);
 }
 
+/* Several choices as chips (select with multiple, "Shown in"; ADR 0046) */
+.tp-chips {
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+	flex-basis: 100%;
+}
+.tp-chips__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.tp-chips__chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.125rem;
+	padding: 0.125rem 0.125rem 0.125rem 0.5rem;
+	border: 1px solid var(--tp-primary);
+	border-radius: 999px;
+	background: var(--tp-primary-flat);
+	color: var(--tp-text);
+	font-size: 0.8125rem;
+	line-height: 1.4;
+}
+.tp-chips__remove {
+	all: unset;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	border-radius: 999px;
+	cursor: pointer;
+	color: inherit;
+}
+.tp-chips__remove svg {
+	width: 0.75rem;
+	height: 0.75rem;
+}
+.tp-chips__remove:hover:not(:disabled),
+.tp-chips__remove:focus-visible {
+	background: var(--tp-surface-2);
+}
+.tp-chips__remove:focus-visible {
+	outline: 2px solid var(--tp-primary);
+}
+.tp-chips__remove:disabled {
+	cursor: default;
+	opacity: 0.4;
+}
+
 /* JSON view, banners, issues */
 .tp-json__actions {
 	display: flex;

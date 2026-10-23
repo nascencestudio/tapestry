@@ -56,8 +56,14 @@ export interface LayoutOverrides {
 
 export interface PageLayout {
 	regions: PageRegions;
-	/** The document to render as the page body for `doc`. */
-	body: (doc: TapestryDocument | null) => TapestryDocument | null;
+	/**
+	 * The document to render as the page body for `doc`: in a display mode (ADR 0046; default Full), and in
+	 * the editor's canvas with each area showing its tab.
+	 */
+	body: (
+		doc: TapestryDocument | null,
+		options?: { mode?: string; tabs?: Readonly<Record<string, string>> },
+	) => TapestryDocument | null;
 }
 
 const NONE: PageLayout = {
@@ -113,12 +119,15 @@ export async function loadLayout(options: {
 			editingPart: editing?.id ?? null,
 			editingTemplate: editingTemplateId && template ? template.id : null,
 		};
-		const body = (page: TapestryDocument | null): TapestryDocument | null => {
+		const body = (
+			page: TapestryDocument | null,
+			options: { mode?: string; tabs?: Readonly<Record<string, string>> } = {},
+		): TapestryDocument | null => {
 			// The part editor: an empty body (the placeholder goes there).
 			if (regions.editingPart) return emptyDocument();
 			// The template editor: the template body itself is what's edited.
 			if (regions.editingTemplate) return templateBody;
-			if (templateBody && page) return mergeTemplate(templateBody, page);
+			if (templateBody && page) return mergeTemplate(templateBody, page, options);
 			return page;
 		};
 		return { regions, body };

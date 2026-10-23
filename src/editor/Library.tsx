@@ -199,7 +199,7 @@ export function Library({ store, announce }: Props) {
 		const doc = store.doc.peek();
 		const node = createNode(store.manifest, type, new Set(allIds(doc)));
 		if (!node) return;
-		const target = insertionTargetFor(doc, store.manifest, store.selectedId.peek());
+		const target = insertionTargetFor(doc, store.manifest, store.selectedId.peek(), store.tabs.peek());
 		if (store.commit(insertNode(doc, store.manifest, node, target), { select: node.id })) {
 			announce(`Added ${store.manifest[type]?.label ?? type}.`);
 		}
@@ -247,7 +247,12 @@ export function Library({ store, announce }: Props) {
 								pattern={pattern}
 								announce={announce}
 								onInsert={() => {
-									const target = insertionTargetFor(store.doc.peek(), store.manifest, store.selectedId.peek());
+									const target = insertionTargetFor(
+										store.doc.peek(),
+										store.manifest,
+										store.selectedId.peek(),
+										store.tabs.peek(),
+									);
 									void insertPattern(store, pattern, target, announce);
 								}}
 							/>

@@ -58,8 +58,22 @@ function assertProp(type: string, name: string, prop: PropDefinition, parent?: s
 		if (prop.options.length === 0 && prop.optionsUrl === undefined) {
 			throw new TapestryDefinitionError(`${where}: select props need at least one option (or an optionsUrl).`);
 		}
-		if (prop.default !== undefined && !prop.optionsUrl && !prop.options.some((o) => o.value === prop.default)) {
-			throw new TapestryDefinitionError(`${where}: default "${prop.default}" is not one of the options.`);
+		if (prop.multiple !== undefined && typeof prop.multiple !== 'boolean') {
+			throw new TapestryDefinitionError(`${where}: multiple must be true or false.`);
+		}
+		if (prop.default !== undefined) {
+			const defaults = Array.isArray(prop.default) ? prop.default : [prop.default];
+			if (Array.isArray(prop.default) && !prop.multiple) {
+				throw new TapestryDefinitionError(`${where}: a list default needs multiple: true.`);
+			}
+			if (new Set(defaults).size !== defaults.length) {
+				throw new TapestryDefinitionError(`${where}: default lists a choice more than once.`);
+			}
+			for (const value of defaults) {
+				if (typeof value !== 'string' || (!prop.optionsUrl && !prop.options.some((o) => o.value === value))) {
+					throw new TapestryDefinitionError(`${where}: default "${String(value)}" is not one of the options.`);
+				}
+			}
 		}
 	}
 	if (prop.type === 'richtext') {

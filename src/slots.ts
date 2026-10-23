@@ -13,14 +13,32 @@ import type { ComponentManifest, ComponentManifestEntry, TapestryNode } from './
  */
 export const ROOT_ENTRY = '#root';
 
-/** The manifest with the root's areas set (a page using a template), or removed (`null`). */
+/** A template content area's key (its name, slugified): the `slot` of a page's top-level nodes. */
+export const AREA_KEY = /^[a-z][a-z0-9-]{0,39}$/;
+
+/**
+ * The manifest with the root's areas set (a page using a template), or removed (`null`). With display
+ * modes (ADR 0046), an area shown in several modes has a slot per mode: `main` (Full), `main.teaser`
+ * ("Main · Teaser"), in the site's mode order; an area in one mode keeps just its key.
+ */
 export function withRootAreas(
 	manifest: ComponentManifest,
-	areas: ReadonlyArray<{ key: string; name: string }> | null,
+	areas: ReadonlyArray<{ key: string; name: string; modes?: readonly string[] }> | null,
+	modes: ReadonlyArray<{ key: string; name: string }> = [],
 ): ComponentManifest {
 	const { [ROOT_ENTRY]: _old, ...rest } = manifest;
 	if (!areas || areas.length === 0) return rest;
-	const slots = Object.fromEntries(areas.map((area) => [area.key, { label: area.name }]));
+	const slots = Object.fromEntries(
+		areas.flatMap((area) => {
+			const shown = modes.filter((m) => (area.modes ?? ['full']).includes(m.key));
+			if (shown.length <= 1) return [[area.key, { label: area.name }]];
+			// `modeSlot()` in modes.ts (which imports this module): Full is the bare key.
+			return shown.map((m) => [
+				m.key === 'full' ? area.key : `${area.key}.${m.key}`,
+				{ label: `${area.name} · ${m.name}` },
+			]);
+		}),
+	);
 	return {
 		...rest,
 		[ROOT_ENTRY]: { type: ROOT_ENTRY, label: 'Page', component: '', props: {}, slots } as ComponentManifestEntry,
@@ -71,7 +89,7 @@ export function sortByArea(children: TapestryNode[], entry: ComponentManifestEnt
 }
 
 /**
- * A node object in canonical key order (id, type, version, label, slot, props, children):
+ * A node object in canonical key order (id, type, version, label, slot, modes, props, children):
  * documents are compared as strings.
  */
 export function canonicalNode(node: TapestryNode): TapestryNode {
@@ -81,6 +99,7 @@ export function canonicalNode(node: TapestryNode): TapestryNode {
 		...(node.version !== undefined && node.version > 1 ? { version: node.version } : {}),
 		...(node.label ? { label: node.label } : {}),
 		...(node.slot !== undefined ? { slot: node.slot } : {}),
+		...(node.modes && node.modes.length > 0 ? { modes: node.modes } : {}),
 		props: node.props,
 		...(node.children ? { children: node.children } : {}),
 	};

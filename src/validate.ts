@@ -1,4 +1,5 @@
 import { migrateComponentProps, migrateFormat, resolveType } from './migrations.js';
+import { cleanNodeModes, parseModeSlot } from './modes.js';
 import { cleanRichText, isRichTextEmpty, MEDIA_ID } from './richtext.js';
 import { canonicalNode, hasArea, hasChildAreas, sortByArea } from './slots.js';
 
@@ -40,14 +41,16 @@ export const LIMITS = {
 	listDefaultMaxItems: 50,
 	/** Largest `maxItems` a `list` prop may declare. */
 	listMaxItems: 100,
+	/** Most choices a `select` with `multiple` may hold. */
+	maxSelectChoices: 100,
 } as const;
 
 const NODE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 /** Template and part ids (ADR 0041). Here rather than in templates.ts, which imports this module. */
 export const TEMPLATE_ID = /^tt_[a-z0-9]{16}$/;
 export const PART_ID = /^tp_[a-z0-9]{16}$/;
-/** A template content area's key (its name, slugified): the `slot` of a page's top-level nodes. */
-export const AREA_KEY = /^[a-z][a-z0-9-]{0,39}$/;
+export { AREA_KEY } from './slots.js';
+
 /** A value of a select whose choices come from the server (`optionsUrl`). */
 const OPTION_ID = /^[A-Za-z0-9_-]{1,100}$/;
 
@@ -122,12 +125,25 @@ export function validatePropValue(def: PropDefinition, value: unknown): string |
 			return null;
 		case 'boolean':
 			return typeof value === 'boolean' ? null : 'must be true or false';
-		case 'select':
-			if (typeof value !== 'string') return 'must be a string';
-			if (def.options.some((o) => o.value === value)) return null;
-			// Choices from the server (ADR 0042): any id; the component handles one that no longer exists.
-			if (def.optionsUrl) return OPTION_ID.test(value) ? null : 'is not a valid choice';
-			return 'is not one of the allowed options';
+		case 'select': {
+			const one = (choice: unknown) => {
+				if (typeof choice !== 'string') return 'must be a string';
+				if (def.options.some((o) => o.value === choice)) return null;
+				// Choices from the server (ADR 0042): any id; the component handles one that no longer exists.
+				if (def.optionsUrl) return OPTION_ID.test(choice) ? null : 'is not a valid choice';
+				return 'is not one of the allowed options';
+			};
+			if (!def.multiple) return one(value);
+			// Several choices (ADR 0046): a list of distinct choices.
+			if (!Array.isArray(value)) return 'must be a list of choices';
+			if (value.length > LIMITS.maxSelectChoices) return `must have at most ${LIMITS.maxSelectChoices} choices`;
+			if (new Set(value).size !== value.length) return 'lists a choice more than once';
+			for (const choice of value) {
+				const problem = one(choice);
+				if (problem) return `has a choice that ${problem.replace(/^must be/, 'is not')}`;
+			}
+			return null;
+		}
 		case 'media':
 			if (typeof value !== 'string') return 'must be a media item id';
 			return MEDIA_ID.test(value) ? null : 'is not a valid media item id';
@@ -220,6 +236,16 @@ function cleanValue(
 		case 'link':
 			// Strings (from a former `url` prop) and non-canonical objects convert.
 			value = cleanLinkValue(value) ?? value;
+			break;
+		case 'select':
+			if (def.multiple) {
+				// A single choice (a former single select) becomes a list; an empty list is no value.
+				if (typeof value === 'string') value = [value];
+				if (Array.isArray(value) && value.length === 0) return undefined;
+			} else if (Array.isArray(value) && value.length === 1) {
+				// …and a one-choice list (a former multiple select) a single choice.
+				value = value[0];
+			}
 			break;
 		case 'object':
 			return cleanObject(def.fields, value, path, issues);
@@ -450,7 +476,8 @@ function cleanNodes(
 		let slot: string | undefined;
 		if (item.slot !== undefined) {
 			if (!parent) {
-				if (state.rootAreas && typeof item.slot === 'string' && AREA_KEY.test(item.slot)) {
+				// A content area's key, or its content for a display mode (`main.teaser`, ADR 0046).
+				if (state.rootAreas && typeof item.slot === 'string' && parseModeSlot(item.slot)) {
 					slot = item.slot;
 				} else {
 					state.issues.push({
@@ -496,6 +523,15 @@ function cleanNodes(
 		state.ids.add(id);
 		state.nodeCount++;
 		const label = cleanNodeLabel(item.label);
+		// Display modes (ADR 0046): kept on any node (only template bodies use them); Full alone isn't stored.
+		const modes = cleanNodeModes(item.modes);
+		if (item.modes !== undefined && !Array.isArray(item.modes)) {
+			state.issues.push({
+				severity: 'warning',
+				path: `${nodePath}.modes`,
+				message: 'must be a list of display modes; ignored',
+			});
+		}
 		if (item.label !== undefined && typeof item.label !== 'string') {
 			state.issues.push({ severity: 'warning', path: `${nodePath}.label`, message: 'label must be text; ignored' });
 		}
@@ -519,6 +555,7 @@ function cleanNodes(
 				version: migration.version,
 				...(label ? { label } : {}),
 				...(slot !== undefined ? { slot } : {}),
+				...(modes ? { modes } : {}),
 				props,
 				...(children ? { children } : {}),
 			}),

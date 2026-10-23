@@ -13,8 +13,9 @@
 import { StudioCMSRenderer } from 'studiocms:renderer';
 import manifest from 'virtual:tapestry/manifest';
 import { isEditor } from '../access.js';
+import { parseTabs } from '../modes.js';
 import { LIMITS, validateDocument } from '../validate.js';
-import { enableCanvasMode } from './canvas-mode.js';
+import { enableCanvasMode, PAGE_PARAM, setCurrentPage, TABS_PARAM } from './canvas-mode.js';
 import { getViewer } from './page.js';
 import { loadLayout } from './regions.js';
 
@@ -42,7 +43,9 @@ let content = raw;
 try {
 	const doc = validateDocument(JSON.parse(raw), manifest).document;
 	if (doc.template) {
-		const merged = (await loadLayout({ doc, preview: true })).body(doc);
+		// Each content area shows its tab (ADR 0046).
+		const tabs = parseTabs(Astro.url.searchParams.get(TABS_PARAM));
+		const merged = (await loadLayout({ doc, preview: true })).body(doc, { tabs });
 		if (merged) content = JSON.stringify(merged);
 	}
 } catch {
@@ -50,6 +53,8 @@ try {
 }
 
 enableCanvasMode(Astro.locals);
+// The page being edited (lists leave it out, ADR 0046).
+setCurrentPage(Astro.locals, Astro.url.searchParams.get(PAGE_PARAM));
 Astro.response.headers.set('Cache-Control', 'no-store');
 Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 

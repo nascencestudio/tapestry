@@ -42,7 +42,7 @@ happens across sibling checkouts in `/Volumes/T7/www/`:
 | Deployment | Docker + Caddy for a Hetzner Cloud server; CI (GitHub Actions, ADR 0020) | ✅ Done (2026-10-06) |
 | 4. Rich content | Images, rich text, links, repeaters, named slots, patterns, library previews | ✅ Done (2026-10-07) |
 | 5. Production | Islands, migrations, i18n, permissions, a11y, perf budget, npm publish, docs site | ✅ Done (2026-10-08) except the actual npm publish: prepared (repos: nascencestudio/tapestry, nascencestudio/medialibrary); the user releases |
-| Companions | tapestry-seo (0.4.0 SEO button), templates (0.5.0), hooks for tapestry-menus (0.6.0, ADR 0042) | ✅ SEO released; 0.5.0 and 0.6.0 built, not released (2026-10-16) |
+| Companions | tapestry-seo (0.4.0 SEO button), templates (0.5.0), hooks for tapestry-menus (0.6.0, ADR 0042), display modes for tapestry-fabric (0.7.0, ADR 0046) | ✅ SEO released; 0.5.0, 0.6.0 and 0.7.0 built, not released (0.7.0: 2026-10-23) |
 
 Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in tapestry-playground (`../tapestry-playground/docs/devlog.md`).
 
@@ -57,6 +57,10 @@ Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in ta
    2026-10-16, committed locally, not on GitHub): create the repo, switch its `file:` dev dependency to
    0.6.0, push, first release with a one-time NPM_TOKEN. Then the playground (branch `menus`) switches to
    npm versions, runs all suites and commits.
+   Then Tapestry 0.7.0 (branch `display-modes`, on top of `companion-hooks`: display modes, ADR 0046), which
+   **@nascencestudio/tapestry-fabric** needs (`../tapestry-fabric`, 0.1.0 built 2026-10-23, local repo, not on
+   GitHub; `file:` dev dependency to switch to 0.7.0 like menus). The playground's `fabric` branch (on `menus`)
+   has the fabric suite and a11y states.
    Still open: the StudioCMS issue in tapestry-playground/docs/upstream/ (only when the user asks).
 2. Report upstream (only when the user asks): `bySlug` drafts (#10), ignored config keys (#5),
    dev-toolbar DB viewer errors (#12), empty page type (#15), edit-screen crash/no delete (#16),
@@ -138,7 +142,9 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │   ├── richtext.ts        ← rich text format, cleanRichText() (toolbar allowlist), toRenderTree() (pure)
 │   ├── toolbar-settings.ts← admin toolbar narrowing: parse/apply/form helpers (pure)
 │   ├── translations.ts    ← languages option, translation rows/groups, new-translation slug/title/content (pure, ADR 0032)
-│   ├── templates.ts       ← templates (layouts with content areas) + parts: ids, parsing, templateAreas(), mergeTemplate(), assignAreas(), error codes (pure, ADR 0041)
+│   ├── templates.ts       ← templates (layouts with content areas) + parts: ids, parsing, templateAreas(), mergeTemplate(…, { mode, tabs }), assignAreas(), error codes (pure, ADR 0041)
+│   ├── modes.ts           ← display modes: keys, built-ins, parseModes(), node `modes`, mode slots (`main.teaser`), tabs param, usage, withoutMode() (pure, ADR 0046)
+│   ├── text.ts            ← nodesText(): plain text of rich text/textarea fields, for excerpts (pure)
 │   ├── save-rules.ts      ← applySaveRules(): publish permission + locked components, for page and part saves (pure)
 │   ├── vite.ts            ← virtual modules: manifest, component imports, runtime config, thumbnails, extensions (COMPANIONS; ADRs 0040, 0042);
 │   │                        islandWrapperSource() (index.ts writes them to node_modules/.tapestry/islands)
@@ -163,6 +169,8 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │   │   ├── pages-endpoint.ts ← GET /_tapestry/pages: editors-only page list for the link field (routes.ts has the paths)
 │   │   ├── templates-store.ts, templates-endpoint.ts, parts-endpoint.ts ← rows, /_tapestry/templates (list; admin forms), /_tapestry/parts (part + template body saves)
 │   │   ├── regions.ts, Region.astro, Area.astro ← loadLayout(): regions + the page merged into its template; `<Region>`; the built-in content area
+│   │   ├── modes-store.ts ← `@nascencestudio/tapestry/modes`: the site's display modes (plugin data), add/rename/delete, usage, template choices (ADR 0046)
+│   │   ├── listing.ts, Document.astro ← listPagesForLists(), pageInMode(), pageText() (re-exported from page.ts); `<Document>` for documents inside components (foreign in the canvas)
 │   │   ├── TemplateManagement.astro, TemplateManagementNav.astro, ContentEditor.astro ← the Template Management dashboard page (editors view, admins change), part/template editor (`?edit=`)
 │   │   └── Editor.astro   ← hosts the editor + the page-content textarea
 │   └── editor/            ← Preact dashboard editor (browser only)
@@ -180,6 +188,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │       ├── extensions.ts, CompanionPanels.tsx ← companions from virtual:tapestry/extensions (ADRs 0040, 0042): bar buttons (SEO) and
 │       │                    panels under the settings panel (Navigation settings; `.tp-inspector` column); media.ts holds the picker loader
 │       ├── TemplateMenu.tsx ← the page's template menu: no template (own header/footer) or a template (ADR 0041)
+│       ├── ChipsField.tsx ← several choices as chips with an autocompleting box: `select` `multiple`, "Shown in" (ADR 0046)
 │       ├── publishing.ts  ← stored page signal, writes draft/publish into the textarea
 │       ├── icons.tsx      ← toolbar + UI icons (inline SVG, drawn for Tapestry) and letter glyphs
 │       ├── InfoPopover.tsx ← "i" button + closable help popover, ShortcutList, shortcutText()
@@ -479,5 +488,13 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 - `Popover` takes `align="end"` (always right-aligned; menus at the right of a narrow area) and
   `headerExtra` (e.g. an `InfoPopover` beside the title). Popovers can nest: Escape closes the innermost
   first (a popover ignores Escape while one is open inside its panel).
+- Display modes (ADR 0046): on only with Fabric installed (`config.displayModes`). A content area in several
+  modes stores each mode's page content in its own root slot (`main` = Full, `main.teaser`); `withRootAreas()`
+  makes one slot per mode, so the layer tree, validator and moves treat them as areas. The canvas draws the
+  tabs on area labels and sends `tapestry-tabs` with renders; its render key (`renderKey()`) includes the tabs,
+  and `scheduleRender()` must use the same key (a rename once stopped refreshing the chip). Lists' items
+  (`<tapestry-foreign>`) lose their editor markers after every render (`neutralizeForeign()`).
+- Never put `\u2028`/`\u2029` escapes in files through the Write tool: it wrote the real characters, which
+  end a regex literal (`modes.ts` once failed to parse). Write such lines with a script, escapes as text.
 - Pragmatic DnD 4.x import paths: `@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter`,
   `/utils/combine`, hitbox `/list-item/attach-instruction` and `/list-item/extract-instruction`.

@@ -307,7 +307,7 @@ function Row({
 							if (result) store.commit(result.doc, { select: result.id });
 						}}
 					>
-						⧉
+						{UI_ICONS.duplicate}
 					</button>
 					<button
 						type="button"
@@ -319,7 +319,7 @@ function Row({
 							store.commit(removeNode(store.doc.peek(), node.id), { select: null });
 						}}
 					>
-						✕
+						{UI_ICONS.trash}
 					</button>
 				</span>
 			</div>

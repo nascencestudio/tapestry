@@ -5,6 +5,7 @@
  * Kept free of DOM and component code so it can be unit-tested directly.
  */
 import { batch, computed, signal } from '@preact/signals';
+import { type DisplayMode, FULL, parseModeSlot } from '../modes.js';
 import { lockedChanges, lockedMessage, matchesSomeVersion } from '../permissions.js';
 import { withRootAreas } from '../slots.js';
 import { AREA_TYPE } from '../templates.js';
@@ -40,7 +41,9 @@ export interface StoreOptions {
 	 * Templates' content areas by template id (ADR 0041): a page whose document names a template has
 	 * those areas at its root (top-level components belong to one of them).
 	 */
-	templateAreas?: ReadonlyMap<string, ReadonlyArray<{ key: string; name: string }>>;
+	templateAreas?: ReadonlyMap<string, ReadonlyArray<{ key: string; name: string; modes?: readonly string[] }>>;
+	/** The site's display modes (ADR 0046); empty when display modes are off. */
+	modes?: readonly DisplayMode[];
 	/** What's edited: a page (default), a header/footer part, or a template body (ADR 0041). */
 	editing?: 'page' | 'part' | 'template';
 }
@@ -68,17 +71,48 @@ export function createEditorStore(
 	const validation = computed(() => parseDocument(JSON.stringify(doc.value), manifest));
 	// The manifest the editing code uses: with the root's areas when the page uses a template. Follows
 	// the document (undoing a template change brings its areas back).
-	const catalog = storeOptions.templateAreas ?? new Map();
+	const catalog: NonNullable<StoreOptions['templateAreas']> = storeOptions.templateAreas ?? new Map();
 	const editing = storeOptions.editing ?? 'page';
 	// In a template body the content area is a placeholder for pages' content, not a container.
 	const baseManifest: ComponentManifest =
 		editing === 'template' && manifest[AREA_TYPE]
 			? { ...manifest, [AREA_TYPE]: { ...manifest[AREA_TYPE], acceptsChildren: false } }
 			: manifest;
+	const modes: readonly DisplayMode[] = storeOptions.modes ?? [];
+	/** The page's template's content areas (with their modes), or none. */
+	const areas = computed(() => {
+		const template = editing === 'page' ? doc.value.template : undefined;
+		return template ? (catalog.get(template) ?? []) : [];
+	});
 	const editingManifest = computed(() => {
 		const template = editing === 'page' ? doc.value.template : undefined;
-		return template ? withRootAreas(baseManifest, catalog.get(template) ?? []) : baseManifest;
+		return template ? withRootAreas(baseManifest, areas.value, modes) : baseManifest;
 	});
+	/** The display mode each content area shows on the canvas (its tab; absent: Full). Not saved. */
+	const tabs = signal<Readonly<Record<string, string>>>({});
+	/** Show an area's tab for `mode` (Full when the area doesn't have it). */
+	function setTab(area: string, mode: string) {
+		const shown = areas.peek().find((a) => a.key === area)?.modes ?? [FULL];
+		const next = shown.includes(mode) && mode !== FULL ? mode : undefined;
+		if ((tabs.peek()[area] ?? undefined) === next) return;
+		const { [area]: _old, ...rest } = tabs.peek();
+		batch(() => {
+			tabs.value = next ? { ...rest, [area]: next } : rest;
+			// A selection in this area's other tab is no longer on the canvas (and adding would go next to it).
+			const selected = selectedId.peek();
+			const location = selected ? findNode(doc.peek(), selected) : null;
+			const top = location ? doc.peek().root.find((n) => n.id === (location.ancestors[0] ?? selected)) : undefined;
+			const parsed = top?.slot !== undefined ? parseModeSlot(top.slot) : null;
+			if (parsed && parsed.area === area && parsed.mode !== (next ?? FULL)) selectedId.value = null;
+		});
+	}
+	/** A top-level component of a mode's content: its area shows that tab, so the canvas shows it. */
+	function showTabOf(id: string | null) {
+		if (!id || modes.length === 0) return;
+		const node = doc.peek().root.find((n) => n.id === id);
+		const parsed = node?.slot !== undefined ? parseModeSlot(node.slot) : null;
+		if (parsed) setTab(parsed.area, parsed.mode);
+	}
 	const canUndo = computed(() => past.value.length > 0);
 	const canRedo = computed(() => future.value.length > 0);
 	/** Node ids the layer tree shows, in order (descendants of collapsed containers left out). */
@@ -105,6 +139,7 @@ export function createEditorStore(
 			future.value = [];
 			doc.value = next;
 			if (options.select !== undefined) selectedId.value = options.select;
+			if (options.select) showTabOf(options.select);
 		});
 		lastCommit = options.coalesceKey !== undefined ? { key: options.coalesceKey, at } : null;
 		return true;
@@ -154,6 +189,7 @@ export function createEditorStore(
 		batch(() => {
 			selectedId.value = id;
 			if (id) reveal(id);
+			showTabOf(id);
 		});
 		lastCommit = null;
 	}
@@ -210,6 +246,13 @@ export function createEditorStore(
 		},
 		/** Templates' content areas by template id. */
 		templateAreas: catalog,
+		/** The page's template's content areas (with their display modes). */
+		areas,
+		/** The site's display modes (ADR 0046); empty when they're off. */
+		modes,
+		/** Each content area's tab on the canvas (area key → mode; Full is absent). */
+		tabs,
+		setTab,
 		/** What's edited: a page, a header/footer part, or a template body. */
 		editing,
 		/** Component types the current user may not change. */

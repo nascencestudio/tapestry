@@ -103,7 +103,16 @@ export interface BooleanProp extends PropBase {
 export interface SelectProp extends PropBase {
 	type: 'select';
 	options: ReadonlyArray<{ value: string; label: string }>;
-	default?: string;
+	/**
+	 * Choices from the server (ADR 0042): a same-site path answering editors with
+	 * `{ options: [{ value, label }] }` (e.g. a companion plugin's menus). Values are then ids
+	 * (letters, digits, `_`, `-`); `options` may be empty.
+	 */
+	optionsUrl?: string;
+	/** Several choices (ADR 0046): the value is a list of option values, in the order picked. */
+	multiple?: boolean;
+	/** One option value; with `multiple`, a list of them. */
+	default?: string | string[];
 }
 
 export interface RichTextProp extends PropBase {
@@ -250,6 +259,12 @@ export interface ComponentDefinition {
 	 */
 	client?: ClientDirective;
 	/**
+	 * Pass the component its node's id as a `nodeId` prop (a string, stable for this placement of the
+	 * component; ADR 0046): e.g. to name a URL parameter of its own, like a list's pager. A prop can't
+	 * also be called `nodeId` then.
+	 */
+	withNodeId?: boolean;
+	/**
 	 * Optional picture for the editor's component library: an image file
 	 * (`.png`, `.jpg`, `.webp`, `.avif`, `.gif` or `.svg`), relative to the Astro
 	 * project root like `component`. Without one, the library still shows a live
@@ -323,7 +338,7 @@ export type ComponentManifest = Record<string, ComponentManifestEntry>;
 // ---------------------------------------------------------------------------
 
 /** A value of a single-value prop (or of a field in an object or list). */
-export type FieldValue = string | number | boolean | RichTextDoc | LinkValue;
+export type FieldValue = string | number | boolean | RichTextDoc | LinkValue | string[];
 
 /** An `object` prop's value, or one `list` item: field values by field name. */
 export type ObjectValue = { [field: string]: FieldValue };
@@ -350,6 +365,11 @@ export interface TapestryNode {
 	 * slots in the order the parent's definition lists them.
 	 */
 	slot?: string;
+	/**
+	 * Template components only (ADR 0046): the display modes it's shown in (absent: Full only). A content
+	 * area in several modes holds separate content for each. Ignored outside template bodies.
+	 */
+	modes?: string[];
 	/** Prop values keyed by prop name. */
 	props: Record<string, PropValue>;
 	/** Child nodes. Only allowed when the component sets `acceptsChildren` or has `slots`. */
@@ -360,8 +380,12 @@ export interface TapestryNode {
 export interface TapestryDocument {
 	/** Format version, so stored pages can be migrated later. */
 	version: 1;
-	/** The page's template (`tt_…`, ADR 0041). Missing: the site's default template. Pages only. */
+	/** Pages only (ADR 0041): the template the page inherits (`tt_…`); its top-level nodes then carry
+	 * `slot` = the content area they're in. */
 	template?: string;
+	/** Pages without a template: their own header and footer part (`tp_…`); absent: none. */
+	header?: string;
+	footer?: string;
 	/** Top-level nodes, rendered in order. */
 	root: TapestryNode[];
 }

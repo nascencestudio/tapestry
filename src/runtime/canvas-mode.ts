@@ -19,18 +19,35 @@ export const PREVIEW_PARAM = 'tapestry-preview';
 export const VERSION_PARAM = 'tapestry-version';
 
 /**
- * Query parameter: the page canvas shows this template (`tt_…`, or `default`) instead of the saved
- * choice, so an unsaved change shows at once (ADR 0041).
+ * Query parameter: the page canvas shows this template (`tt_…`, or `none`) instead of the saved choice,
+ * so an unsaved change shows at once (ADR 0041).
  */
 export const TEMPLATE_PARAM = 'tapestry-template';
 
+/** Query parameters: a page without a template shows this header/footer (part id, or empty: none). */
+export const HEADER_PARAM = 'tapestry-header';
+export const FOOTER_PARAM = 'tapestry-footer';
+
 /** Query parameter: the part editor's canvas (this part is edited in place; the body is a placeholder). */
 export const PART_PARAM = 'tapestry-part';
+
+/** Query parameter: the template editor's canvas (this template's body is edited, between its header and footer). */
+export const EDIT_TEMPLATE_PARAM = 'tapestry-edit-template';
+/** Canvas only (ADR 0046): the display mode each content area shows, its tab (`main:teaser,side:card`). */
+export const TABS_PARAM = 'tapestry-tabs';
+/**
+ * Wraps documents rendered inside a component (a list's items, ADR 0046) in the canvas: they belong to
+ * other pages, so the canvas never selects, edits or drops into anything inside.
+ */
+export const FOREIGN_ELEMENT = 'tapestry-foreign';
 
 /** Attributes on `<tapestry-region>` (canvas mode): the region's name, its part, and the part being edited. */
 export const REGION_ATTR = 'data-tapestry-region';
 export const REGION_PART_ATTR = 'data-tapestry-part';
 export const EDITING_PART_ATTR = 'data-tapestry-editing-part';
+
+/** Attribute on a template's content area element (its key), from Area.astro (ADR 0041). */
+export const AREA_ATTR = 'data-tapestry-area';
 
 /** Attribute on each node's wrapper in canvas mode; value is the node id. */
 export const NODE_ATTR = 'data-tapestry-node';
@@ -92,4 +109,19 @@ export function registerPropOwner(locals: Locals, value: unknown, nodeId: string
 export function propOwner(locals: Locals | undefined, value: unknown): { nodeId: string; prop: string } | undefined {
 	if (!locals || typeof value !== 'object' || value === null) return undefined;
 	return ((locals as Record<symbol, unknown>)[OWNERS] as Owners | undefined)?.get(value);
+}
+
+/** The editor's render requests (ADR 0046): the id of the page being edited, so lists can leave it out. */
+export const PAGE_PARAM = 'tapestry-page';
+const PAGE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+const CURRENT_PAGE = Symbol.for('tapestry.currentPage');
+
+/** Record the page this request shows (getPage(); the render endpoint for the page being edited). */
+export function setCurrentPage(locals: object, id: string | null | undefined): void {
+	if (typeof id === 'string' && PAGE_ID.test(id)) (locals as Record<symbol, string>)[CURRENT_PAGE] = id;
+}
+
+/** The id of the page this request shows, or null. */
+export function currentPage(locals: object): string | null {
+	return (locals as Record<symbol, string | undefined>)[CURRENT_PAGE] ?? null;
 }

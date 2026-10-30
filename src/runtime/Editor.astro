@@ -13,6 +13,10 @@ import config from 'virtual:tapestry/config';
 import manifest from 'virtual:tapestry/manifest';
 import type { PluginPageTypeEditorProps } from 'studiocms/types';
 import { hasPermission } from '../access.js';
+import { storedModes } from '../modes.js';
+import { templateAreas } from '../templates.js';
+import { loadModes } from './modes-store.js';
+import { listParts, listTemplates } from './templates-store.js';
 import { loadToolbarSettings } from './toolbar-store.js';
 import { getViewer } from './viewer.js';
 
@@ -27,6 +31,24 @@ const toolbars = JSON.stringify(await loadToolbarSettings(manifest));
 // Who may publish (ADR 0022). Only the UI; the server enforces it (publish-guard.ts).
 const viewer = await getViewer(Astro);
 const canPublish = hasPermission(viewer.permissionLevel, config.publishPermission);
+// Templates (with their content areas) and parts for the Template menu (ADR 0041).
+const [templates, parts] = await Promise.all([
+	listTemplates(manifest, config.historyLimit).catch(() => []),
+	listParts(manifest, config.historyLimit).catch(() => []),
+]);
+// Display modes (ADR 0046): none unless a companion (Tapestry Fabric) turns them on.
+const modes = await loadModes();
+const modesData = modes.length > 0 ? JSON.stringify(storedModes(modes).modes) : '';
+const templateCatalog = JSON.stringify({
+	templates: templates.map((t) => ({
+		id: t.id,
+		name: t.name,
+		header: t.header,
+		footer: t.footer,
+		areas: templateAreas(t.page.published ?? t.page.draft),
+	})),
+	parts: parts.map((p) => ({ id: p.id, region: p.region, name: p.name })),
+});
 ---
 
 <div
@@ -37,6 +59,8 @@ const canPublish = hasPermission(viewer.permissionLevel, config.publishPermissio
 	data-can-publish={canPublish ? 'true' : 'false'}
 	data-publish-role={config.publishPermission}
 	data-user-level={viewer.permissionLevel}
+	data-template-catalog={templateCatalog}
+	data-modes={modesData}
 ></div>
 <textarea id="page-content" name="page-content" class="tapestry-editor-field" data-tapestry-field spellcheck="false"
 	>{content ?? ''}</textarea
@@ -45,10 +69,11 @@ const canPublish = hasPermission(viewer.permissionLevel, config.publishPermissio
 <script>
 	import config from 'virtual:tapestry/config';
 	import { loadPicker } from 'virtual:tapestry/media-client';
-	import { loadSeoEditor } from 'virtual:tapestry/seo-client';
+	import extensions from 'virtual:tapestry/extensions';
 	import manifest from 'virtual:tapestry/manifest';
 	import thumbnails from 'virtual:tapestry/thumbnails';
 	import { mountEditor } from '../editor/mount.js';
+	import { parseModes } from '../modes.js';
 	import { applyToolbarSettings, parseToolbarSettings } from '../toolbar-settings.js';
 
 	function toolbarSettings(raw: string | undefined) {
@@ -56,6 +81,25 @@ const canPublish = hasPermission(viewer.permissionLevel, config.publishPermissio
 			return parseToolbarSettings(JSON.parse(raw ?? '{}'), manifest);
 		} catch {
 			return parseToolbarSettings({}, manifest);
+		}
+	}
+
+	function templateCatalog(raw: string | undefined) {
+		try {
+			const parsed = JSON.parse(raw ?? '');
+			return Array.isArray(parsed?.templates) && Array.isArray(parsed?.parts) ? parsed : undefined;
+		} catch {
+			return undefined;
+		}
+	}
+
+	/** The site's display modes, or none (off). */
+	function displayModes(raw: string | undefined) {
+		if (!raw) return [];
+		try {
+			return parseModes({ modes: JSON.parse(raw) });
+		} catch {
+			return parseModes(null);
 		}
 	}
 
@@ -74,11 +118,13 @@ const canPublish = hasPermission(viewer.permissionLevel, config.publishPermissio
 			canPublish: host.dataset.canPublish !== 'false',
 			publishRole: host.dataset.publishRole,
 			mediaPicker: loadPicker,
-			seoEditor: loadSeoEditor,
+			extensions,
 			thumbnails,
 			languages: config.languages,
 			userLevel: host.dataset.userLevel,
 			pageId: new URL(location.href).searchParams.get('edit') ?? undefined,
+			templateCatalog: templateCatalog(host.dataset.templateCatalog),
+			modes: displayModes(host.dataset.modes),
 		}) ?? cleanup;
 		field.hidden = true;
 	}

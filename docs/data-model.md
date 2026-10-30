@@ -77,10 +77,13 @@ never-published pages are left out.
 ```ts
 interface TapestryDocument {
   version: 1;            // format version, for future migrations
-  template?: string;     // pages only: the template ("tt_" + 16); absent: the default (ADR 0041)
+  template?: string;     // pages only: the template it inherits ("tt_" + 16) (ADR 0041)
+  header?: string;       // pages without a template: their own header part ("tp_" + 16)
+  footer?: string;       //   …and footer part (absent: none)
   root: TapestryNode[];  // top-level nodes, rendered in order
 }
-// Keys are written in this order (documents are compared as strings).
+// Keys are written in this order (documents are compared as strings). With a template, top-level
+// nodes carry `slot` = the content area they're in (an area key: lowercase, digits, hyphens).
 
 interface TapestryNode {
   id: string;                       // unique within the document
@@ -293,20 +296,21 @@ interface Part {
   page: StoredPage;              // the stored page format above (draft, publish, history, schedule)
 }
 
-// id "@nascencestudio/tapestry-template:<id>"
+// id "@nascencestudio/tapestry-template:<id>": a page layout pages inherit
 interface Template {
   id: string;                    // "tt_" + 16
   name: string;
   header: string | null;         // a part id
   footer: string | null;
+  page: StoredPage;              // the body: any components plus content areas (type "tapestry-area",
+                                 // prop `name`; area key = slugified name, e.g. "Main" → "main")
 }
-
-// id "@nascencestudio/tapestry-templates"
-interface TemplateSettings { defaultTemplate: string | null }
 ```
 
-A page uses its document's `template`, else the default template, else none. Visitors get each
-part's published version; editors previewing get drafts. Parts are saved with the same rules as
+A page with a `template` is rendered as the template body with each content area holding the page's
+top-level nodes for that area (template node ids prefixed `tpl_`); its header and footer are the
+template's. A page without one uses its own `header`/`footer` (or none). Visitors get published
+versions; editors previewing get drafts. Parts and template bodies are saved with the same rules as
 pages (publish permission, locked components; `save-rules.ts`).
 
 ## Translations

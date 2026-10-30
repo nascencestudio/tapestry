@@ -78,9 +78,22 @@ export function displayValue(value: PropValue | undefined, def?: PropDefinition)
 	if (typeof value === 'boolean') return value ? 'Yes' : 'No';
 	if (typeof value === 'number') return String(value);
 	let text: string;
+	if (Array.isArray(value) && def?.type === 'select') {
+		// Several choices (ADR 0046): their labels.
+		const labels = value.map((v) =>
+			typeof v === 'string' ? (def.options.find((o) => o.value === v)?.label ?? v) : '',
+		);
+		return labels.length ? labels.join(', ') : '(empty)';
+	}
 	if (Array.isArray(value)) {
 		const noun = (def?.type === 'list' && def.itemLabel) || 'item';
-		const items = def?.type === 'list' ? value.map((item) => itemSummary(def.fields, item)).filter(Boolean) : [];
+		const items =
+			def?.type === 'list'
+				? value
+						.filter((item): item is ObjectValue => typeof item === 'object')
+						.map((item) => itemSummary(def.fields, item))
+						.filter(Boolean)
+				: [];
 		text = `${value.length} ${noun}${value.length === 1 ? '' : 's'}${items.length ? `: ${items.join(', ')}` : ''}`;
 	} else if (typeof value === 'string') {
 		text = value;

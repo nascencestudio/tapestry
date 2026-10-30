@@ -3,17 +3,30 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { definePlugin } from 'studiocms/plugins';
-import { toManifest } from './define.js';
+import { defineComponent, toManifest } from './define.js';
 import { NODE_ELEMENT, ROOT_ELEMENT } from './render.js';
 import { DEFAULT_HISTORY_LIMIT } from './revisions.js';
 import { PAGES_ROUTE, PARTS_ROUTE, PATTERNS_ROUTE, TEMPLATES_ROUTE, TRANSLATIONS_ROUTE } from './routes.js';
+import { AREA_TYPE } from './templates.js';
 import { type Language, parseLanguages } from './translations.js';
 import type { ComponentDefinition } from './types.js';
-import { islandWrapperSource, type MediaLibraryPaths, tapestryVitePlugin } from './vite.js';
+import { COMPANIONS, islandWrapperSource, type MediaLibraryPaths, tapestryVitePlugin } from './vite.js';
 
 export type { PageAccess, PermissionLevel, Viewer } from './access.js';
 export { ANONYMOUS, hasPermission, isEditor, pageAccess, pagePath } from './access.js';
 export { defineComponent, TapestryDefinitionError, toManifest } from './define.js';
+export type { DisplayMode } from './modes.js';
+export {
+	BUILT_IN_MODES,
+	FULL,
+	MAX_MODES,
+	modeClassName,
+	modeSlot,
+	nodeModes,
+	parseModeSlot,
+	shownIn,
+	TEASER,
+} from './modes.js';
 export {
 	decodeProps,
 	encodeProps,
@@ -50,6 +63,7 @@ export {
 	toRenderTree,
 } from './richtext.js';
 export { CANVAS_PARAM, NODE_ATTR, ROOT_ATTR, TEXT_ATTR, TEXT_PROP_ATTR } from './runtime/canvas-mode.js';
+export { nodesText } from './text.js';
 export type { RichTextField, ToolbarSettings } from './toolbar-settings.js';
 export {
 	applyToolbarSettings,
@@ -61,6 +75,7 @@ export {
 export type * from './types.js';
 export type { ValidationIssue, ValidationResult } from './validate.js';
 export {
+	cleanLinkValue,
 	cleanRichTextProp,
 	emptyDocument,
 	isSafeUrl,
@@ -119,6 +134,17 @@ export interface TapestryOptions {
 	 * StudioCMS plugin). See docs/decisions/0040-seo-button.md.
 	 */
 	seo?: boolean;
+	/**
+	 * Show **Navigation settings** under the editor's settings panel for @nascencestudio/tapestry-menus (this
+	 * page's menu link). Default: on when the package is installed. See docs/decisions/0042-companion-hooks.md.
+	 */
+	menus?: boolean;
+	/**
+	 * Display modes (Full, Teaser, …) on template components and content areas, for
+	 * @nascencestudio/tapestry-fabric's page lists. Default: on when that package is installed. See
+	 * docs/decisions/0046-display-modes.md.
+	 */
+	displayModes?: boolean;
 }
 
 /** Locate @nascencestudio/medialibrary from the site's project root, or null. */
@@ -135,13 +161,34 @@ function findMediaLibrary(root: string): MediaLibraryPaths | null {
 	}
 }
 
-/** Locate @nascencestudio/tapestry-seo's editor entry from the site's project root, or null. */
-function findSeoEditor(root: string): string | null {
-	try {
-		return createRequire(join(root, 'package.json')).resolve('@nascencestudio/tapestry-seo/editor');
-	} catch {
-		return null;
-	}
+/** Companions that turn display modes on (ADR 0046). */
+const DISPLAY_MODE_COMPANIONS = ['@nascencestudio/tapestry-fabric'];
+
+/** Whether a companion that uses display modes is installed (resolvable from the site), unless turned off. */
+function findDisplayModes(root: string, options: TapestryOptions): boolean {
+	if (options.displayModes === false) return false;
+	const require = createRequire(join(root, 'package.json'));
+	return DISPLAY_MODE_COMPANIONS.some((entry) => {
+		try {
+			require.resolve(entry);
+			return true;
+		} catch {
+			return false;
+		}
+	});
+}
+
+/** The companion plugins installed in the site (their editor entries), unless turned off by option. */
+function findCompanions(root: string, options: TapestryOptions): Array<{ id: string; path: string }> {
+	const require = createRequire(join(root, 'package.json'));
+	return COMPANIONS.flatMap((companion) => {
+		if (options[companion.option] === false) return [];
+		try {
+			return [{ id: companion.id, path: require.resolve(companion.entry) }];
+		} catch {
+			return [];
+		}
+	});
 }
 
 function resolve(path: string): string {
@@ -235,9 +282,27 @@ function writeIslandWrappers(definitions: readonly ComponentDefinition[], root: 
  * });
  * ```
  */
+/** The built-in content area for template bodies (ADR 0041); offered only in the template editor. */
+function areaDefinition(): ComponentDefinition {
+	return defineComponent({
+		type: AREA_TYPE,
+		label: 'Content area',
+		description: 'Where pages using this template put their content. Name it (Main, Sidebar…).',
+		category: 'Template',
+		component: resolve('./runtime/Area.astro'),
+		acceptsChildren: true,
+		props: { name: { type: 'text', label: 'Name', required: true, default: 'Main', maxLength: 40 } },
+	});
+}
+
 export function tapestry(options: TapestryOptions): TapestryPlugin {
+	if (options.components.some((definition) => definition.type === AREA_TYPE)) {
+		throw new Error(`[tapestry] "${AREA_TYPE}" is Tapestry's built-in content area; choose another type.`);
+	}
+	// The site's components plus the built-in content area.
+	const components = [...options.components, areaDefinition()];
 	// Validates uniqueness eagerly so config mistakes fail at startup.
-	toManifest(options.components);
+	toManifest(components);
 	if (options.publishPermission !== undefined && !['editor', 'admin', 'owner'].includes(options.publishPermission)) {
 		throw new Error(`[tapestry] publishPermission must be 'editor', 'admin' or 'owner'.`);
 	}
@@ -309,13 +374,13 @@ export function tapestry(options: TapestryOptions): TapestryPlugin {
 							});
 							// Outermost, so it sees every JSON response (see middleware.ts).
 							addMiddleware({ entrypoint: fileURLToPath(resolve('./runtime/middleware.js')), order: 'pre' });
-							const islands = writeIslandWrappers(options.components, config.root);
+							const islands = writeIslandWrappers(components, config.root);
 							updateConfig({
 								vite: {
 									optimizeDeps: { include: EDITOR_DEPS },
 									plugins: [
 										tapestryVitePlugin(
-											options.components,
+											components,
 											config.root,
 											{
 												pageUrlPattern: options.pageUrlPattern ?? '/{slug}',
@@ -324,13 +389,14 @@ export function tapestry(options: TapestryOptions): TapestryPlugin {
 												settingsRoute: SETTINGS_ROUTE,
 												publishPermission: options.publishPermission ?? 'editor',
 												languages,
+												displayModes: findDisplayModes(fileURLToPath(config.root), options),
 											},
 											{
 												paths: options.mediaLibrary === false ? null : findMediaLibrary(fileURLToPath(config.root)),
 												fallbackMedia: fileURLToPath(resolve('./runtime/MediaFallback.astro')),
 											},
 											islands,
-											options.seo === false ? null : findSeoEditor(fileURLToPath(config.root)),
+											findCompanions(fileURLToPath(config.root), options),
 										),
 									],
 								},
@@ -346,6 +412,23 @@ export function tapestry(options: TapestryOptions): TapestryPlugin {
 				setDashboard({
 					translations: { en: {} },
 					settingsPage: { fields: [], endpoint: fileURLToPath(resolve('./runtime/settings-onsave.js')) },
+					// Template Management (ADR 0041): in the Dashboard section after the plugins listed
+					// before Tapestry (put the media library first to have it right under Media). StudioCMS
+					// lists only editor-level pages there: editors can look, only admins can change things.
+					dashboardPages: {
+						user: [
+							{
+								title: { en: 'Template Management' },
+								description: 'Headers, footers and page templates.',
+								route: 'templates',
+								icon: 'heroicons:rectangle-group',
+								sidebar: 'double',
+								requiredPermissions: 'editor',
+								innerSidebarComponent: fileURLToPath(resolve('./runtime/TemplateManagementNav.astro')),
+								pageBodyComponent: fileURLToPath(resolve('./runtime/TemplateManagement.astro')),
+							},
+						],
+					},
 				});
 			},
 			'studiocms:rendering': ({ setRendering }) => {

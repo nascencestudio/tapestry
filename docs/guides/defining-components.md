@@ -102,6 +102,7 @@ REST API would otherwise expose drafts; see [security](../security.md#unpublishe
 | `acceptsChildren` | boolean | | Children render into the component's default `<slot />` |
 | `slots` | `Record<name, { label, description? }>` | | Named areas for children (see "Children") |
 | `thumbnail` | string | | Image for the editor's library (`.png`, `.jpg`, `.webp`, `.avif`, `.gif`, `.svg`), relative to the project root. Without one, hovering the component shows a live preview. |
+| `withNodeId` | boolean | | Pass the component its node's id as a `nodeId` prop (stable for this placement), e.g. to name a URL parameter of its own; no prop may then be called `nodeId` |
 
 Throws `TapestryDefinitionError` at config load for invalid names, reserved
 prop names, a select `default` that isn't one of its options, `min > max`, an unknown or
@@ -126,10 +127,22 @@ Every prop: `label` (required), `description?`, `required?`.
 | `link` | `ResolvedLink \| null` (below) | `default` (a web address string, or `{ type: 'page' \| 'url', … }`) |
 | `number` | `number` | `min`, `max`, `default` |
 | `boolean` | `boolean` | `default` |
-| `select` | `string` (one of the option values) | `options` (required), `default` |
+| `select` | `string` (one of the option values); with `multiple`, `string[]` | `options` (required; may be empty with `optionsUrl`), `optionsUrl`, `multiple`, `default` (a list with `multiple`) |
 | `object` | object of field values, or `undefined` (below) | `fields`, `default` |
 | `list` | array of objects, or `undefined` (below) | `fields`, `minItems`, `maxItems` (default 50, at most 100), `itemLabel`, `default` |
 | `richtext` | rich text object (render it with `<RichText>`, below) | `toolbar`, `maxLength` (default 20,000 characters of text), `default` (plain string or rich text) |
+
+**Choices from the server (`optionsUrl`):** a `select` can load its options when the editor opens,
+from a path on your site that answers editors with `{ "options": [{ "value": "…", "label": "…" }] }`
+(no other host: no scheme, `//` or `..`). Companion plugins use it, e.g. Tapestry Menus' menu
+picker. Values are then ids (letters, digits, `_` and `-`), and the validator can't know the live list,
+so the component must handle a value that no longer exists (render nothing, say). The settings panel
+shows such a value as "Missing: …".
+
+**Several choices (`multiple: true`):** the value is a list of option values in the order picked (at most
+100); editors add them as chips through a box that autocompletes from the options. An empty list is no
+value (`undefined`). Tapestry Fabric's Page list uses it for categories and tags.
+
 
 Optional props without a value and without a `default` are **absent**
 (`undefined`), so give your component sensible fallbacks.

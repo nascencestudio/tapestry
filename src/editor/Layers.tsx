@@ -8,7 +8,7 @@ import { attachInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/list
 import { extractInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/list-item/extract-instruction';
 import type { JSX } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
-import { areaLabel, childAreas, hasChildAreas } from '../slots.js';
+import { areaLabel, childAreas, hasChildAreas, ROOT_ENTRY } from '../slots.js';
 import type { TapestryNode } from '../types.js';
 import { activeEndZone, type DragData, dropIndicator, isDragData, isDragging } from './dnd.js';
 import { InfoPopover, type Shortcut, ShortcutList, shortcutText } from './InfoPopover.js';
@@ -307,7 +307,7 @@ function Row({
 							if (result) store.commit(result.doc, { select: result.id });
 						}}
 					>
-						⧉
+						{UI_ICONS.duplicate}
 					</button>
 					<button
 						type="button"
@@ -319,7 +319,7 @@ function Row({
 							store.commit(removeNode(store.doc.peek(), node.id), { select: null });
 						}}
 					>
-						✕
+						{UI_ICONS.trash}
 					</button>
 				</span>
 			</div>
@@ -391,6 +391,10 @@ export function Layers({ store, announce }: Props) {
 	const onKeyDown = (event: KeyboardEvent) => handleStructureKey(store, event, keyOptions);
 
 	const hasFocusTarget = doc.root.length > 0 && !store.selectedId.value;
+	// A page using a template has the template's content areas at its root.
+	const rootEntry = store.manifest[ROOT_ENTRY];
+	const areaKeys = new Set(childAreas(rootEntry));
+	const unplaced = rootEntry ? doc.root.filter((node) => !areaKeys.has(node.slot)) : [];
 
 	return (
 		<section class="tp-panel tp-layers" aria-labelledby="tp-layers-heading">
@@ -454,11 +458,55 @@ export function Layers({ store, announce }: Props) {
 					}
 				}}
 			>
-				{doc.root.map((node) => (
-					<Row key={node.id} store={store} node={node} level={1} />
-				))}
+				{rootEntry ? (
+					<>
+						{/* A page using a template: one group per content area (ADR 0041). */}
+						{childAreas(rootEntry).map((slot) => {
+							const label = areaLabel(rootEntry, slot);
+							const inArea = doc.root.filter((node) => node.slot === slot);
+							return (
+								<li role="none" key={slot ?? ''} class="tp-tree__area" data-tp-area={`:${slot ?? ''}`}>
+									<div class="tp-tree__area-label" aria-hidden="true">
+										{label}
+									</div>
+									{/* biome-ignore lint/a11y/useSemanticElements: ARIA tree pattern */}
+									<ul role="group" class="tp-tree__group" aria-label={label}>
+										{inArea.map((node) => (
+											<Row key={node.id} store={store} node={node} level={1} area={label} />
+										))}
+										<li role="none">
+											<EndZone
+												store={store}
+												parentId={null}
+												slot={slot}
+												label={
+													inArea.length ? `Drop to add at the end of ${label}` : `Empty — drop components into ${label}`
+												}
+											/>
+										</li>
+									</ul>
+								</li>
+							);
+						})}
+						{unplaced.length > 0 && (
+							<li role="none" class="tp-tree__area" data-tp-area="unplaced">
+								<div class="tp-tree__area-label" aria-hidden="true">
+									Not in this template (not shown on the page)
+								</div>
+								{/* biome-ignore lint/a11y/useSemanticElements: ARIA tree pattern */}
+								<ul role="group" class="tp-tree__group" aria-label="Not in this template">
+									{unplaced.map((node) => (
+										<Row key={node.id} store={store} node={node} level={1} area="Not in this template" />
+									))}
+								</ul>
+							</li>
+						)}
+					</>
+				) : (
+					doc.root.map((node) => <Row key={node.id} store={store} node={node} level={1} />)
+				)}
 			</ul>
-			<EndZone store={store} parentId={null} label="Drop to add at the end of the page" />
+			{!rootEntry && <EndZone store={store} parentId={null} label="Drop to add at the end of the page" />}
 			<p id="tp-layers-keys" class="tp-sr-only">
 				{shortcutText(TREE_SHORTCUTS)}
 			</p>

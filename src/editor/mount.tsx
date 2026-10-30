@@ -12,18 +12,21 @@
 import { signal } from '@preact/signals';
 import { render } from 'preact';
 import { pagePath } from '../access.js';
+import type { DisplayMode } from '../modes.js';
 import { lockedTypes } from '../permissions.js';
 import { applyDueSchedule, DEFAULT_HISTORY_LIMIT, parseStoredPage, workingDocument } from '../revisions.js';
 import { PARTS_ROUTE } from '../routes.js';
+import { PAGE_PARAM } from '../runtime/canvas-mode.js';
 import type { Language } from '../translations.js';
 import type { ComponentManifest, TapestryDocument } from '../types.js';
 import { App } from './App.js';
+import { type EditorExtension, setEditorExtensions } from './extensions.js';
 import { configurePreviews } from './library-previews.js';
 import { type PickerModule, setMediaPickerLoader } from './media.js';
 import { createPublishing } from './publishing.js';
 import { preloadRichText } from './richtext-loader.js';
-import { type SeoEditorModule, setSeoEditorLoader } from './seo.js';
 import { createEditorStore } from './store.js';
+import type { TemplateCatalog } from './TemplateMenu.js';
 
 const MOUNTED = 'tapestryMounted';
 
@@ -50,15 +53,27 @@ export interface MountOptions {
 	pageId?: string;
 	/** Library thumbnail URLs by component type (`virtual:tapestry/thumbnails`). */
 	thumbnails?: Record<string, string>;
-	/** Loads @nascencestudio/tapestry-seo's SEO dialog (absent when it isn't installed; ADR 0040). */
-	seoEditor?: (() => Promise<SeoEditorModule>) | null;
+	/** Companion plugins' editor-bar buttons (`virtual:tapestry/extensions`; ADR 0040, 0042). */
+	extensions?: readonly EditorExtension[];
 	/**
-	 * Edit a template's header or footer part instead of a page (ADR 0041): saved through the parts
-	 * endpoint, shown on the canvas inside `canvasPage` (a real page's path).
+	 * Edit a header/footer part or a template body instead of a page (ADR 0041): saved through the
+	 * parts endpoint, shown on the canvas inside `canvasPage` (a real page's path).
 	 */
-	part?: { id: string; region: 'header' | 'footer'; name: string };
-	/** The part editor's canvas page (e.g. `/`). */
+	subject?: { kind: 'part' | 'template'; id: string; name: string; region?: 'header' | 'footer' };
+	/** The part/template editor's canvas page (e.g. `/`). */
 	canvasPage?: string | null;
+	/** Templates and parts for the page editor's Template menu (and the templates' content areas). */
+	templateCatalog?: TemplateCatalog;
+	/** The site's display modes (ADR 0046; absent or empty when they're off). */
+	modes?: readonly DisplayMode[];
+}
+
+/** The render endpoint, with the page being edited (lists leave it out, ADR 0046). */
+function renderUrlFor(route: string, pageId: string | undefined): string {
+	if (!pageId) return route;
+	const url = new URL(route, window.location.origin);
+	url.searchParams.set(PAGE_PARAM, pageId);
+	return `${url.pathname}${url.search}`;
 }
 
 /** Mount the editor. Safe to call repeatedly; returns a cleanup function (or undefined if already mounted). */
@@ -72,7 +87,7 @@ export function mountEditor(
 	host.dataset[MOUNTED] = 'true';
 
 	setMediaPickerLoader(options.mediaPicker ?? null);
-	setSeoEditorLoader(options.seoEditor ?? null);
+	setEditorExtensions(options.extensions);
 	configurePreviews({
 		...(options.thumbnails ? { thumbnails: options.thumbnails } : {}),
 		...(options.renderRoute ? { renderRoute: options.renderRoute } : {}),
@@ -88,6 +103,9 @@ export function mountEditor(
 	const store = createEditorStore(workingDocument(stored), manifest, Date.now, {
 		locked,
 		knownVersions: () => knownVersions(),
+		templateAreas: new Map((options.templateCatalog?.templates ?? []).map((t) => [t.id, t.areas])),
+		editing: options.subject?.kind ?? 'page',
+		modes: options.modes ?? [],
 	});
 	const publishing = createPublishing({
 		store,
@@ -108,21 +126,21 @@ export function mountEditor(
 
 	// The page's public URL follows StudioCMS's slug field (on the Basic Information tab).
 	// The part editor shows the part inside a real page instead.
-	const slugField = options.part
+	const slugField = options.subject
 		? null
 		: (field.form?.querySelector<HTMLInputElement>('input[name="page-slug"]') ?? null);
 	const pattern = options.pageUrlPattern ?? '/{slug}';
-	const pageUrl = signal<string | null>(options.part ? (options.canvasPage ?? null) : null);
+	const pageUrl = signal<string | null>(options.subject ? (options.canvasPage ?? null) : null);
 	const updatePageUrl = () => {
 		const slug = slugField?.value.trim();
 		pageUrl.value = slug ? pagePath(pattern, slug) : null;
 	};
-	if (!options.part) updatePageUrl();
+	if (!options.subject) updatePageUrl();
 	slugField?.addEventListener('input', updatePageUrl);
 
-	/** The part editor's save: the content field to the parts endpoint; adopt what was stored. */
-	const savePart = async (): Promise<string | null> => {
-		const part = options.part;
+	/** The part/template editor's save: the content field to the parts endpoint; adopt what was stored. */
+	const saveSubject = async (): Promise<string | null> => {
+		const part = options.subject;
 		if (!part) return null;
 		const response = await fetch(PARTS_ROUTE, {
 			method: 'POST',
@@ -145,13 +163,14 @@ export function mountEditor(
 			unreadableContent={parsed.unreadable ? raw : undefined}
 			publishing={publishing}
 			pageUrl={pageUrl}
-			renderUrl={options.renderRoute ?? '/_tapestry/render'}
+			renderUrl={renderUrlFor(options.renderRoute ?? '/_tapestry/render', options.subject ? undefined : options.pageId)}
 			form={field.form}
 			canPublish={options.canPublish ?? true}
 			publishRole={options.publishRole}
 			languages={options.languages}
 			pageId={options.pageId}
-			{...(options.part ? { part: { ...options.part, save: savePart } } : {})}
+			{...(options.subject ? { subject: { ...options.subject, save: saveSubject } } : {})}
+			{...(options.templateCatalog && !options.subject ? { templateCatalog: options.templateCatalog } : {})}
 		/>,
 		host,
 	);

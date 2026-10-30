@@ -47,6 +47,10 @@ interface PopoverProps {
 	 * there's no room on the right.
 	 */
 	placement?: 'below' | 'above';
+	/** `end`: always right-aligned with the button (menus near the right of a narrow area). Default: as above. */
+	align?: 'auto' | 'end';
+	/** Extra controls in the header, before the close button (e.g. an "i" help button). */
+	headerExtra?: ComponentChildren;
 	icon?: ComponentChildren;
 	/** Visible button text (beside the icon); without it, an icon button. */
 	text?: ComponentChildren;
@@ -68,6 +72,8 @@ export function Popover({
 	label,
 	title,
 	placement = 'below',
+	align: alignOption = 'auto',
+	headerExtra,
 	icon,
 	text,
 	onOpen,
@@ -75,17 +81,17 @@ export function Popover({
 	children,
 }: PopoverProps) {
 	const [open, setOpen] = useState(false);
-	const [align, setAlign] = useState<'start' | 'end'>('start');
+	const [align, setAlign] = useState<'start' | 'end'>(alignOption === 'end' ? 'end' : 'start');
 	const button = useRef<HTMLButtonElement>(null);
 	const panel = useRef<HTMLDivElement>(null);
 
 	// Measure before paint: left-aligned unless that would run off the right edge.
 	useLayoutEffect(() => {
-		if (!open || !button.current || !panel.current) return;
+		if (!open || alignOption === 'end' || !button.current || !panel.current) return;
 		const width = panel.current.offsetWidth;
 		const left = button.current.getBoundingClientRect().left;
 		setAlign(left + width <= document.documentElement.clientWidth - 8 ? 'start' : 'end');
-	}, [open]);
+	}, [open, alignOption]);
 
 	// A layout effect, so the listeners are in place before anything else can happen (a passive
 	// effect runs after paint; a quick click outside could slip in before it).
@@ -98,6 +104,8 @@ export function Popover({
 		};
 		const onKey = (event: KeyboardEvent) => {
 			if (event.key !== 'Escape') return;
+			// A popover open inside this one (e.g. its "i" help) closes first.
+			if (panel.current?.querySelector('.tp-info__panel')) return;
 			event.preventDefault();
 			event.stopPropagation();
 			setOpen(false);
@@ -143,6 +151,7 @@ export function Popover({
 				>
 					<div class="tp-info__header">
 						<span class="tp-info__title">{title}</span>
+						{headerExtra && <span class="tp-info__extra">{headerExtra}</span>}
 						<button
 							type="button"
 							class="tp-icon-button tp-info__close"

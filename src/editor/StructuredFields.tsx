@@ -142,7 +142,9 @@ export function ListField({
 	onChange: FieldChange;
 	Row: RowComponent;
 }) {
-	const items: ObjectValue[] = Array.isArray(value) ? value : [];
+	const items: ObjectValue[] = Array.isArray(value)
+		? value.filter((item): item is ObjectValue => typeof item === 'object')
+		: [];
 	const noun = def.itemLabel ?? 'item';
 	const max = listMaxItems(def);
 	// Open items, by position (a single item starts open).

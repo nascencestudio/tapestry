@@ -78,14 +78,23 @@ describe('media modules', () => {
 	});
 });
 
-describe('SEO module', () => {
-	it('loads tapestry-seo’s dialog on demand when installed, else nothing (no SEO button)', async () => {
-		const { seoModuleSource } = await import('../src/vite.js');
-		expect(seoModuleSource('/s/editor/index.js')).toContain('import("/s/editor/index.js")');
-		expect(seoModuleSource('/s/editor/index.js')).toContain('export const enabled = true');
-		expect(seoModuleSource(null)).toContain('export const loadSeoEditor = null');
+describe('companion plugins (editor-bar buttons and sidebar panels)', () => {
+	it('loads each installed companion’s dialog on demand, else nothing', async () => {
+		const { extensionsModuleSource } = await import('../src/vite.js');
+		const source = extensionsModuleSource([
+			{ id: 'seo', path: '/s/editor/index.js' },
+			{ id: 'menu', path: '/m/editor/index.js' },
+			{ id: 'unknown', path: '/x.js' },
+		]);
+		expect(source).toContain('import("/s/editor/index.js")');
+		expect(source).toContain('m["openSeoEditor"]');
+		expect(source).toContain('kind: "button"');
+		expect(source).toContain('m["mountMenuSettings"]');
+		expect(source).toContain('kind: "panel", label: "Navigation settings"');
+		expect(source).not.toContain('/x.js');
+		expect(extensionsModuleSource([])).toBe('export default [];\n');
 		// Paths are written as JSON strings, so quotes can't break out of the import.
-		expect(seoModuleSource('/a"b/editor.js')).toContain('import("/a\\"b/editor.js")');
+		expect(extensionsModuleSource([{ id: 'seo', path: '/a"b/e.js' }])).toContain('import("/a\\"b/e.js")');
 	});
 });
 

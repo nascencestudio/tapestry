@@ -11,6 +11,7 @@ import config from 'virtual:tapestry/config';
 import manifest from 'virtual:tapestry/manifest';
 import type { AstroGlobal } from 'astro';
 import { isEditor, pageAccess, type Viewer } from '../access.js';
+import { parseTabs } from '../modes.js';
 import {
 	applyDueSchedule,
 	documentFor,
@@ -21,16 +22,63 @@ import {
 	parseVersion,
 } from '../revisions.js';
 import type { Language } from '../translations.js';
+import type { ResolvedLink } from '../types.js';
 import { emptyDocument } from '../validate.js';
-import { CANVAS_PARAM, enableCanvasMode, enableEmbeddedMode, PREVIEW_PARAM, VERSION_PARAM } from './canvas-mode.js';
-import { type PageTranslation, pageLanguages } from './languages.js';
-import { loadRegions, PART_PARAM, type PageRegions, TEMPLATE_PARAM } from './regions.js';
+import {
+	CANVAS_PARAM,
+	currentPage,
+	enableCanvasMode,
+	enableEmbeddedMode,
+	isCanvasMode,
+	PREVIEW_PARAM,
+	setCurrentPage,
+	TABS_PARAM,
+	VERSION_PARAM,
+} from './canvas-mode.js';
+import { currentLanguage, localizeFor, localizeStrictFor, type PageTranslation, pageLanguages } from './languages.js';
+import { draftAccessFor, resolveLinks } from './links.js';
+import {
+	EDIT_TEMPLATE_PARAM,
+	FOOTER_PARAM,
+	HEADER_PARAM,
+	type LayoutOverrides,
+	loadLayout,
+	PART_PARAM,
+	type PageRegions,
+	TEMPLATE_PARAM,
+} from './regions.js';
 import { getViewer } from './viewer.js';
 
+export type { ListedPage, ListedTerm, PageInMode } from './listing.js';
+export { listPagesForLists, pageInMode, pageText } from './listing.js';
 export type { PublicPage, PublicPageTranslation } from './public-pages.js';
 export { listPublicPages } from './public-pages.js';
 export type { Language, PageRegions, PageTranslation };
 export { getViewer };
+
+/**
+ * The language code of the page being shown (from getPage(), ADR 0042), for companion plugins'
+ * components (menu labels); null on single-language sites or before getPage().
+ */
+export function pageLanguage(context: Pick<AstroGlobal, 'locals'>): string | null {
+	return currentLanguage(context.locals);
+}
+
+/**
+ * The id of the page this request shows (ADR 0046): set by getPage(), and in the editor's canvas the page
+ * being edited. Lists use it to leave their own page out. Null elsewhere (e.g. the template editor).
+ */
+export function currentPageId(context: Pick<AstroGlobal, 'locals'>): string | null {
+	return currentPage(context.locals);
+}
+
+/**
+ * True while the editor's visual canvas renders this request (ADR 0042): companion components can show
+ * a placeholder there (e.g. a menu block without a menu) that visitors never see.
+ */
+export function inEditorCanvas(context: Pick<AstroGlobal, 'locals'>): boolean {
+	return isCanvasMode(context.locals);
+}
 
 type RequestContext = Pick<AstroGlobal, 'cookies' | 'params' | 'response' | 'url' | 'locals'>;
 
@@ -97,6 +145,7 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 	if (!page) return null;
 	const access = pageAccess(page, viewer);
 	if (!access.visible) return null;
+	setCurrentPage(Astro.locals, String(page.id));
 	for (const [name, value] of Object.entries(access.headers)) Astro.response.headers.set(name, value);
 	const editor = isEditor(viewer);
 	const languages = await pageLanguages(Astro.locals, { id: String(page.id), slug: String(page.slug) }, editor);
@@ -106,11 +155,17 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 		enableCanvasMode(Astro.locals);
 		Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 	}
-	// Editors only: the canvas previews an unsaved template choice, or edits a part (body: placeholder).
-	const templateOverride = canvas ? Astro.url.searchParams.get(TEMPLATE_PARAM) : null;
-	const editingPart = canvas ? Astro.url.searchParams.get(PART_PARAM) : null;
+	// Editors only (the canvas): an unsaved layout choice, or the part/template being edited (ADR 0041).
+	const param = (name: string) => (canvas ? Astro.url.searchParams.get(name) : null);
+	const overrides: LayoutOverrides = {
+		template: param(TEMPLATE_PARAM),
+		header: param(HEADER_PARAM),
+		footer: param(FOOTER_PARAM),
+		editingPart: param(PART_PARAM),
+		editingTemplate: param(EDIT_TEMPLATE_PARAM),
+	};
 	if (page.package !== TAPESTRY_PAGE_TYPE) {
-		const regions = await loadRegions({ doc: null, preview: canvas, templateOverride, editingPart });
+		const { regions } = await loadLayout({ doc: null, preview: canvas, overrides });
 		return { page, viewer, ...i18n, regions };
 	}
 
@@ -127,8 +182,9 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 		if (!doc) return null;
 		enableEmbeddedMode(Astro.locals);
 		Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-		const content = JSON.stringify(doc);
-		const regions = await loadRegions({ doc, preview: version !== 'published' });
+		const layout = await loadLayout({ doc, preview: version !== 'published' });
+		const { regions } = layout;
+		const content = JSON.stringify(layout.body(doc) ?? emptyDocument());
 		const rendered = {
 			...page,
 			defaultContent: page.defaultContent ? { ...page.defaultContent, content } : page.defaultContent,
@@ -152,9 +208,12 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 	if (previewing) Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 	// Copy, never mutate: StudioCMS caches page objects across requests, and the
 	// chosen version (possibly a draft) must not leak into another request.
-	const regions = await loadRegions({ doc: chosen, preview: previewing, templateOverride, editingPart });
-	// The part editor's canvas shows the page's layout with an empty body (the placeholder goes there).
-	const content = JSON.stringify(regions.editingPart ? emptyDocument() : (chosen ?? emptyDocument()));
+	// The page inside its template (or, in the part/template editors' canvas, what they edit).
+	const layout = await loadLayout({ doc: chosen, preview: previewing, overrides });
+	const { regions } = layout;
+	// The canvas: each content area shows its tab (ADR 0046).
+	const tabs = canvas ? parseTabs(Astro.url.searchParams.get(TABS_PARAM)) : {};
+	const content = JSON.stringify(layout.body(chosen ?? emptyDocument(), { tabs }) ?? emptyDocument());
 	const rendered = {
 		...page,
 		defaultContent: page.defaultContent ? { ...page.defaultContent, content } : page.defaultContent,
@@ -171,4 +230,42 @@ export async function getPage(Astro: RequestContext, options: { slug?: string } 
 			scheduledAt: stored.scheduled?.at ?? null,
 		},
 	};
+}
+
+/**
+ * Resolve link values (`{ type: 'page', page }` or `{ type: 'url', url }`) the way Tapestry's own link
+ * props are (ADR 0042), for companion plugins such as tapestry-menus: page links get the page's current
+ * path in the page's language (call getPage() first), and are null when the page is gone or, for
+ * visitors, unpublished. `hideUntranslated`: null for pages without a visible version in the current
+ * language (instead of linking the original).
+ */
+export async function resolveSiteLinks(
+	context: Pick<AstroGlobal, 'cookies' | 'locals' | 'url'>,
+	values: readonly unknown[],
+	options: { hideUntranslated?: boolean } = {},
+): Promise<Array<ResolvedLink | null>> {
+	const strict = options.hideUntranslated ? localizeStrictFor(context.locals) : null;
+	let input: unknown[] = [...values];
+	const hidden = new Set<number>();
+	if (strict) {
+		input = await Promise.all(
+			input.map(async (value, index) => {
+				if (!value || typeof value !== 'object' || (value as { type?: unknown }).type !== 'page') return value;
+				const link = value as { type: 'page'; page: string };
+				const page = await strict(link.page).catch(() => link.page);
+				if (page === null) {
+					hidden.add(index);
+					return null;
+				}
+				return page === link.page ? link : { ...link, page };
+			}),
+		);
+	}
+	const resolved = await resolveLinks(
+		input,
+		context.url.host,
+		draftAccessFor(context),
+		strict ? null : localizeFor(context.locals),
+	);
+	return resolved.map((link, index) => (hidden.has(index) ? null : link));
 }

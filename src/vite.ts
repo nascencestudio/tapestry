@@ -9,7 +9,7 @@ export const CONFIG_MODULE_ID = 'virtual:tapestry/config';
 export const MEDIA_MODULE_ID = 'virtual:tapestry/media';
 export const MEDIA_CLIENT_MODULE_ID = 'virtual:tapestry/media-client';
 export const THUMBNAILS_MODULE_ID = 'virtual:tapestry/thumbnails';
-export const SEO_CLIENT_MODULE_ID = 'virtual:tapestry/seo-client';
+export const EXTENSIONS_MODULE_ID = 'virtual:tapestry/extensions';
 
 /** Where @nascencestudio/medialibrary's entry points are, when it's installed. */
 export interface MediaLibraryPaths {
@@ -37,14 +37,45 @@ export function mediaModuleSources(paths: MediaLibraryPaths | null, fallbackMedi
 }
 
 /**
- * Source of `virtual:tapestry/seo-client`: with @nascencestudio/tapestry-seo, a loader for its SEO
- * dialog (`/editor`, loaded on demand when the SEO button is used); without it, null, and the
- * editor shows no SEO button (ADR 0040).
+ * Companion plugins in the page editor (ADR 0040, 0042): the package entry Tapestry looks for, where
+ * they appear, and the function their module exports. A `button` (editor bar) opens a dialog:
+ * `open({ pageId, loadPicker })`. A `panel` (a collapsible section under the settings panel, like
+ * Drupal's node sidebar) fills an element: `mount(element, { pageId, loadPicker })` returns a cleanup.
  */
-export function seoModuleSource(editorPath: string | null): string {
-	return editorPath
-		? `export const enabled = true;\nexport const loadSeoEditor = () => import(${JSON.stringify(editorPath)});\n`
-		: 'export const enabled = false;\nexport const loadSeoEditor = null;\n';
+export const COMPANIONS = [
+	{
+		id: 'seo',
+		option: 'seo',
+		entry: '@nascencestudio/tapestry-seo/editor',
+		kind: 'button',
+		label: 'SEO',
+		title: 'Search title, description and social image for this page (saved separately, at once)',
+		open: 'openSeoEditor',
+	},
+	{
+		id: 'menu',
+		option: 'menus',
+		entry: '@nascencestudio/tapestry-menus/editor',
+		kind: 'panel',
+		label: 'Navigation settings',
+		title: 'Where this page is linked in the site’s menus',
+		open: 'mountMenuSettings',
+	},
+] as const;
+
+/**
+ * Source of `virtual:tapestry/extensions`: the installed companions, each loading its module on
+ * demand (nothing loads until the button is used or the panel opened).
+ */
+export function extensionsModuleSource(found: ReadonlyArray<{ id: string; path: string }>): string {
+	const entries = found.flatMap(({ id, path }) => {
+		const companion = COMPANIONS.find((c) => c.id === id);
+		if (!companion) return [];
+		return [
+			`{ id: ${JSON.stringify(id)}, kind: ${JSON.stringify(companion.kind)}, label: ${JSON.stringify(companion.label)}, title: ${JSON.stringify(companion.title)}, load: () => import(${JSON.stringify(path)}).then((m) => m[${JSON.stringify(companion.open)}]) }`,
+		];
+	});
+	return `export default [${entries.join(', ')}];\n`;
 }
 
 /** Browser-safe runtime settings exposed as `virtual:tapestry/config`. */
@@ -61,6 +92,8 @@ export interface RuntimeConfig {
 	publishPermission: 'editor' | 'admin' | 'owner';
 	/** Languages pages can be translated into; the first is the default. Empty: one language. */
 	languages: Language[];
+	/** Display modes (ADR 0046): on when a companion that uses them (Tapestry Fabric) is installed. */
+	displayModes: boolean;
 }
 
 export interface MediaSetup {
@@ -176,10 +209,11 @@ export function tapestryVitePlugin(
 		settingsRoute: '/_tapestry/settings',
 		publishPermission: 'editor',
 		languages: [],
+		displayModes: false,
 	},
 	media: MediaSetup = { paths: null, fallbackMedia: '' },
 	islands: ReadonlyMap<string, string> = new Map(),
-	seoEditor: string | null = null,
+	companions: ReadonlyArray<{ id: string; path: string }> = [],
 ) {
 	const mediaSources = mediaModuleSources(media.paths, media.fallbackMedia);
 	const modules = new Map([
@@ -189,7 +223,7 @@ export function tapestryVitePlugin(
 		[`\0${MEDIA_MODULE_ID}`, mediaSources.server],
 		[`\0${MEDIA_CLIENT_MODULE_ID}`, mediaSources.client],
 		[`\0${THUMBNAILS_MODULE_ID}`, thumbnailsModuleSource(definitions, root)],
-		[`\0${SEO_CLIENT_MODULE_ID}`, seoModuleSource(seoEditor)],
+		[`\0${EXTENSIONS_MODULE_ID}`, extensionsModuleSource(companions)],
 	]);
 	return {
 		name: 'tapestry:virtual-modules',

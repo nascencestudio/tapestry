@@ -2,6 +2,8 @@ import { draggable } from '@atlaskit/pragmatic-drag-and-drop/adapter/element-ada
 import { useSignal } from '@preact/signals';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { PatternSummary } from '../patterns.js';
+import { ROOT_ENTRY } from '../slots.js';
+import { AREA_TYPE } from '../templates.js';
 import type { ComponentManifestEntry } from '../types.js';
 import type { DragData } from './dnd.js';
 import { UI_ICONS } from './icons.js';
@@ -145,7 +147,13 @@ export function Library({ store, announce }: Props) {
 	const q = query.value.trim().toLowerCase();
 	const entries = Object.values(store.manifest).filter(
 		(e) =>
-			!q || e.label.toLowerCase().includes(q) || e.type.includes(q) || (e.description ?? '').toLowerCase().includes(q),
+			// The root's areas aren't a component; the content area is for template bodies only (ADR 0041).
+			e.type !== ROOT_ENTRY &&
+			(e.type !== AREA_TYPE || store.editing === 'template') &&
+			(!q ||
+				e.label.toLowerCase().includes(q) ||
+				e.type.includes(q) ||
+				(e.description ?? '').toLowerCase().includes(q)),
 	);
 
 	const groups = new Map<string, ComponentManifestEntry[]>();
@@ -191,7 +199,7 @@ export function Library({ store, announce }: Props) {
 		const doc = store.doc.peek();
 		const node = createNode(store.manifest, type, new Set(allIds(doc)));
 		if (!node) return;
-		const target = insertionTargetFor(doc, store.manifest, store.selectedId.peek());
+		const target = insertionTargetFor(doc, store.manifest, store.selectedId.peek(), store.tabs.peek());
 		if (store.commit(insertNode(doc, store.manifest, node, target), { select: node.id })) {
 			announce(`Added ${store.manifest[type]?.label ?? type}.`);
 		}
@@ -239,7 +247,12 @@ export function Library({ store, announce }: Props) {
 								pattern={pattern}
 								announce={announce}
 								onInsert={() => {
-									const target = insertionTargetFor(store.doc.peek(), store.manifest, store.selectedId.peek());
+									const target = insertionTargetFor(
+										store.doc.peek(),
+										store.manifest,
+										store.selectedId.peek(),
+										store.tabs.peek(),
+									);
 									void insertPattern(store, pattern, target, announce);
 								}}
 							/>

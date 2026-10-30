@@ -1,10 +1,11 @@
 /// <reference path="../virtual.d.ts" />
 /**
  * /_tapestry/templates: templates and header/footer parts (ADR 0041).
- * - GET (editors): `{ templates, parts, defaultTemplate }` (the page editor's Template menu; parts
- *   without their documents).
- * - POST (admins, same origin, form fields): the Templates settings page's forms, then back to it.
- *   `action` is one of `create-template`, `update-template`, `delete-template`, `set-default`,
+ * - GET (editors): `{ templates, parts }` for the page editor's Template menu: templates with their
+ *   header, footer and content areas (from the published body, else the draft); parts without their
+ *   documents.
+ * - POST (admins, same origin, form fields): Template Management's forms, then back to the page.
+ *   `action`: `create-template`, `update-template` (name, header, footer), `delete-template`,
  *   `create-part`, `rename-part`, `delete-part` (refused while a template uses the part).
  */
 import { randomBytes } from 'node:crypto';
@@ -22,18 +23,19 @@ import {
 	PART_ID,
 	TEMPLATE_ID,
 	type TemplateError,
+	templateAreas,
 	templatesUsing,
 } from '../templates.js';
 import {
 	deletePart,
 	deleteTemplate,
-	getDefaultTemplate,
 	getPart,
+	getTemplate,
 	listParts,
 	listTemplates,
+	loadTemplateUsage,
 	savePart,
 	saveTemplate,
-	setDefaultTemplate,
 } from './templates-store.js';
 import { getViewer } from './viewer.js';
 
@@ -58,15 +60,20 @@ const deny = (status: number, message: string) =>
 export const GET: APIRoute = async (context) => {
 	if (!isEditor(await getViewer(context))) return json({ error: 'Editors only' }, 403);
 	try {
-		const [templates, parts, defaultTemplate] = await Promise.all([
-			listTemplates(),
+		const [templates, parts] = await Promise.all([
+			listTemplates(manifest, config.historyLimit),
 			listParts(manifest, config.historyLimit),
-			getDefaultTemplate(),
 		]);
 		return json({
-			templates,
+			templates: templates.map((t) => ({
+				id: t.id,
+				name: t.name,
+				header: t.header,
+				footer: t.footer,
+				areas: templateAreas(t.page.published ?? t.page.draft),
+				status: pageStatus(t.page),
+			})),
 			parts: parts.map((p) => ({ id: p.id, region: p.region, name: p.name, status: pageStatus(p.page) })),
-			defaultTemplate,
 		});
 	} catch (error) {
 		console.error('[tapestry] loading templates failed', error);
@@ -77,12 +84,11 @@ export const GET: APIRoute = async (context) => {
 /** One form action; returns an error code for the page (TEMPLATE_ERRORS), or null when done. */
 async function act(form: URLSearchParams): Promise<TemplateError | null> {
 	const action = form.get('action');
-	const part = (key: string) => {
+	const id = form.get('id') ?? '';
+	const partField = (key: string) => {
 		const value = form.get(key) ?? '';
 		return PART_ID.test(value) ? value : null;
 	};
-	const id = form.get('id') ?? '';
-	const templates = await listTemplates();
 
 	switch (action) {
 		case 'create-template':
@@ -90,31 +96,30 @@ async function act(form: URLSearchParams): Promise<TemplateError | null> {
 			const name = cleanName(form.get('name'));
 			if (!name) return 'name-required';
 			const parts = await listParts(manifest, config.historyLimit);
-			const header = part('header');
-			const footer = part('footer');
+			const header = partField('header');
+			const footer = partField('footer');
 			if (header && !parts.some((p) => p.id === header && p.region === 'header')) return 'part-missing';
 			if (footer && !parts.some((p) => p.id === footer && p.region === 'footer')) return 'part-missing';
 			if (action === 'create-template') {
+				const templates = await listTemplates(manifest, config.historyLimit);
 				if (templates.length >= MAX_TEMPLATES) return 'too-many-templates';
-				const created = { id: newId('tt_', random), name, header, footer };
-				await saveTemplate(created);
-				// The first template becomes the default, so pages pick it up at once.
-				if (templates.length === 0) await setDefaultTemplate(created.id);
+				await saveTemplate({ id: newId('tt_', random), name, header, footer, page: emptyStoredPage() });
 				return null;
 			}
-			if (!TEMPLATE_ID.test(id) || !templates.some((t) => t.id === id)) return 'template-missing';
-			await saveTemplate({ id, name, header, footer });
+			const existing = TEMPLATE_ID.test(id) ? await getTemplate(id, manifest, config.historyLimit) : null;
+			if (!existing) return 'template-missing';
+			await saveTemplate({ ...existing, name, header, footer });
 			return null;
 		}
 		case 'delete-template': {
 			if (!TEMPLATE_ID.test(id)) return 'template-missing';
+			const existing = await getTemplate(id, manifest, config.historyLimit);
+			if (!existing) return 'template-missing';
+			// In use: the name must be typed to confirm (the dialog asks; checked here too). Pages using it
+			// then render without a template (their content stays in the document).
+			const uses = (await loadTemplateUsage(manifest, config.historyLimit, config.pageUrlPattern)).get(id) ?? [];
+			if (uses.length > 0 && form.get('confirm') !== existing.name) return 'confirm-name';
 			await deleteTemplate(id);
-			if ((await getDefaultTemplate()) === id) await setDefaultTemplate(null);
-			return null;
-		}
-		case 'set-default': {
-			if (id !== '' && !(TEMPLATE_ID.test(id) && templates.some((t) => t.id === id))) return 'template-missing';
-			await setDefaultTemplate(id || null);
 			return null;
 		}
 		case 'create-part': {
@@ -136,7 +141,7 @@ async function act(form: URLSearchParams): Promise<TemplateError | null> {
 		}
 		case 'delete-part': {
 			if (!PART_ID.test(id)) return 'part-not-found';
-			if (templatesUsing(id, templates).length > 0) return 'part-in-use';
+			if (templatesUsing(id, await listTemplates(manifest, config.historyLimit)).length > 0) return 'part-in-use';
 			await deletePart(id);
 			return null;
 		}
@@ -161,7 +166,7 @@ export const POST: APIRoute = async (context) => {
 		console.error('[tapestry] template change failed', error);
 		problem = 'failed';
 	}
-	// Back to the Templates page (same-origin addresses only), with the outcome.
+	// Back to the page the form was on (same-origin addresses only), with the outcome.
 	const back = new URL(form.get('return') || '/', context.url);
 	const target = new URL(back.origin === context.url.origin ? back.pathname + back.search : '/', context.url);
 	target.searchParams.delete('saved');

@@ -1,11 +1,14 @@
 import { effect, type ReadonlySignal, useSignal } from '@preact/signals';
 import { useEffect, useRef } from 'preact/hooks';
-import { PART_PARAM, TEMPLATE_PARAM } from '../runtime/canvas-mode.js';
+import { EDIT_TEMPLATE_PARAM, FOOTER_PARAM, HEADER_PARAM, PART_PARAM, TEMPLATE_PARAM } from '../runtime/canvas-mode.js';
 import type { Language } from '../translations.js';
+import type { TapestryDocument } from '../types.js';
 import type { ValidationIssue } from '../validate.js';
+import { CompanionPanels } from './CompanionPanels.js';
 import { ComparePanel } from './ComparePanel.js';
 import { Canvas } from './canvas/Canvas.js';
 import { monitorDrops } from './dnd.js';
+import { editorExtensions, openExtension } from './extensions.js';
 import { HistoryPanel } from './HistoryPanel.js';
 import { Popover } from './InfoPopover.js';
 import { UI_ICONS } from './icons.js';
@@ -17,9 +20,8 @@ import { PropsPanel } from './PropsPanel.js';
 import { describeProblems } from './problems.js';
 import type { Publishing } from './publishing.js';
 import { formatWhen, SchedulePanel } from './SchedulePanel.js';
-import { openSeo, seoAvailable } from './seo.js';
 import type { EditorStore } from './store.js';
-import { TemplateMenu } from './TemplateMenu.js';
+import { type TemplateCatalog, TemplateMenu } from './TemplateMenu.js';
 import { TranslationsMenu } from './TranslationsMenu.js';
 
 export interface AppProps {
@@ -45,11 +47,23 @@ export interface AppProps {
 	/** The lowest role that may publish (for the explanation). */
 	publishRole?: string;
 	/**
-	 * Editing a template's header or footer part (ADR 0041) instead of a page: saving goes through
-	 * `save` (not StudioCMS's form), the canvas shows the part in a real page, and page-only tools
-	 * (translations, SEO, template, View page) are hidden.
+	 * Editing a header/footer part or a template body (ADR 0041) instead of a page: saving goes through
+	 * `save` (not StudioCMS's form), the canvas shows it on a real page, and page-only tools
+	 * (translations, SEO, template menu, View page) are hidden.
 	 */
-	part?: { id: string; region: 'header' | 'footer'; name: string; save: () => Promise<string | null> };
+	subject?: EditorSubject;
+	/** Templates and parts for the page's Template menu (pages only). */
+	templateCatalog?: TemplateCatalog;
+}
+
+/** What the editor edits when it isn't a page (ADR 0041). */
+export interface EditorSubject {
+	kind: 'part' | 'template';
+	id: string;
+	name: string;
+	/** Parts: which region. */
+	region?: 'header' | 'footer';
+	save: () => Promise<string | null>;
 }
 
 const STATUS_LABEL = {
@@ -57,6 +71,15 @@ const STATUS_LABEL = {
 	published: 'Published',
 	changed: 'Unpublished changes',
 } as const;
+
+/** The canvas page's parameters: the page's layout choice, or the part/template being edited. */
+function canvasParams(doc: TapestryDocument, subject: EditorSubject | undefined): Record<string, string> {
+	if (subject?.kind === 'part') return { [PART_PARAM]: subject.id };
+	if (subject?.kind === 'template') return { [EDIT_TEMPLATE_PARAM]: subject.id };
+	return doc.template
+		? { [TEMPLATE_PARAM]: doc.template }
+		: { [TEMPLATE_PARAM]: 'none', [HEADER_PARAM]: doc.header ?? '', [FOOTER_PARAM]: doc.footer ?? '' };
+}
 
 function isTextEntry(target: EventTarget | null): boolean {
 	const el = target as HTMLElement | null;
@@ -76,8 +99,10 @@ export function App({
 	publishRole = 'admin',
 	languages,
 	pageId,
-	part,
+	subject,
+	templateCatalog,
 }: AppProps) {
+	const part = subject;
 	const publishTitle = canPublish
 		? undefined
 		: `Only ${publishRole === 'owner' ? 'the owner' : `${publishRole}s`} can publish. Save a draft and ask them to publish it.`;
@@ -127,7 +152,13 @@ export function App({
 
 	function publishNow() {
 		publishing.publish();
-		submit(part ? `Published: every page using this ${part.region} shows it now.` : 'Published.');
+		submit(
+			part
+				? part.kind === 'template'
+					? 'Published: every page using this template shows it now.'
+					: `Published: every page using this ${part.region} shows it now.`
+				: 'Published.',
+		);
 		announce('Publishing…');
 	}
 
@@ -270,24 +301,29 @@ export function App({
 			>
 				{'{ }'} JSON
 			</button>
-			{pageId && seoAvailable() && (
-				<button
-					type="button"
-					class="tp-button"
-					aria-haspopup="dialog"
-					title="Search title, description and social image for this page (saved separately, at once)"
-					onClick={() => {
-						openSeo(pageId).catch((error) => console.error('[tapestry] the SEO dialog failed to open', error));
-					}}
-					data-tapestry-seo-toggle
-				>
-					SEO
-				</button>
-			)}
-			{pageId && (
+			{pageId &&
+				editorExtensions('button').map((extension) => (
+					<button
+						key={extension.id}
+						type="button"
+						class="tp-button"
+						aria-haspopup="dialog"
+						title={extension.title}
+						onClick={() => {
+							openExtension(extension, pageId).catch((error) =>
+								console.error(`[tapestry] the ${extension.label} dialog failed to open`, error),
+							);
+						}}
+						data-tapestry-extension={extension.id}
+						{...(extension.id === 'seo' ? { 'data-tapestry-seo-toggle': '' } : {})}
+					>
+						{extension.label}
+					</button>
+				))}
+			{pageId && templateCatalog && (
 				<>
 					<span class="tp-actionbar__separator" aria-hidden="true" />
-					<TemplateMenu store={store} announce={announce} />
+					<TemplateMenu store={store} catalog={templateCatalog} announce={announce} />
 				</>
 			)}
 		</div>
@@ -340,6 +376,47 @@ export function App({
 	);
 
 	/** Full screen, next to the preview widths. */
+	// The template editor's "Preview as" (ADR 0046): show the canvas as a display mode shows the template.
+	// The template editor's "Display mode" (ADR 0046): show the canvas as a display mode shows the template.
+	// One button naming the current mode, opening a list (sites can have up to 16 modes).
+	const previewModes =
+		store.editing === 'template' && store.modes.length > 1 ? [{ key: '', name: 'All' }, ...store.modes] : [];
+	const currentPreview = previewModes.find((m) => m.key === store.previewMode.value) ?? previewModes[0];
+	const previewSwitch =
+		previewModes.length === 0 ? null : (
+			<Popover
+				id="tp-preview-mode"
+				label="Show the canvas as a display mode shows this template"
+				title="Display mode"
+				text={<span data-tapestry-current-preview-mode>Display mode: {currentPreview?.name}</span>}
+			>
+				{(close) => (
+					<ul class="tp-templates__list" data-tapestry-preview-modes>
+						{previewModes.map((mode) => (
+							<li key={mode.key}>
+								<button
+									type="button"
+									class="tp-templates__item"
+									aria-pressed={store.previewMode.value === mode.key}
+									data-tapestry-preview-mode={mode.key}
+									onClick={() => {
+										store.previewMode.value = mode.key;
+										announce(mode.key ? `Previewing ${mode.name}.` : 'Showing all components.');
+										close();
+									}}
+								>
+									<span class="tp-templates__name">{mode.name}</span>
+									<span class="tp-muted">
+										{mode.key ? `Only what ${mode.name} shows` : 'Every component, whatever its display modes'}
+									</span>
+								</button>
+							</li>
+						))}
+					</ul>
+				)}
+			</Popover>
+		);
+
 	const fullscreenButton = (
 		<button
 			type="button"
@@ -556,13 +633,29 @@ export function App({
 						announce={announce}
 						onKeyDown={handleShortcut}
 						toolbar={editingTools}
-						afterViewports={fullscreenButton}
+						afterViewports={
+							<>
+								{fullscreenButton}
+								{previewSwitch}
+							</>
+						}
 						afterReload={viewPage}
 						footerEnd={saveActions || undefined}
-						params={part ? { [PART_PARAM]: part.id } : { [TEMPLATE_PARAM]: store.doc.value.template ?? 'default' }}
-						{...(part ? { emptyText: `This ${part.region} is empty. Drag components here.` } : {})}
+						params={canvasParams(store.doc.value, part)}
+						{...(part
+							? {
+									emptyText:
+										part.kind === 'template'
+											? 'This template is empty. Add components and at least one Content area.'
+											: `This ${part.region} is empty. Drag components here.`,
+								}
+							: {})}
 					/>
-					<PropsPanel store={store} />
+					{/* The settings panel, then companion panels (Navigation settings…) below it. */}
+					<div class="tp-inspector">
+						<PropsPanel store={store} />
+						<CompanionPanels pageId={subject ? undefined : pageId} />
+					</div>
 				</div>
 			</div>
 

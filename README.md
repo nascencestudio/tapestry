@@ -11,11 +11,14 @@ components, with **no client JavaScript unless a component opts in**.
 - Drafts, publishing, scheduled publishing, version history and comparison
 - Rich text (ProseMirror, per-field toolbars), links, media (with
   [`@nascencestudio/medialibrary`](https://github.com/nascencestudio/medialibrary)), lists and objects, named slots
-- Templates: shared headers and footers built in the same editor, chosen per page
+- Templates: page layouts with content areas, plus shared headers and footers, built in the same editor
+  (Template Management) and chosen per page
 - Patterns (saved sections), translations, component permissions, migrations
 - Interactive components (Astro islands) when a component opts in
 - SEO with [`@nascencestudio/tapestry-seo`](https://github.com/nascencestudio/tapestry-seo): an **SEO**
   button in the editor for each page's search title, description and social image, robots.txt and a sitemap
+- Menus with [`@nascencestudio/tapestry-menus`](https://github.com/nascencestudio/tapestry-menus): several
+  menus edited in the dashboard, Menu and Breadcrumbs components, and **Navigation settings** under the editor's settings panel
 
 Inspired by [Drupal Canvas](https://www.drupal.org/project/canvas). The editor is built with
 [Preact](https://preactjs.com) (about 35 KB gzipped on first load, dashboard only); page content is
@@ -24,7 +27,7 @@ allowlists and an element allowlist on the rendered output ([security](docs/secu
 
 ## Requirements
 
-- Node ≥ 22.12, Astro 7, StudioCMS 0.6
+- Node ≥ 22.12, Astro 7, StudioCMS 0.6 or 0.7
 - An on-demand (SSR) Astro adapter, as StudioCMS requires
 
 ## Install
@@ -99,29 +102,72 @@ Optional companions, picked up automatically when installed and registered as St
 [`@nascencestudio/medialibrary`](https://github.com/nascencestudio/medialibrary) (`media` props, images
 in rich text; option `mediaLibrary`) and
 [`@nascencestudio/tapestry-seo`](https://github.com/nascencestudio/tapestry-seo) (the editor's **SEO**
-button; option `seo`).
+button; option `seo`) and [`@nascencestudio/tapestry-menus`](https://github.com/nascencestudio/tapestry-menus)
+(**Navigation settings** under the editor's settings panel; option `menus`).
 
-## Interactive components need a StudioCMS patch
+## Apply the StudioCMS patches that ship with Tapestry
 
-StudioCMS 0.6.1 removes every `<script>` that components render from page
-content, so islands (`client: 'visible'` etc.) never become interactive and
-`<script>`s in your components don't run. Until StudioCMS changes this, apply the
-small patch that ships with this package (it only affects page types that opt in,
-like Tapestry):
+StudioCMS 0.6.1 and 0.7.0 have bugs that the small patches in this package fix. One patch is for
+StudioCMS itself (one file per version):
+
+- It removes every `<script>` that components render from page content, so islands
+  (`client: 'visible'` etc.) never become interactive and `<script>`s in your components
+  don't run (the fix only affects page types that opt in, like Tapestry).
+- When two plugins add dashboard pages (Tapestry's Template Management and the media
+  library's Media), the whole dashboard answers 404. The fix names each plugin page by its
+  own address.
+- Mail (Dashboard → SMTP Configuration): saving the settings a second time fails, and with mail
+  on, any dashboard save fails ("Failed to send notification") whenever a notification email
+  can't be sent. The fix updates saved settings, and logs failed notifications instead of
+  failing the save.
+- Taxonomy: new tags and categories can't be created ("Expected number, actual undefined").
+
+The other is for StudioCMS's SDK, `@withstudiocms/sdk` 0.4.2 (used by both StudioCMS versions):
+
+- Once a page has a tag or category, it fails to load (error 500), and so can every page that
+  lists pages, the dashboard login included. Saving shows "Failed to parse data during page update".
+- Users can't be deleted ("is an internal user and cannot be deleted").
+
+Copy the StudioCMS patch for your version (here 0.7.0; for 0.6.1 use `studiocms@0.6.1.patch`)
+and the SDK patch:
 
 ```sh
 mkdir -p patches
-cp node_modules/@nascencestudio/tapestry/patches/studiocms@0.6.1.patch patches/
+cp node_modules/@nascencestudio/tapestry/patches/studiocms@0.7.0.patch patches/
+cp node_modules/@nascencestudio/tapestry/patches/@withstudiocms__sdk@0.4.2.patch patches/
 ```
 
 ```yaml
 # pnpm-workspace.yaml
 patchedDependencies:
-  studiocms@0.6.1: patches/studiocms@0.6.1.patch
+  studiocms@0.7.0: patches/studiocms@0.7.0.patch
+  '@withstudiocms/sdk@0.4.2': patches/@withstudiocms__sdk@0.4.2.patch
 ```
 
+When you upgrade StudioCMS, switch to the matching files: pnpm stops the install if a patch's
+version is no longer installed.
+
 Then `pnpm install`. (With npm, use [patch-package](https://github.com/ds300/patch-package)
-with the same file.) Sites without interactive components don't need it.
+with the same files.)
+
+## Production builds on StudioCMS 0.7
+
+StudioCMS 0.7 parses Markdown with `satteri`, which loads a prebuilt native binary. Bundled into
+the server build, it can't find that binary, and the server fails with "Cannot find native binding"
+(logging in fails too). Install it as a direct dependency, at the version StudioCMS uses, and keep it
+out of the bundle:
+
+```sh
+pnpm add satteri@0.10.5
+```
+
+```js
+// astro.config.mjs
+export default defineConfig({
+  vite: { ssr: { external: ["satteri"] } },
+  // …
+});
+```
 
 ## Documentation
 

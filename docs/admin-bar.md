@@ -166,9 +166,10 @@ Tapestry content follow the page's language. See [ADR 0032](decisions/0032-trans
 
 ### 7. Optional: templates (shared header and footer)
 
-Admins build headers and footers once (Dashboard → Plugins → Tapestry → Templates) and combine them
-into templates; editors choose a page's template in the editor. Place the regions in your layout,
-around the page content:
+Admins build headers, footers and page templates in Dashboard → **Template Management** (templates are
+layouts with content areas that pages fill); editors choose a page's template, or its own header and
+footer, in the editor. Place the header and footer regions in your layout, around the page content
+(a template's body arrives with the page content):
 
 ```astro
 ---
@@ -182,7 +183,8 @@ const { result } = Astro.props; // getPage()'s result
 </body>
 ```
 
-Pages of other types (Markdown) get the default template's header and footer. See
+Requires the StudioCMS patch shipped with Tapestry (README): without it, two plugins with dashboard
+pages (Template Management and the media library's Media) take the dashboard down. See
 [ADR 0041](decisions/0041-templates.md).
 
 ### 8. Optional: page URL pattern
@@ -208,6 +210,38 @@ import { listPublicPages } from '@nascencestudio/tapestry/page';
 
 const pages = await listPublicPages(); // [{ path: '/about', title: 'About', updatedAt: '…', translations: […] }, …]
 ```
+
+## Helpers for companion plugins
+
+Also from `@nascencestudio/tapestry/page`, for plugins that add components or links (Tapestry Menus;
+[ADR 0042](decisions/0042-companion-hooks.md)):
+
+- `resolveSiteLinks(Astro, values, { hideUntranslated })`: link values (`{ type: 'page', page }` or
+  `{ type: 'url', url }`) resolved like link props: the page's current path in the shown page's
+  language, `null` when the page is gone or (for visitors) unpublished. With `hideUntranslated`, `null`
+  too for pages without a visible version in that language.
+- `pageLanguage(Astro)`: the shown page's language code (after `getPage()`), or `null`.
+- `inEditorCanvas(Astro)`: true while the editor's canvas renders the request (show a placeholder
+  that visitors never see).
+
+For lists of pages and display modes (Tapestry Fabric; [ADR 0046](decisions/0046-display-modes.md)):
+
+- `listPagesForLists()`: the pages `listPublicPages()` returns, plus each one's categories and tags (id,
+  name, parent), template, published date, language group (page ids) and published document.
+- `pageInMode(page, mode)`: a listed page inside its template in a display mode (`{ document, empty }`), or
+  `null` (not a Tapestry page, no template, nothing in that mode). `empty`: its areas have nothing in it.
+- `pageText(page)`: the plain text of a listed page's own Full content (for excerpts).
+- `currentPageId(Astro)`: the id of the page being shown (after `getPage()`; in the editor's canvas, the
+  page being edited), to leave it out of its own lists.
+- `<Document document={…} />` (`@nascencestudio/tapestry/Document.astro`) renders a document inside a
+  component; in the editor's canvas it's marked as another page's content (not selectable).
+
+`@nascencestudio/tapestry/modes` (server only) holds the display modes: `loadModes()`, `addMode()`,
+`renameMode()`, `deleteMode()` (takes the mode off template components), `loadModeUsage()` and
+`listTemplateChoices()`. Display modes are on only when a companion that uses them is installed.
+
+`@nascencestudio/tapestry/links` has `cleanLinkValue()` and `isSafeUrl()`, the link props' validation,
+safe to use in the browser (the main entry is the server-side plugin).
 
 ## How it works
 

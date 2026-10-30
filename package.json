@@ -1,6 +1,6 @@
 {
   "name": "@nascencestudio/tapestry",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "Drag-and-drop component page building for Astro + StudioCMS",
   "license": "MIT",
   "author": "Nascence Studio",
@@ -27,7 +27,16 @@
       "types": "./dist/runtime/page.d.ts",
       "default": "./dist/runtime/page.js"
     },
+    "./links": {
+      "types": "./dist/links.d.ts",
+      "default": "./dist/links.js"
+    },
+    "./modes": {
+      "types": "./dist/runtime/modes-store.d.ts",
+      "default": "./dist/runtime/modes-store.js"
+    },
     "./AdminBar.astro": "./dist/runtime/AdminBar.astro",
+    "./Document.astro": "./dist/runtime/Document.astro",
     "./Region.astro": "./dist/runtime/Region.astro",
     "./RichText.astro": "./dist/runtime/RichText.astro"
   },
@@ -46,7 +55,7 @@
   },
   "peerDependencies": {
     "astro": "^7.0.0",
-    "studiocms": "^0.6.0",
+    "studiocms": "^0.6.0 || ^0.7.0",
     "@nascencestudio/medialibrary": "^0.1.0 || ^0.2.0"
   },
   "peerDependenciesMeta": {
@@ -57,8 +66,8 @@
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "4.0.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "3.0.0",
-    "@preact/signals": "2.11.2",
-    "preact": "10.29.8",
+    "@preact/signals": "^2.11.2",
+    "preact": "^10.29.8",
     "prosemirror-commands": "1.7.2",
     "prosemirror-history": "1.5.1",
     "prosemirror-keymap": "1.2.3",
@@ -69,15 +78,15 @@
     "prosemirror-view": "1.42.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.14",
+    "@biomejs/biome": "2.5.15",
     "@libsql/client": "0.18.0",
     "@nascencestudio/medialibrary": "0.2.0",
     "@types/node": "22.20.4",
-    "astro": "7.3.5",
-    "studiocms": "0.6.1",
+    "astro": "7.4.1",
+    "studiocms": "0.7.0",
     "typescript": "6.0.3",
     "ultrahtml": "1.7.0",
-    "vitest": "5.0.3"
+    "vitest": "5.0.5"
   },
   "engines": {
     "node": ">=22.12.0"

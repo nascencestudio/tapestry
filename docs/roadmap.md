@@ -1,6 +1,6 @@
 # Roadmap
 
-_Last updated: 2026-10-06._
+_Last updated: 2026-10-16._
 
 Guiding principle: **start small, ship vertical slices**. Every phase ends with
 something that works end to end in the playground, has tests, and is documented.
@@ -157,11 +157,10 @@ Decision: [ADR 0016](decisions/0016-media-library.md). Moved to its own reposito
 
 ## Site structure
 
-- [x] Templates: shared header and footer parts built in the editor, combined by templates that pages
-  choose (Template menu), draft/publish/history for parts, `<Region>` for layouts
+- [x] Templates: page layouts (any components + named content areas) that pages inherit, shared header
+  and footer parts, Template Management under Media, the Template menu (or a page's own header and
+  footer), draft/publish/history for parts and templates, `<Region>` for layouts
   ([ADR 0041](decisions/0041-templates.md), 0.5.0, 2026-10-15)
-- [ ] Menus: `@nascencestudio/tapestry-menus` (menus edited in the dashboard; Menu and Breadcrumbs
-  components for templates and pages; next)
 
 ## Companion plugins
 
@@ -169,6 +168,17 @@ Decision: [ADR 0016](decisions/0016-media-library.md). Moved to its own reposito
   `listPublicPages()`, [ADR 0039](decisions/0039-public-pages-and-tapestry-seo.md), 2026-10-11); the
   editor's **SEO** button for per-page settings (`seo` option, `virtual:tapestry/seo-client`,
   [ADR 0040](decisions/0040-seo-button.md), 0.4.0, 2026-10-12)
+- [x] Menus: `@nascencestudio/tapestry-menus` (menus edited in Dashboard → Menus, Menu and Breadcrumbs
+  components, **Navigation settings** under the editor's settings panel; its ADR 0001, 2026-10-16), on Tapestry 0.6.0's hooks:
+  `select` `optionsUrl`, `resolveSiteLinks()`, `pageLanguage()`, `inEditorCanvas()`,
+  `@nascencestudio/tapestry/links`, companion buttons (`virtual:tapestry/extensions`)
+  ([ADR 0042](decisions/0042-companion-hooks.md))
+- [x] Fabric: `@nascencestudio/tapestry-fabric` (content types by proxy: Dashboard → Display Modes, the Page
+  list component; its ADR 0001, 2026-10-23), on Tapestry 0.7.0's display modes: "Shown in" on template
+  components, a tab per mode on content areas, rendering in a mode, `select` `multiple`, list helpers in
+  `/page`, `/modes`, `Document.astro` ([ADR 0046](decisions/0046-display-modes.md))
+- [x] "Preview as: All | Full | Teaser" in the template editor, and page links for Page lists (Tapestry's
+  `withNodeId`, Fabric 0.1.0) (2026-10-30)
 
 ## Later / maybe
 

@@ -1,0 +1,23 @@
+---
+/**
+ * The built-in content area (ADR 0041): placed in a template's body, it holds a page's components
+ * for that area. On the site, a plain `<div class="tapestry-area tapestry-area--<key>">` around them
+ * (a hook for styling). In the canvas it also shows its name, so areas can be found in the template
+ * editor and on pages.
+ */
+import { areaKey } from '../templates.js';
+import { AREA_ATTR, isCanvasMode } from './canvas-mode.js';
+
+interface Props {
+	name?: string;
+}
+
+const { name = 'Main' } = Astro.props;
+const key = areaKey(name);
+const canvas = isCanvasMode(Astro.locals);
+---
+
+<div class={`tapestry-area tapestry-area--${key}`} {...{ [AREA_ATTR]: key }}>
+	{canvas && <tapestry-area-label>{`Content area: ${name || 'Main'}`}</tapestry-area-label>}
+	<slot />
+</div>

@@ -90,11 +90,32 @@ export async function pageLanguages(
 	return { language, translations };
 }
 
+/** The language code of the page this request shows (set by getPage()); null on single-language sites. */
+export function currentLanguage(locals: object): string | null {
+	return (locals as Record<symbol, RequestState | undefined>)[STATE]?.lang ?? null;
+}
+
 /**
  * For page links on a translated page: the same-language version of a linked
  * page, if there is one the viewer may see (else the page itself). Pages shown
  * without `getPage()` (or on single-language sites) keep their links as they are.
  */
+/**
+ * Like `localizeFor`, but null when the page has no visible version in the current language (menus
+ * leave such links out; ADR 0042). Null itself on single-language sites or outside getPage().
+ */
+export function localizeStrictFor(locals: object): ((pageId: string) => Promise<string | null>) | null {
+	const state = (locals as Record<symbol, RequestState | undefined>)[STATE];
+	if (!state) return null;
+	return async (pageId) => {
+		const group = translationGroup(pageId, await state.rows, config.languages);
+		if (group.lang === state.lang) return pageId;
+		const target = group.members.find((m) => m.lang === state.lang);
+		if (!target) return null;
+		return (await visiblePage(target.pageId, state.editor)) ? target.pageId : null;
+	};
+}
+
 export function localizeFor(locals: object): ((pageId: string) => Promise<string>) | null {
 	const state = (locals as Record<symbol, RequestState | undefined>)[STATE];
 	if (!state) return null;

@@ -171,6 +171,23 @@ export const UI_ICONS = {
 			<path {...line} d="M4 4l8 8M12 4l-8 8" />
 		</Svg>
 	),
+	/** Two overlapping squares: duplicate (the canvas chip draws the same paths). */
+	duplicate: (
+		<Svg>
+			<path {...line} d="M5.5 5.5h8v8h-8z" />
+			<path {...line} d="M10.5 5.5v-3h-8v8h3" />
+		</Svg>
+	),
+	/** A trash can: delete (the canvas chip draws the same paths). */
+	trash: (
+		<Svg>
+			<path {...line} d="M2.5 4.5h11" />
+			<path {...line} d="M6.5 4.5v-2h3v2" />
+			<path {...line} d="M4 4.5l.75 9h6.5l.75-9" />
+			<path {...line} d="M6.75 7v4.5" />
+			<path {...line} d="M9.25 7v4.5" />
+		</Svg>
+	),
 	/** Page structure: a container that's open (rotated by CSS when collapsed). */
 	chevron: (
 		<Svg>

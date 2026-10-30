@@ -6,8 +6,9 @@
  * old documents. Operations that would produce an invalid tree (a node inside
  * itself, children under a component that doesn't accept them) return `null`.
  */
+import { cleanNodeModes, modeSlot, parseModeSlot } from '../modes.js';
 import { richTextFromPlain, richTextToPlain } from '../richtext.js';
-import { canonicalNode, childAreas, firstArea, hasArea, hasChildAreas, sortByArea } from '../slots.js';
+import { canonicalNode, childAreas, firstArea, hasArea, hasChildAreas, ROOT_ENTRY, sortByArea } from '../slots.js';
 import type {
 	ComponentManifest,
 	FieldDefinition,
@@ -87,14 +88,15 @@ export function acceptsChildren(
 	parentId: string | null,
 	slot?: string,
 ): boolean {
-	if (parentId === null) return slot === undefined;
+	// The root: one area, or a template's content areas (ADR 0041).
+	if (parentId === null) return manifest[ROOT_ENTRY] ? hasArea(manifest[ROOT_ENTRY], slot) : slot === undefined;
 	const parent = findNode(doc, parentId)?.node;
 	return Boolean(parent && hasArea(manifest[parent.type], slot));
 }
 
-/** The manifest entry of a parent (undefined for the root). */
+/** The manifest entry of a parent (for the root: its template areas, if any). */
 function parentEntry(doc: TapestryDocument, manifest: ComponentManifest, parentId: string | null) {
-	if (parentId === null) return undefined;
+	if (parentId === null) return manifest[ROOT_ENTRY];
 	const parent = findNode(doc, parentId)?.node;
 	return parent ? manifest[parent.type] : undefined;
 }
@@ -323,9 +325,20 @@ export function insertionTargetFor(
 	doc: TapestryDocument,
 	manifest: ComponentManifest,
 	selectedId: string | null,
+	/** The canvas's area tabs (ADR 0046): the first area's content for the mode its tab shows. */
+	tabs: Readonly<Record<string, string>> = {},
 ): Target {
 	const selected = selectedId ? findNode(doc, selectedId) : null;
-	if (!selected) return { parentId: null, index: doc.root.length };
+	if (!selected) {
+		// The end of the page, or of its first content area when it uses a template.
+		let area = firstArea(manifest[ROOT_ENTRY]);
+		const base = area !== undefined ? parseModeSlot(area)?.area : undefined;
+		const tab = base !== undefined ? tabs[base] : undefined;
+		if (base !== undefined && tab && hasArea(manifest[ROOT_ENTRY], modeSlot(base, tab))) area = modeSlot(base, tab);
+		return area === undefined
+			? { parentId: null, index: doc.root.length }
+			: { parentId: null, index: doc.root.length, slot: area };
+	}
 	const entry = manifest[selected.node.type];
 	if (hasChildAreas(entry)) {
 		// The end of its first area (the default one, if it has one).
@@ -360,17 +373,26 @@ export function nudgeTarget(
 	const { parentId, index } = location;
 	const slot = location.node.slot;
 	const at = (target: Target): Target => (target.slot === undefined ? { parentId, index: target.index } : target);
+	// The parent's areas in order (named slots, or a template's content areas at the root).
+	const areas = childAreas(parentEntry(doc, manifest, parentId));
+	const area = areas.indexOf(slot);
 	switch (direction) {
 		case 'up': {
 			const previous = siblings[index - 1];
-			if (!previous) return null;
+			// The first of all: into the previous area, even an empty one.
+			if (!previous) return area > 0 ? at({ parentId, index: 0, slot: areas[area - 1] }) : null;
 			// The first in a slot moves to the end of the previous slot.
 			if (previous.slot !== slot) return at({ parentId, index, slot: previous.slot });
 			return at({ parentId, index: index - 1, slot });
 		}
 		case 'down': {
 			const next = siblings[index + 1];
-			if (!next) return null;
+			// The last of all: into the next area, even an empty one.
+			if (!next) {
+				return area >= 0 && area < areas.length - 1
+					? at({ parentId, index: siblings.length, slot: areas[area + 1] })
+					: null;
+			}
 			// The last in a slot moves to the start of the next slot.
 			if (next.slot !== slot) return at({ parentId, index, slot: next.slot });
 			// +2 because move targets are expressed before removal.
@@ -430,6 +452,17 @@ export function setNodeLabel(doc: TapestryDocument, id: string, label: string): 
 	if ((location.node.label ?? '') === clean) return null;
 	const { label: _old, ...rest } = location.node;
 	const next = canonicalNode(clean ? { ...rest, label: clean } : rest);
+	return withChildren(doc, location.parentId, (siblings) => siblings.map((n) => (n.id === id ? next : n)));
+}
+
+/** Set the display modes a template component is shown in (ADR 0046); Full alone is the default (not stored). */
+export function setNodeModes(doc: TapestryDocument, id: string, modes: readonly string[]): TapestryDocument | null {
+	const location = findNode(doc, id);
+	if (!location) return null;
+	const clean = cleanNodeModes([...modes]);
+	if (JSON.stringify(location.node.modes ?? null) === JSON.stringify(clean ?? null)) return null;
+	const { modes: _old, ...rest } = location.node;
+	const next = canonicalNode(clean ? { ...rest, modes: clean } : rest);
 	return withChildren(doc, location.parentId, (siblings) => siblings.map((n) => (n.id === id ? next : n)));
 }
 

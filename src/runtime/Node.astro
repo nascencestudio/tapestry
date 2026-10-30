@@ -64,6 +64,8 @@ if (Component && defs) {
 
 const children = Astro.slots.has('default') ? await Astro.slots.render('default') : '';
 const entry = type ? manifest[type] : undefined;
+// Components that ask for it get their node's id (ADR 0046), e.g. for a URL parameter of their own.
+if (Component && entry?.withNodeId) props = { ...props, nodeId: id };
 // Named slots arrive inside the children HTML, wrapped by the renderer; pass each to the
 // component as a real Astro slot.
 const slotNames = Object.keys(entry?.slots ?? {});

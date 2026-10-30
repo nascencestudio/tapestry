@@ -81,3 +81,29 @@ describe('toManifest', () => {
 		expect(() => toManifest([dup, dup])).toThrow(/more than once/);
 	});
 });
+
+describe('select choices from the server (optionsUrl)', async () => {
+	const { validatePropValue } = await import('../src/validate.js');
+	const select = (extra: Record<string, unknown>) => ({
+		type: 'x',
+		label: 'X',
+		component: './X.astro',
+		props: { menu: { type: 'select', label: 'Menu', options: [], ...extra } },
+	});
+
+	it('need a path on this site', () => {
+		expect(() => defineComponent(select({ optionsUrl: '/_menus/options' }) as never)).not.toThrow();
+		for (const url of ['https://evil.example/o', '//evil.example/o', '/a/../b', 'relative', 'javascript:alert(1)']) {
+			expect(() => defineComponent(select({ optionsUrl: url }) as never), url).toThrow();
+		}
+		expect(() => defineComponent(select({}) as never)).toThrow(/at least one option/);
+	});
+
+	it('accept ids as values (the list is only known in the editor)', () => {
+		const def = { type: 'select' as const, label: 'Menu', options: [], optionsUrl: '/_menus/options' };
+		expect(validatePropValue(def, 'mn_abc123')).toBeNull();
+		expect(validatePropValue(def, 'has space')).not.toBeNull();
+		expect(validatePropValue(def, '<script>')).not.toBeNull();
+		expect(validatePropValue({ ...def, optionsUrl: undefined }, 'mn_abc123')).not.toBeNull();
+	});
+});

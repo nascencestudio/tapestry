@@ -1,7 +1,9 @@
 import { createContext } from 'preact';
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { FULL, nodeModes } from '../modes.js';
 import type { MediaItem, MediaProp, PropDefinition, PropValue, TapestryNode } from '../types.js';
 import { LIMITS, validatePropValue } from '../validate.js';
+import { ChipsField } from './ChipsField.js';
 import { canvasTextTargets } from './canvas/inline.js';
 import { UI_ICONS } from './icons.js';
 import { LinkField } from './LinkField.js';
@@ -10,7 +12,7 @@ import { savePattern } from './patterns-client.js';
 import { preloadRichText, type RichTextModule, richTextModule } from './richtext-loader.js';
 import { ListField, ObjectField } from './StructuredFields.js';
 import type { EditorStore } from './store.js';
-import { findNode, nodeSummary, setNodeLabel, updateProps } from './tree.js';
+import { findNode, nodeSummary, setNodeLabel, setNodeModes, updateProps } from './tree.js';
 
 /**
  * `coalesce`: a key that merges quick successive changes into one undo step
@@ -248,23 +250,94 @@ function Field({ id, fieldKey, def, value, onChange, describedBy, invalid }: Fie
 		case 'list':
 			return <ListField id={id} fieldKey={fieldKey} def={def} value={value} onChange={onChange} Row={FieldRow} />;
 		case 'select':
-			return (
-				<select
-					id={id}
-					{...a11y}
-					class="tp-input"
-					value={typeof value === 'string' ? value : ''}
-					onChange={(e) => onChange(e.currentTarget.value || undefined)}
-				>
-					{!def.required && def.default === undefined && <option value="">—</option>}
-					{def.options.map((o) => (
-						<option key={o.value} value={o.value}>
-							{o.label}
-						</option>
-					))}
-				</select>
-			);
+			return <SelectField id={id} a11y={a11y} def={def} value={value} onChange={onChange} />;
 	}
+}
+
+/** Choices loaded from `optionsUrl`, once per URL (ADR 0042). */
+const remoteOptions = new Map<string, Promise<Array<{ value: string; label: string }>>>();
+function loadOptions(url: string): Promise<Array<{ value: string; label: string }>> {
+	let loading = remoteOptions.get(url);
+	if (!loading) {
+		loading = fetch(url, { credentials: 'same-origin' })
+			.then((r) => (r.ok ? r.json() : { options: [] }))
+			.then((body: { options?: unknown }) =>
+				(Array.isArray(body.options) ? body.options : []).filter(
+					(o): o is { value: string; label: string } => typeof o?.value === 'string' && typeof o?.label === 'string',
+				),
+			)
+			.catch(() => {
+				remoteOptions.delete(url); // try again next time
+				return [];
+			});
+		remoteOptions.set(url, loading);
+	}
+	return loading;
+}
+
+function SelectField({
+	id,
+	a11y,
+	def,
+	value,
+	onChange,
+}: {
+	id: string;
+	a11y: Record<string, string | boolean | undefined>;
+	def: Extract<PropDefinition, { type: 'select' }>;
+	value: PropValue | undefined;
+	onChange: (value: PropValue | undefined) => void;
+}) {
+	const [remote, setRemote] = useState<Array<{ value: string; label: string }> | null>(def.optionsUrl ? null : []);
+	useEffect(() => {
+		if (!def.optionsUrl) return;
+		let cancelled = false;
+		void loadOptions(def.optionsUrl).then((options) => !cancelled && setRemote(options));
+		return () => {
+			cancelled = true;
+		};
+	}, [def.optionsUrl]);
+	const options = [...def.options, ...(remote ?? []).filter((o) => !def.options.some((s) => s.value === o.value))];
+	if (def.multiple) {
+		// Several choices (ADR 0046): chips, added through an autocompleting text box.
+		const chosen = Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+		return (
+			<div {...(remote === null ? { 'data-tapestry-options-loading': '' } : {})}>
+				<ChipsField
+					id={id}
+					options={options}
+					value={remote === null ? [] : chosen}
+					onChange={(next) => onChange(next.length > 0 ? next : undefined)}
+					labelledBy={`${id}-label`}
+					{...(typeof a11y['aria-describedby'] === 'string' ? { describedBy: a11y['aria-describedby'] } : {})}
+					placeholder={remote === null ? 'Loading…' : options.length === 0 ? 'Nothing to choose' : 'Type to add…'}
+					disabled={remote === null}
+				/>
+			</div>
+		);
+	}
+	const current = typeof value === 'string' ? value : '';
+	// A value that's no longer offered (e.g. a deleted menu) stays visible instead of silently changing.
+	const missing = current && remote !== null && !options.some((o) => o.value === current);
+	return (
+		<select
+			id={id}
+			{...a11y}
+			class="tp-input"
+			value={current}
+			onChange={(e) => onChange(e.currentTarget.value || undefined)}
+			data-tapestry-options-loading={remote === null ? '' : undefined}
+		>
+			{!def.required && def.default === undefined && <option value="">—</option>}
+			{def.optionsUrl && remote === null && <option value={current}>Loading…</option>}
+			{missing && <option value={current}>Missing: {current}</option>}
+			{options.map((o) => (
+				<option key={o.value} value={o.value}>
+					{o.label}
+				</option>
+			))}
+		</select>
+	);
 }
 
 function problemFor(def: PropDefinition, value: PropValue | undefined): string | null {
@@ -376,6 +449,36 @@ function NodeLabelField({ store, node }: { store: EditorStore; node: TapestryNod
 			/>
 			<p id={`${id}-help`} class="tp-field__help">
 				Only editors see this. It helps tell similar components apart.
+			</p>
+		</div>
+	);
+}
+
+/**
+ * "Shown in" (ADR 0046): the display modes a template component is shown in. Only in the template
+ * editor, and only when display modes are on. At least one; new components are in Full.
+ */
+function NodeModesField({ store, node }: { store: EditorStore; node: TapestryNode }) {
+	const id = `tp-node-modes-${node.id}`;
+	const isArea = node.type === 'tapestry-area';
+	return (
+		<div class="tp-field tp-field--modes" data-tapestry-modes-field>
+			<span id={`${id}-label`} class="tp-field__label">
+				Shown in
+			</span>
+			<ChipsField
+				id={id}
+				options={store.modes.map((m) => ({ value: m.key, label: m.name }))}
+				value={nodeModes(node)}
+				minimum={1}
+				labelledBy={`${id}-label`}
+				describedBy={`${id}-help`}
+				onChange={(next) => store.commit(setNodeModes(store.doc.peek(), node.id, next.length > 0 ? next : [FULL]))}
+			/>
+			<p id={`${id}-help`} class="tp-field__help">
+				{isArea
+					? 'Pages fill in this area for each display mode (a tab per mode). Full is the page itself.'
+					: 'Display modes this component appears in. Full is the page itself; Teaser is how it looks in lists.'}
 			</p>
 		</div>
 	);
@@ -504,6 +607,9 @@ export function PropsPanel({ store }: { store: EditorStore }) {
 			{path && <p class="tp-muted tp-props__path">In {path}</p>}
 			{entry?.description && <p class="tp-muted">{entry.description}</p>}
 			<NodeLabelField key={node.id} store={store} node={node} />
+			{store.editing === 'template' && store.modes.length > 0 && (
+				<NodeModesField key={`modes-${node.id}`} store={store} node={node} />
+			)}
 			<SavePattern key={`pattern-${node.id}`} store={store} node={node} />
 			{props.length === 0 && <p class="tp-muted">This component has no settings.</p>}
 			{locked && (

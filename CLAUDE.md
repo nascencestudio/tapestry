@@ -42,16 +42,18 @@ happens across sibling checkouts in `/Volumes/T7/www/`:
 | Deployment | Docker + Caddy for a Hetzner Cloud server; CI (GitHub Actions, ADR 0020) | ✅ Done (2026-10-06) |
 | 4. Rich content | Images, rich text, links, repeaters, named slots, patterns, library previews | ✅ Done (2026-10-07) |
 | 5. Production | Islands, migrations, i18n, permissions, a11y, perf budget, npm publish, docs site | ✅ Done (2026-10-08) except the actual npm publish: prepared (repos: nascencestudio/tapestry, nascencestudio/medialibrary); the user releases |
+| Companions | tapestry-seo (0.4.0 SEO button), templates (0.5.0), hooks for tapestry-menus (0.6.0, ADR 0042), display modes for tapestry-fabric (0.7.0, ADR 0046) | ✅ SEO released; 0.5.0, 0.6.0 and 0.7.0 built, not released (0.7.0: 2026-10-23) |
 
 Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in tapestry-playground (`../tapestry-playground/docs/devlog.md`).
 
 **Immediate next steps**
-1. Release Tapestry 0.5.0 (branch `templates`: shared header/footer parts, templates, `<Region>`,
-   ADR 0041): PR → merge (merge commit) → release `v0.5.0` → approve on npm. `main` is protected:
-   always work on a branch. Then the playground (branch `templates`) switches to 0.5.0.
-2. Next: `@nascencestudio/tapestry-menus` (decided with the user 2026-10-14: menus edited in the
-   dashboard, Menu + Breadcrumbs components for templates/pages, safe CSS classes from labels, link
-   target, unstyled output + getMenu(), links follow the page language, visibility by login, depth).
+1. **Releasing (2026-10-30, the user's order):** Tapestry ships **one release, 0.7.0**, from branch
+   `display-modes` (it contains 0.5.0's templates, 0.6.0's companion hooks and 0.7.0's display modes; 0.5.0 and
+   0.6.0 are never published). PR → merge (merge commit) → release `v0.7.0` → approve on npm. `main` is
+   protected: always work on a branch. In parallel: media library 0.2.1, IP Guard 0.1.0 (new). After Tapestry
+   0.7.0: tapestry-seo 0.2.1, tapestry-menus 0.1.0 and tapestry-fabric 0.1.0 (new), then webforms 0.1.0 (new;
+   needs IP Guard). New packages: GitHub repo, a one-time `NPM_TOKEN`, then trusted publishing. Then the
+   playground switches to npm versions, runs every suite, the budget and the Docker build, and commits.
    Still open: the StudioCMS issue in tapestry-playground/docs/upstream/ (only when the user asks).
 2. Report upstream (only when the user asks): `bySlug` drafts (#10), ignored config keys (#5),
    dev-toolbar DB viewer errors (#12), empty page type (#15), edit-screen crash/no delete (#16),
@@ -70,7 +72,8 @@ Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in ta
    - Never weaken `pnpm-workspace.yaml` hardening without an ADR or devlog entry
      explaining why. Every `overrides` / `allowBuilds` / `peerDependencyRules`
      entry has a written reason.
-   - Pin exact versions (`saveExact: true`). After editing a `package.json` by
+   - Pin exact versions (`saveExact: true`), except `preact` and `@preact/signals` (ranges: one runtime per
+     site, ADR 0044). After editing a `package.json` by
      hand, run `pnpm install` (`verifyDepsBeforeRun` will refuse to run scripts otherwise).
    - Treat page content as untrusted input. All content goes through
      `validateDocument()` before rendering. See [docs/security.md](docs/security.md).
@@ -101,7 +104,10 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 ├── package.json               ← the plugin's manifest + repo scripts (lint, docs:*)
 ├── pnpm-workspace.yaml        ← supply-chain hardening (read the comments); workspace = root + website
 ├── LICENSE                    ← MIT © Nascence Studio
-├── patches/studiocms@0.6.1.patch ← shipped to users for islands/component scripts (#37); not applied here
+├── patches/studiocms@0.6.1.patch, studiocms@0.7.0.patch ← shipped to users (component scripts #37, dashboard pages #38,
+│                                mail #39/#40, taxonomy create #42); same changes for each supported StudioCMS version; not applied here
+├── patches/@withstudiocms__sdk@0.4.2.patch ← shipped too (page tags/categories #43, user deletion #35); a copy of the
+│                                playground's (pnpm allows one patch per package: keep them identical)
 ├── .github/workflows/         ← ci.yml (lint, audit, build, types, tests, pack, docs build; ADR 0020),
 │                                release.yml (stages an npm release with provenance; approve on npmjs.com; ADR 0035),
 │                                docs.yml (GitHub Pages; ADR 0036); dependabot.yml
@@ -116,6 +122,7 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │   ├── types.ts           ← component definition + document types
 │   ├── define.ts          ← defineComponent(), toManifest()
 │   ├── validate.ts        ← parseDocument()/validateDocument(), limits, URL safety
+│   ├── links.ts           ← `@nascencestudio/tapestry/links`: cleanLinkValue(), isSafeUrl() for companions (browser-safe)
 │   ├── render.ts          ← document → <tapestry-node> HTML (+ <tapestry-slot> wrappers), splitSlots(), props encoding, sanitizer opts
 │   ├── migrations.ts      ← format + component migrations, resolveType() for `replaces` (pure, ADR 0031)
 │   ├── permissions.ts     ← component permissions: locked types, lockedChanges(), matchesSomeVersion() (pure, ADR 0033)
@@ -128,14 +135,16 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │   ├── richtext.ts        ← rich text format, cleanRichText() (toolbar allowlist), toRenderTree() (pure)
 │   ├── toolbar-settings.ts← admin toolbar narrowing: parse/apply/form helpers (pure)
 │   ├── translations.ts    ← languages option, translation rows/groups, new-translation slug/title/content (pure, ADR 0032)
-│   ├── templates.ts       ← templates + header/footer parts: ids, parsing, resolveTemplate(), error codes (pure, ADR 0041)
+│   ├── templates.ts       ← templates (layouts with content areas) + parts: ids, parsing, templateAreas(), mergeTemplate(…, { mode, tabs }), assignAreas(), error codes (pure, ADR 0041)
+│   ├── modes.ts           ← display modes: keys, built-ins, parseModes(), node `modes`, mode slots (`main.teaser`), tabs param, usage, withoutMode() (pure, ADR 0046)
+│   ├── text.ts            ← nodesText(): plain text of rich text/textarea fields, for excerpts (pure)
 │   ├── save-rules.ts      ← applySaveRules(): publish permission + locked components, for page and part saves (pure)
-│   ├── vite.ts            ← virtual modules: manifest, component imports, runtime config, thumbnails, seo-client (ADR 0040);
+│   ├── vite.ts            ← virtual modules: manifest, component imports, runtime config, thumbnails, extensions (COMPANIONS; ADRs 0040, 0042);
 │   │                        islandWrapperSource() (index.ts writes them to node_modules/.tapestry/islands)
 │   ├── virtual.d.ts       ← types for virtual:tapestry/*
 │   ├── runtime/
 │   │   ├── renderer.ts    ← StudioCMS PluginRenderer for the page type
-│   │   ├── page.ts        ← getPage() for site routes (@nascencestudio/tapestry/page); picks published/draft
+│   │   ├── page.ts        ← getPage() for site routes (@nascencestudio/tapestry/page); picks published/draft; companion helpers resolveSiteLinks(), pageLanguage(), inEditorCanvas() (ADR 0042)
 │   │   ├── viewer.ts      ← getViewer(): StudioCMS session check (re-exported from page.ts)
 │   │   ├── middleware.ts  ← Astro middleware: JSON responses carry only published content for non-editors;
 │   │   │                     publish-guard.ts guardSaves(): keeps the live version for non-publishers (ADR 0022), refuses changes to locked components (ADR 0033)
@@ -151,9 +160,11 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │   │   ├── translations-endpoint.ts, translations-store.ts, languages.ts ← /_tapestry/translations (list, create), rows, getPage() language/translations + link localizing
 │   │   ├── patterns-endpoint.ts, patterns-store.ts ← /_tapestry/patterns (editors; GET/POST/DELETE), plugin-data rows
 │   │   ├── pages-endpoint.ts ← GET /_tapestry/pages: editors-only page list for the link field (routes.ts has the paths)
-│   │   ├── templates-store.ts, templates-endpoint.ts, parts-endpoint.ts ← templates/parts rows, /_tapestry/templates (list; admin forms), /_tapestry/parts (part editor save)
-│   │   ├── regions.ts, Region.astro ← getPage()'s `regions` (template, header/footer documents); `<Region>` for layouts
-│   │   ├── TemplatesSettings.astro, PartEditor.astro ← Plugins → Tapestry → Templates (`?section=templates`), part editor (`?part=`)
+│   │   ├── templates-store.ts, templates-endpoint.ts, parts-endpoint.ts ← rows, /_tapestry/templates (list; admin forms), /_tapestry/parts (part + template body saves)
+│   │   ├── regions.ts, Region.astro, Area.astro ← loadLayout(): regions + the page merged into its template; `<Region>`; the built-in content area
+│   │   ├── modes-store.ts ← `@nascencestudio/tapestry/modes`: the site's display modes (plugin data), add/rename/delete, usage, template choices (ADR 0046)
+│   │   ├── listing.ts, Document.astro ← listPagesForLists(), pageInMode(), pageText() (re-exported from page.ts); `<Document>` for documents inside components (foreign in the canvas)
+│   │   ├── TemplateManagement.astro, TemplateManagementNav.astro, ContentEditor.astro ← the Template Management dashboard page (editors view, admins change), part/template editor (`?edit=`)
 │   │   └── Editor.astro   ← hosts the editor + the page-content textarea
 │   └── editor/            ← Preact dashboard editor (browser only)
 │       ├── mount.tsx      ← entry: parse content, create store, sync textarea
@@ -167,8 +178,10 @@ tapestry/                      ← the package root (@nascencestudio/tapestry)
 │       ├── library-previews.ts, LibraryPreview.tsx ← thumbnails + live previews in the library (ADR 0029)
 │       ├── TranslationsMenu.tsx ← toolbar menu: language versions, create
 │       ├── patterns-client.ts ← library list, save/delete, insertPattern() (fresh copies)
-│       ├── seo.ts         ← SEO button's loader for tapestry-seo's dialog (ADR 0040); media.ts holds the picker loader
-│       ├── TemplateMenu.tsx ← the page's template menu (ADR 0041); chooseTemplate() keeps the key order
+│       ├── extensions.ts, CompanionPanels.tsx ← companions from virtual:tapestry/extensions (ADRs 0040, 0042): bar buttons (SEO) and
+│       │                    panels under the settings panel (Navigation settings; `.tp-inspector` column); media.ts holds the picker loader
+│       ├── TemplateMenu.tsx ← the page's template menu: no template (own header/footer) or a template (ADR 0041)
+│       ├── ChipsField.tsx ← several choices as chips with an autocompleting box: `select` `multiple`, "Shown in" (ADR 0046)
 │       ├── publishing.ts  ← stored page signal, writes draft/publish into the textarea
 │       ├── icons.tsx      ← toolbar + UI icons (inline SVG, drawn for Tapestry) and letter glyphs
 │       ├── InfoPopover.tsx ← "i" button + closable help popover, ShortcutList, shortcutText()
@@ -247,21 +260,21 @@ Dev site, e2e (`pnpm e2e`), budget and Docker: see `../tapestry-playground/CLAUD
 checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, then after each
 `pnpm build` here run `pnpm install` there (a `file:` dependency is a copy) and restart its dev server.
 
-## Pinned stack (2026-10-09; the playground's own site dependencies are in its CLAUDE.md)
+## Pinned stack (2026-10-22; the playground's own site dependencies are in its CLAUDE.md)
 
 | Package | Version | Note |
 | --- | --- | --- |
-| Node | ≥ 22.12 (dev: 22.23.3) | `.nvmrc`; 22.23.x has the 2026 security releases |
+| Node | ≥ 22.12 for sites (dev: 22.23.3; astro 7.4 needs ≥ 22.22) | `.nvmrc`; 22.23.x has the 2026 security releases |
 | pnpm | 12.4.2 | `packageManager` field |
-| astro | 7.3.5 | |
-| studiocms | 0.6.1 | |
-| @libsql/client | 0.18.0 | dev dependency; matches StudioCMS 0.6.1's database layer |
+| astro | 7.4.1 | |
+| studiocms | 0.7.0 | peers `^0.6.0 \|\| ^0.7.0` (ADR 0043) |
+| @libsql/client | 0.18.0 | dev dependency; matches StudioCMS 0.7.0's database layer |
 | typescript | 6.0.3 | not 7: `@astrojs/check` (playground) supports ≤ 6; keep the repos aligned |
-| vitest | 5.0.3 | pins `why-is-node-running@3.2.1` itself |
-| @astrojs/starlight | 0.42.5 | docs site only (ADR 0036); `postcss-nested` override for an audit fix |
-| @biomejs/biome | 2.5.14 | |
-| preact | 10.29.8 | not 11: `@astrojs/preact@6` peer is `^10.6.5` (we don't use the integration, but stay compatible) |
-| @preact/signals | 2.11.2 | |
+| vitest | 5.0.5 | pins `why-is-node-running@3.2.1` itself |
+| @astrojs/starlight | 0.42.6 | docs site only (ADR 0036); `postcss-nested` override for an audit fix |
+| @biomejs/biome | 2.5.15 | |
+| preact | ^10.29.8 (10.29.8 locked) | not 11: `@astrojs/preact@6` peer is `^10.6.5` (we don't use the integration, but stay compatible) |
+| @preact/signals | ^2.11.2 (2.11.2 locked) | a range, like `preact` (ADR 0044): two copies on a site break the media picker |
 | @atlaskit/pragmatic-drag-and-drop | 4.0.0 | + `-hitbox` 3.0.0; no provenance (ADR 0007) |
 | prosemirror-* | model 1.25.12, state 1.4.4, view 1.42.6, transform 1.12.2, commands 1.7.2, keymap 1.2.3, history 1.5.1, schema-list 1.5.1 | rich text editor; no provenance; no Meta libraries (user preference) (ADR 0012) |
 
@@ -290,6 +303,8 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
   `tapestryComponentRegistry()` into their config (one line).
 - Production builds need `vite.build.cssMinify: 'esbuild'` because of a StudioCMS
   CSS bug (see [known issues](docs/known-issues.md)).
+- StudioCMS 0.7 sites need `satteri` as a direct dependency plus `vite.ssr.external: ['satteri']`, or the
+  production server can't load its native binary (#41, README). Dev doesn't show it: test with a production build.
 - New StudioCMS pages show their content editor only after the page is created
   (create first, then edit), and the editor sits on the **Page Content** tab.
 - StudioCMS saves any unknown **named** form field as plugin data, so editor
@@ -357,7 +372,7 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 - Rich text components use `<RichText value={…} />` and style its output with `:global()`.
 - Python/sed edits that don't `assert` the old text exists can silently do nothing
   (a config edit was lost this way); check, or use the Edit tool.
-- StudioCMS `usePluginData()` insert/update don't persist in 0.6.1 (known issue #25); use
+- StudioCMS `usePluginData()` insert/update don't persist in 0.6.1 or 0.7.0 (known issue #25); use
   `SDKCoreJs.dbService.db` (Kysely) like `toolbar-store.ts`.
 - Plugin dashboard pages (`dashboardPages`) appear under Admin, not Plugins. The Plugins section
   lists only plugins with a `settingsPage`, linking to `/dashboard/plugins@<id>` (missing slash,
@@ -445,14 +460,37 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 - A button's visible text must be part of its accessible name (axe 4.14 `label-content-name-mismatch`
   counts text even inside `aria-hidden`; single letters like B/I/U pass as icons). Toolbar buttons
   named in words ("Subscript") get drawn icons, not text like "X₂".
-- Templates (ADR 0041): the canvas edits the root outside any `<tapestry-region>` (pages) or inside the
-  region marked `data-tapestry-editing-part` (part editor); never `querySelector(ROOT)` alone
-  (`editableRoot()`). Region wrappers are `display: contents`: fade/outline styles go on the components.
-  A page's `template` sits between `version` and `root` (documents are compared as strings); build new
-  documents with `chooseTemplate()`. Template-page errors are codes (`TEMPLATE_ERRORS`), never free text
-  in the URL. Part saves go through `applySaveRules()` like page saves.
-- Companion plugins (tapestry-seo) import `virtual:tapestry/config`, `/media` and `/media-client`
-  (ADR 0040): changing those modules' exports breaks them. Optional companions are detected by
-  resolving their entry from the site root (`findMediaLibrary`, `findSeoEditor`); their UI loads on demand.
+- Templates (ADR 0041): the canvas edits the root outside any `<tapestry-region>` (pages, template
+  bodies) or inside the region marked `data-tapestry-editing-part` (part editor); never
+  `querySelector(ROOT)` alone (`editableRoot()`). Region wrappers are `display: contents`: fade/outline
+  styles go on the components. A templated page's top-level nodes carry `slot` = area key; the root's
+  areas come from a `#root` manifest entry (`withRootAreas`, the store's `manifest` getter follows
+  `doc.template`). On the canvas, template nodes have `tpl_` ids (never selectable; `hitsAt()` skips them
+  and reports `area:<key>`). Document keys: version, template, header, footer, root (`assignAreas()`).
+  Template Management errors are codes (`TEMPLATE_ERRORS`). Part/template saves go through
+  `applySaveRules()` like page saves. StudioCMS lists only editor-level plugin pages under Media:
+  Template Management is visible to editors (read-only) and editable by admins.
+- Companion plugins (tapestry-seo, tapestry-menus) import `virtual:tapestry/config`, `/media`,
+  `/media-client`, and the helpers in `/page` and `/links` (ADRs 0040, 0042): changing those exports breaks
+  them. Optional companions are detected by resolving their entry from the site root (`findMediaLibrary`,
+  `findCompanions` over `COMPANIONS`); their UI loads on demand. A new companion needs a `COMPANIONS` entry (`kind`: a bar `button` or a sidebar `panel`).
+- Template Management's dialogs are native `<dialog>`s opened by a small inline script; the typed-name
+  check is reset when a dialog **opens**: headless Chrome 156 on dashboard pages never fired `close`.
+  Deleting a template in use needs `confirm` = its name (the endpoint checks; `loadTemplateUsage()` throws
+  rather than report no use when pages can't be read).
+- `Popover` takes `align="end"` (always right-aligned; menus at the right of a narrow area) and
+  `headerExtra` (e.g. an `InfoPopover` beside the title). Popovers can nest: Escape closes the innermost
+  first (a popover ignores Escape while one is open inside its panel).
+- Display modes (ADR 0046): on only with Fabric installed (`config.displayModes`). A content area in several
+  modes stores each mode's page content in its own root slot (`main` = Full, `main.teaser`); `withRootAreas()`
+  makes one slot per mode, so the layer tree, validator and moves treat them as areas. The canvas draws the
+  tabs on area labels and sends `tapestry-tabs` with renders; its render key (`renderKey()`) includes the tabs,
+  and `scheduleRender()` must use the same key (a rename once stopped refreshing the chip). Lists' items
+  (`<tapestry-foreign>`) lose their editor markers after every render (`neutralizeForeign()`).
+  Mode CSS classes come from the mode's **name** (`modeClassName()`), never its key (keys never change).
+  The template editor's "Display mode" menu (`store.previewMode`, '' = All) only marks canvas nodes
+  (`data-tapestry-out-of-mode`, CSS hides them; the selected one is faded), no re-render.
+- Never put `\u2028`/`\u2029` escapes in files through the Write tool: it wrote the real characters, which
+  end a regex literal (`modes.ts` once failed to parse). Write such lines with a script, escapes as text.
 - Pragmatic DnD 4.x import paths: `@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter`,
   `/utils/combine`, hitbox `/list-item/attach-instruction` and `/list-item/extract-instruction`.

@@ -14,21 +14,32 @@
  */
 import { effect } from '@preact/signals';
 import { h, render } from 'preact';
+import { FULL, modeSlot, nodeModes, parseModeSlot, tabsParam } from '../../modes.js';
 import {
+	AREA_ATTR,
 	EDITING_PART_ATTR,
+	FOREIGN_ELEMENT,
 	NODE_ATTR,
 	REGION_ATTR,
 	ROOT_ATTR,
 	SLOT_ATTR,
 	SLOT_OF_ATTR,
+	TABS_PARAM,
 	TEXT_ATTR,
+	TEXT_PROP_ATTR,
 } from '../../runtime/canvas-mode.js';
+
+/** Canvas nodes not shown in the template editor's "Preview as" mode (and the selected one among them). */
+const OUT_OF_MODE_ATTR = 'data-tapestry-out-of-mode';
+const OUT_OF_MODE_SELECTED_ATTR = 'data-tapestry-out-of-mode-selected';
+
+import { TEMPLATE_NODE_PREFIX } from '../../templates.js';
 import type { TapestryDocument, TapestryNode } from '../../types.js';
 import { activeDrag, applyDrop, type DragData } from '../dnd.js';
 import type { EditorStore } from '../store.js';
 import { copySelection, handleStructureKey, pasteClipboard } from '../structure-keys.js';
 import { duplicateNode, findNode, removeNode } from '../tree.js';
-import { type Indicator, type Placement, type Rect, resolveCanvasDrop } from './geometry.js';
+import { AREA_HIT, type Indicator, type Placement, type Rect, resolveCanvasDrop } from './geometry.js';
 
 import {
 	canvasTextTargets,
@@ -75,9 +86,8 @@ export function editableRoot(d: Document): Element | null {
 function renderJson(document: TapestryDocument): string {
 	const strip = (nodes: TapestryNode[]): TapestryNode[] =>
 		nodes.map(({ label: _label, children, ...rest }) => (children ? { ...rest, children: strip(children) } : rest));
-	// The template choice isn't rendered here (a template change reloads the canvas).
-	const { template: _template, ...rest } = document;
-	return JSON.stringify({ ...rest, root: strip(document.root) });
+	// The template choice stays: the render endpoint renders the page inside its template (ADR 0041).
+	return JSON.stringify({ ...document, root: strip(document.root) });
 }
 
 /** Debounce for re-rendering after edits (ms). Typing produces many edits. */
@@ -162,8 +172,30 @@ const CANVAS_CSS = `
 [${REGION_ATTR}]:not([${EDITING_PART_ATTR}]) { pointer-events: none !important; }
 [${REGION_ATTR}]:not([${EDITING_PART_ATTR}]) [${ROOT_ATTR}] > [${NODE_ATTR}] > * { opacity: 0.5;
 	outline: 1px dashed rgb(162 155 184 / 0.8); outline-offset: -1px; }
-tapestry-canvas-body { display: block; margin: 1.5rem; padding: 3rem 1rem; border: 2px dashed #a29bb8; border-radius: 8px;
-	text-align: center; font: 15px system-ui, sans-serif; color: #5f5a73; background: rgb(162 155 184 / 0.08); }
+/* A page using a template (ADR 0041): the template's own components are shown but not interactive;
+   the page's components inside its content areas are. Template components without an area inside are
+   faded (fading a container would fade the page's content too). */
+[${NODE_ATTR}^="tpl_"] { pointer-events: none; }
+[${NODE_ATTR}^="tpl_"] [${NODE_ATTR}]:not([${NODE_ATTR}^="tpl_"]),
+[${NODE_ATTR}^="tpl_"] tapestry-canvas-drop { pointer-events: auto; }
+[${NODE_ATTR}^="tpl_"]:not(:has([${AREA_ATTR}])) > * { opacity: 0.5; }
+[${AREA_ATTR}] { outline: 2px dashed rgb(139 92 246 / 0.55); outline-offset: 2px; min-height: 3rem; pointer-events: auto; }
+tapestry-area-label { display: block; width: fit-content; margin: 0 0 0.25rem; padding: 0.15rem 0.5rem; border-radius: 4px;
+	background: #6d4ed6; color: #fff; font: 600 12px/1.4 system-ui, sans-serif; }
+/* The template editor's "Preview as" (ADR 0046): components not in the mode are hidden; the selected one is faded. */
+[${OUT_OF_MODE_ATTR}]:not([${OUT_OF_MODE_SELECTED_ATTR}]) > * { display: none !important; }
+[${OUT_OF_MODE_SELECTED_ATTR}] > * { opacity: 0.35; outline: 1px dashed rgb(139 92 246 / 0.8); outline-offset: -1px; }
+tapestry-area-label [data-tapestry-area-tabs] { display: inline-flex; gap: 2px; margin-left: 0.5rem; padding-left: 0.5rem;
+	border-left: 1px solid rgb(255 255 255 / 0.5); vertical-align: middle; }
+tapestry-area-label [data-tapestry-area-tab] { all: unset; padding: 0 0.45rem; border-radius: 3px; cursor: pointer;
+	font: 600 12px/1.5 system-ui, sans-serif; color: #fff; }
+tapestry-area-label [data-tapestry-area-tab]:hover { background: rgb(255 255 255 / 0.2); }
+tapestry-area-label [data-tapestry-area-tab]:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+tapestry-area-label [data-tapestry-area-tab][aria-pressed="true"] { background: #fff; color: #4c2fb0; }
+.tc-template-editing [${AREA_ATTR}] tapestry-canvas-drop { display: none; }
+tapestry-canvas-body { display: block; margin: 1.5rem; padding: 2.5rem 1rem; border: 1px solid rgb(162 155 184 / 0.6);
+	border-radius: 8px; text-align: center; font: italic 15px/1.5 system-ui, sans-serif; color: inherit; opacity: 0.8; cursor: not-allowed;
+	background: repeating-linear-gradient(135deg, rgb(162 155 184 / 0.12) 0 10px, rgb(162 155 184 / 0.04) 10px 20px); }
 tapestry-canvas-empty { display: block; margin: 2rem; padding: 4rem 1rem; border: 2px dashed #8b5cf6; border-radius: 8px;
 	text-align: center; font: 16px system-ui, sans-serif; color: #6d4ed6; }
 tapestry-canvas-drop { display: flex; align-items: center; justify-content: center; min-height: 4.5rem; margin: 0.5rem 0;
@@ -245,8 +277,79 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		if (wrapper) void inline.start(wrapper, { focus: false });
 	}
 
+	/**
+	 * Other pages' content (a list's items, ADR 0046): their editor markers are removed, so nothing inside
+	 * is selected, edited or dropped into, and their area labels go.
+	 */
+	function neutralizeForeign() {
+		for (const foreign of root?.querySelectorAll(FOREIGN_ELEMENT) ?? []) {
+			for (const label of foreign.querySelectorAll('tapestry-area-label')) label.remove();
+			for (const attr of [NODE_ATTR, AREA_ATTR, SLOT_ATTR, SLOT_OF_ATTR, TEXT_ATTR, TEXT_PROP_ATTR, ROOT_ATTR]) {
+				for (const el of foreign.querySelectorAll(`[${attr}]`)) el.removeAttribute(attr);
+			}
+		}
+	}
+
+	/** Content areas shown in several modes get a tab per mode on their label (ADR 0046). */
+	function decorateAreaTabs() {
+		if (!doc || store.editing !== 'page' || store.modes.length === 0) return;
+		for (const el of root?.querySelectorAll(`[${AREA_ATTR}]`) ?? []) {
+			const key = el.getAttribute(AREA_ATTR) ?? '';
+			const label = el.querySelector(':scope > tapestry-area-label');
+			const area = store.areas.peek().find((a) => a.key === key);
+			const modes = store.modes.filter((m) => (area?.modes ?? [FULL]).includes(m.key));
+			if (!label || modes.length < 2) continue;
+			label.querySelector('[data-tapestry-area-tabs]')?.remove();
+			const current = store.tabs.peek()[key] ?? FULL;
+			const tabs = doc.createElement('span');
+			tabs.setAttribute('data-tapestry-area-tabs', '');
+			tabs.setAttribute('role', 'group');
+			tabs.setAttribute('aria-label', `${area?.name ?? key}: display mode`);
+			for (const mode of modes) {
+				const button = doc.createElement('button');
+				button.type = 'button';
+				button.textContent = mode.name;
+				button.setAttribute('data-tapestry-area-tab', mode.key);
+				button.setAttribute('data-tapestry-area-key', key);
+				button.setAttribute('aria-pressed', mode.key === current ? 'true' : 'false');
+				tabs.append(button);
+			}
+			label.append(tabs);
+		}
+	}
+
+	/**
+	 * The template editor's "Preview as" (ADR 0046): components not shown in the mode are hidden (CSS); the
+	 * selected one stays, faded, so a component just added (Full by default) can still be edited.
+	 */
+	function markPreviewMode() {
+		if (!root) return;
+		const mode = store.editing === 'template' ? store.previewMode.peek() : '';
+		const hidden = new Set<string>();
+		if (mode) {
+			const walk = (nodes: readonly TapestryNode[], within: readonly string[] | null) => {
+				for (const node of nodes) {
+					const modes = within ? nodeModes(node).filter((m) => within.includes(m)) : [...nodeModes(node)];
+					if (!modes.includes(mode)) hidden.add(node.id);
+					if (node.children) walk(node.children, modes);
+				}
+			};
+			walk(store.doc.peek().root, null);
+		}
+		const selected = store.selectedId.peek();
+		for (const el of root.querySelectorAll(`[${NODE_ATTR}]`)) {
+			const id = el.getAttribute(NODE_ATTR) ?? '';
+			el.toggleAttribute(OUT_OF_MODE_ATTR, hidden.has(id));
+			el.toggleAttribute(OUT_OF_MODE_SELECTED_ATTR, hidden.has(id) && id === selected);
+		}
+		root.toggleAttribute('data-tapestry-previewing', Boolean(mode));
+	}
+
 	/** Which rich text fields the canvas can edit in place (`nodeId.prop`), for the settings panel. */
 	function publishTextTargets() {
+		neutralizeForeign();
+		decorateAreaTabs();
+		markPreviewMode();
 		const keys = new Set<string>();
 		for (const el of root?.querySelectorAll('[data-tapestry-text]') ?? []) {
 			const id = el.getAttribute('data-tapestry-text');
@@ -317,17 +420,34 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		});
 	}
 
-	/** Node ids under a point, innermost first. */
+	/**
+	 * Node ids under a point, innermost first. On a page using a template, template components (`tpl_`
+	 * ids) are skipped and its content areas are reported as `area:<key>` (ADR 0041).
+	 */
 	function hitsAt(x: number, y: number): string[] {
 		const ids: string[] = [];
 		let el = doc?.elementFromPoint(x, y) ?? null;
 		if (el && overlay?.contains(el)) return ids;
+		// Another page's content (a list's items, ADR 0046): the component showing it is what's hit.
+		el = el?.closest(FOREIGN_ELEMENT)?.parentElement ?? el;
 		while (el && el !== root) {
 			const id = el.getAttribute(NODE_ATTR);
-			if (id) ids.push(id);
+			if (id && !id.startsWith(TEMPLATE_NODE_PREFIX)) ids.push(id);
+			const area = el.getAttribute(AREA_ATTR);
+			// The area's content for the mode its tab shows (ADR 0046): `main`, `main.teaser`.
+			if (area && store.editing === 'page') ids.push(`${AREA_HIT}${modeSlot(area, store.tabs.peek()[area] ?? FULL)}`);
 			el = el.parentElement;
 		}
 		return ids;
+	}
+
+	/** A content area's rectangle (its element is a real box). */
+	function contentAreaRect(key: string): Rect | null {
+		const area = parseModeSlot(key)?.area ?? key;
+		const el = root?.querySelector(`[${AREA_ATTR}="${CSS.escape(area)}"]`);
+		if (!el) return null;
+		const r = el.getBoundingClientRect();
+		return r.width === 0 && r.height === 0 ? null : { left: r.left, top: r.top, width: r.width, height: r.height };
 	}
 
 	// ----------------------------------------------------------------- overlay
@@ -459,10 +579,30 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		grip.textContent = '⋮⋮';
 		chipLabel = d.createElement('span');
 		handle.append(grip, chipLabel);
-		const button = (text: string, label: string, onClick: () => void) => {
+		// Drawn icons (16×16, stroked like the editor's): two squares, a trash can.
+		const icon = (paths: readonly string[]) => {
+			const svg = d.createElementNS('http://www.w3.org/2000/svg', 'svg');
+			svg.setAttribute('viewBox', '0 0 16 16');
+			svg.setAttribute('width', '14');
+			svg.setAttribute('height', '14');
+			svg.setAttribute('aria-hidden', 'true');
+			svg.setAttribute('focusable', 'false');
+			for (const data of paths) {
+				const path = d.createElementNS('http://www.w3.org/2000/svg', 'path');
+				path.setAttribute('d', data);
+				path.setAttribute('fill', 'none');
+				path.setAttribute('stroke', 'currentColor');
+				path.setAttribute('stroke-width', '1.5');
+				path.setAttribute('stroke-linecap', 'round');
+				path.setAttribute('stroke-linejoin', 'round');
+				svg.append(path);
+			}
+			return svg;
+		};
+		const button = (paths: readonly string[], label: string, onClick: () => void) => {
 			const b = d.createElement('button');
 			b.type = 'button';
-			b.textContent = text;
+			b.append(icon(paths));
 			b.title = label;
 			b.setAttribute('aria-label', label);
 			b.addEventListener('click', (event) => {
@@ -474,15 +614,19 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		};
 		chip.append(
 			handle,
-			button('⧉', 'Duplicate', () => {
+			button(['M5.5 5.5h8v8h-8z', 'M10.5 5.5v-3h-8v8h3'], 'Duplicate', () => {
 				const id = store.selectedId.peek();
 				const result = id && duplicateNode(store.doc.peek(), manifest, id);
 				if (result) store.commit(result.doc, { select: result.id });
 			}),
-			button('✕', 'Delete', () => {
-				const id = store.selectedId.peek();
-				if (id && store.commit(removeNode(store.doc.peek(), id), { select: null })) announce('Deleted.');
-			}),
+			button(
+				['M2.5 4.5h11', 'M6.5 4.5v-2h3v2', 'M4 4.5l.75 9h6.5l.75-9', 'M6.75 7v4.5', 'M9.25 7v4.5'],
+				'Delete',
+				() => {
+					const id = store.selectedId.peek();
+					if (id && store.commit(removeNode(store.doc.peek(), id), { select: null })) announce('Deleted.');
+				},
+			),
 		);
 		formatBar = d.createElement('div');
 		formatBar.className = 'tc-format';
@@ -505,9 +649,12 @@ export function createCanvasController(options: CanvasControllerOptions) {
 	async function renderNow() {
 		if (!doc || !root) return;
 		const current = store.doc.peek();
+		const tabs = tabsParam(store.tabs.peek());
 		const json = renderJson(current);
-		if (json === lastRendered) {
+		const key = renderKey(current);
+		if (key === lastRendered) {
 			setPending(false);
+			redraw();
 			return;
 		}
 		// One component's settings changed (the usual case while typing): render just its
@@ -519,7 +666,9 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		inflight?.abort();
 		inflight = new AbortController();
 		try {
-			const response = await fetch(renderUrl, {
+			const url = new URL(renderUrl, window.location.origin);
+			if (tabs) url.searchParams.set(TABS_PARAM, tabs);
+			const response = await fetch(`${url.pathname}${url.search}`, {
 				method: 'POST',
 				body: subtree ? renderJson(subtree) : json,
 				credentials: 'same-origin',
@@ -568,7 +717,7 @@ export function createCanvasController(options: CanvasControllerOptions) {
 				iframe.dataset.tapestryRender = 'full';
 			}
 			runScripts(target, scripts, ranScripts);
-			lastRendered = json;
+			lastRendered = key;
 			lastRenderedDoc = current;
 			publishTextTargets();
 			inline.resume(suspended, root);
@@ -591,12 +740,17 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		iframe.toggleAttribute('data-tapestry-pending', pending);
 	}
 
+	/** What a render shows: the document without editor-only names, and the areas' tabs (ADR 0046). */
+	function renderKey(current: TapestryDocument): string {
+		return `${tabsParam(store.tabs.peek())}|${renderJson(current)}`;
+	}
+
 	function scheduleRender() {
 		// Typing on the canvas already shows the change; re-rendering would only
 		// interrupt it. Other changes (and the end of editing) render as usual.
 		if (inline.isCommitting() || plain.isCommitting()) return;
 		clearTimeout(renderTimer);
-		if (renderJson(store.doc.peek()) === lastRendered) {
+		if (renderKey(store.doc.peek()) === lastRendered) {
 			// Nothing visible changed (e.g. a node's editor-only name, or an edit undone before it
 			// rendered): drop any queued render and just refresh the chip.
 			setPending(false);
@@ -624,6 +778,7 @@ export function createCanvasController(options: CanvasControllerOptions) {
 			hits: hitsAt(x, y),
 			rectOf,
 			areasOf,
+			contentAreaRect,
 		});
 	}
 
@@ -682,6 +837,7 @@ export function createCanvasController(options: CanvasControllerOptions) {
 				releasePress();
 				const target = event.target as Element | null;
 				if (event.button !== 0 || !target || overlay?.contains(target)) return;
+				if (target.closest('[data-tapestry-area-tabs]')) return;
 				// Pressing into text that's being edited, or the text of the selected
 				// node (a click there starts editing), places the caret instead of dragging.
 				const text = textWrapperOf(target);
@@ -745,6 +901,15 @@ export function createCanvasController(options: CanvasControllerOptions) {
 				// The canvas is for editing: links and buttons on the page must not act.
 				event.preventDefault();
 				event.stopPropagation();
+				// A content area's display-mode tab (ADR 0046).
+				const tab = (event.target as Element | null)?.closest?.('[data-tapestry-area-tab]');
+				if (tab) {
+					store.setTab(
+						tab.getAttribute('data-tapestry-area-key') ?? '',
+						tab.getAttribute('data-tapestry-area-tab') ?? FULL,
+					);
+					return;
+				}
 				const text = textWrapperOf(event.target as Element);
 				if (text?.hasAttribute(EDITING_ATTR)) return; // a click inside the text being edited
 				if (plain.targetOf(event.target as Element)) return; // a click into editable plain text
@@ -857,12 +1022,14 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		inline.stop();
 		ranScripts = scriptKeys(doc);
 		root = editableRoot(doc);
+		// The template editor: content areas are placeholders (no drop zones inside them).
+		doc.documentElement.classList.toggle('tc-template-editing', store.editing === 'template');
 		// The part editor: the page's own content area becomes a placeholder.
 		if (root && doc.querySelector(`[${EDITING_PART_ATTR}]`)) {
 			const body = Array.from(doc.querySelectorAll(`[${ROOT_ATTR}]`)).find((el) => !el.closest(`[${REGION_ATTR}]`));
 			if (body && !body.querySelector('tapestry-canvas-body')) {
 				const placeholder = doc.createElement('tapestry-canvas-body');
-				placeholder.textContent = 'Page content';
+				placeholder.textContent = 'Page content goes here. It’s edited on each page, not here.';
 				body.append(placeholder);
 			}
 		}
@@ -885,10 +1052,17 @@ export function createCanvasController(options: CanvasControllerOptions) {
 
 	const stopRenderEffect = effect(() => {
 		store.doc.value;
+		store.tabs.value;
 		scheduleRender();
+	});
+	const stopPreviewEffect = effect(() => {
+		store.previewMode.value;
+		markPreviewMode();
+		redraw();
 	});
 	const stopSelectionEffect = effect(() => {
 		store.selectedId.value;
+		markPreviewMode();
 		editSelectedText();
 		if (root) plain.activate(root, editableSelection());
 		redraw();
@@ -921,6 +1095,7 @@ export function createCanvasController(options: CanvasControllerOptions) {
 			inflight?.abort();
 			stopRenderEffect();
 			stopSelectionEffect();
+			stopPreviewEffect();
 			iframe.removeEventListener('load', setup);
 			for (const cleanup of cleanups.splice(0)) cleanup();
 			overlay?.remove();

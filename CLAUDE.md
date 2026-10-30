@@ -47,20 +47,13 @@ happens across sibling checkouts in `/Volumes/T7/www/`:
 Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in tapestry-playground (`../tapestry-playground/docs/devlog.md`).
 
 **Immediate next steps**
-1. Release Tapestry 0.5.0 (branch `templates`: Template Management, templates as inherited layouts with
-   content areas, header/footer parts, `<Region>`, ADR 0041; the shipped StudioCMS patch gained the
-   dashboard-pages fix, known issue #38): PR → merge (merge commit) → release `v0.5.0` → approve on npm. `main` is protected:
-   always work on a branch.
-2. Then Tapestry 0.6.0 (branch `companion-hooks`, on top of `templates`: `select` `optionsUrl`,
-   `resolveSiteLinks()`, `pageLanguage()`, `inEditorCanvas()`, `@nascencestudio/tapestry/links`, companion
-   buttons; ADR 0042). It unblocks **@nascencestudio/tapestry-menus** (`../tapestry-menus`, 0.1.0 built
-   2026-10-16, committed locally, not on GitHub): create the repo, switch its `file:` dev dependency to
-   0.6.0, push, first release with a one-time NPM_TOKEN. Then the playground (branch `menus`) switches to
-   npm versions, runs all suites and commits.
-   Then Tapestry 0.7.0 (branch `display-modes`, on top of `companion-hooks`: display modes, ADR 0046), which
-   **@nascencestudio/tapestry-fabric** needs (`../tapestry-fabric`, 0.1.0 built 2026-10-23, local repo, not on
-   GitHub; `file:` dev dependency to switch to 0.7.0 like menus). The playground's `fabric` branch (on `menus`)
-   has the fabric suite and a11y states.
+1. **Releasing (2026-10-30, the user's order):** Tapestry ships **one release, 0.7.0**, from branch
+   `display-modes` (it contains 0.5.0's templates, 0.6.0's companion hooks and 0.7.0's display modes; 0.5.0 and
+   0.6.0 are never published). PR → merge (merge commit) → release `v0.7.0` → approve on npm. `main` is
+   protected: always work on a branch. In parallel: media library 0.2.1, IP Guard 0.1.0 (new). After Tapestry
+   0.7.0: tapestry-seo 0.2.1, tapestry-menus 0.1.0 and tapestry-fabric 0.1.0 (new), then webforms 0.1.0 (new;
+   needs IP Guard). New packages: GitHub repo, a one-time `NPM_TOKEN`, then trusted publishing. Then the
+   playground switches to npm versions, runs every suite, the budget and the Docker build, and commits.
    Still open: the StudioCMS issue in tapestry-playground/docs/upstream/ (only when the user asks).
 2. Report upstream (only when the user asks): `bySlug` drafts (#10), ignored config keys (#5),
    dev-toolbar DB viewer errors (#12), empty page type (#15), edit-screen crash/no delete (#16),

@@ -5,6 +5,7 @@ import {
 	cleanModeName,
 	cleanNodeModes,
 	MAX_MODES,
+	modeClassName,
 	modeKeyFor,
 	modeSlot,
 	parseModeSlot,
@@ -101,6 +102,13 @@ describe('the site’s display modes', () => {
 		expect(modeKeyFor('2 columns', new Set())).toBe('mode-2-columns');
 		expect(modeKeyFor('Ünïcodé', new Set())).toBe('unicode');
 		expect(modeKeyFor('!!!', new Set())).toBe('mode');
+	});
+
+	it('give CSS classes from the current name, not the key', () => {
+		expect(modeClassName('Full')).toBe('full');
+		expect(modeClassName('Big card')).toBe('big-card');
+		expect(modeClassName('  Ünïcodé  Card!! ')).toBe('unicode-card');
+		expect(modeClassName('!!!')).toBe('');
 	});
 
 	it('clean names to one short line without control or direction characters', () => {

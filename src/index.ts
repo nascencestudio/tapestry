@@ -20,6 +20,7 @@ export {
 	BUILT_IN_MODES,
 	FULL,
 	MAX_MODES,
+	modeClassName,
 	modeSlot,
 	nodeModes,
 	parseModeSlot,

@@ -14,6 +14,7 @@ import {
 	type DisplayMode,
 	isBuiltInMode,
 	MAX_MODES,
+	modeClassName,
 	modeKeyFor,
 	modeUsage,
 	parseModes,
@@ -25,7 +26,7 @@ import type { TapestryDocument } from '../types.js';
 import { listTemplates, saveTemplate } from './templates-store.js';
 
 export type { DisplayMode } from '../modes.js';
-export { BUILT_IN_MODES, FULL, isBuiltInMode, MAX_MODES, MODE_NAME_MAX, TEASER } from '../modes.js';
+export { BUILT_IN_MODES, FULL, isBuiltInMode, MAX_MODES, MODE_NAME_MAX, modeClassName, TEASER } from '../modes.js';
 
 const ROW_ID = '@nascencestudio/tapestry-display-modes';
 
@@ -65,6 +66,10 @@ async function saveModes(modes: readonly DisplayMode[]): Promise<void> {
 /** Why a change to the modes was refused (codes, like Template Management's). */
 export type ModeError = 'off' | 'name-required' | 'name-taken' | 'too-many' | 'not-found' | 'built-in';
 
+/** Two names that read the same or would give the same CSS class (`Big card`, `big-card`). */
+const sameName = (a: string, b: string) =>
+	a.toLowerCase() === b.toLowerCase() || (modeClassName(a) !== '' && modeClassName(a) === modeClassName(b));
+
 /** Add a mode; its key comes from the name and never changes. */
 export async function addMode(name: unknown): Promise<{ mode: DisplayMode } | { error: ModeError }> {
 	if (!config.displayModes) return { error: 'off' };
@@ -72,7 +77,7 @@ export async function addMode(name: unknown): Promise<{ mode: DisplayMode } | { 
 	if (!clean) return { error: 'name-required' };
 	const modes = await loadModes();
 	if (modes.length >= MAX_MODES) return { error: 'too-many' };
-	if (modes.some((m) => m.name.toLowerCase() === clean.toLowerCase())) return { error: 'name-taken' };
+	if (modes.some((m) => sameName(m.name, clean))) return { error: 'name-taken' };
 	const key = modeKeyFor(clean, new Set(modes.map((m) => m.key)));
 	if (!key) return { error: 'too-many' };
 	const mode = { key, name: clean };
@@ -88,7 +93,7 @@ export async function renameMode(key: string, name: unknown): Promise<{ mode: Di
 	if (!clean) return { error: 'name-required' };
 	const modes = await loadModes();
 	if (!modes.some((m) => m.key === key)) return { error: 'not-found' };
-	if (modes.some((m) => m.key !== key && m.name.toLowerCase() === clean.toLowerCase())) return { error: 'name-taken' };
+	if (modes.some((m) => m.key !== key && sameName(m.name, clean))) return { error: 'name-taken' };
 	await saveModes(modes.map((m) => (m.key === key ? { key, name: clean } : m)));
 	return { mode: { key, name: clean } };
 }

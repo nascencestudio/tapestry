@@ -505,17 +505,6 @@
 	color: var(--tp-danger);
 }
 
-/* The template editor's "Preview as" with more than four modes */
-.tp-preview-mode {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.375rem;
-	font-size: 0.8125rem;
-}
-.tp-preview-mode .tp-input {
-	width: auto;
-}
-
 /* Several choices as chips (select with multiple, "Shown in"; ADR 0046) */
 .tp-chips {
 	display: flex;

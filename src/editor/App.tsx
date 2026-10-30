@@ -377,46 +377,44 @@ export function App({
 
 	/** Full screen, next to the preview widths. */
 	// The template editor's "Preview as" (ADR 0046): show the canvas as a display mode shows the template.
+	// The template editor's "Display mode" (ADR 0046): show the canvas as a display mode shows the template.
+	// One button naming the current mode, opening a list (sites can have up to 16 modes).
 	const previewModes =
 		store.editing === 'template' && store.modes.length > 1 ? [{ key: '', name: 'All' }, ...store.modes] : [];
+	const currentPreview = previewModes.find((m) => m.key === store.previewMode.value) ?? previewModes[0];
 	const previewSwitch =
-		previewModes.length === 0 ? null : previewModes.length <= 5 ? (
-			// biome-ignore lint/a11y/useSemanticElements: a button group, not form fields (a fieldset inside the StudioCMS form would mislead)
-			<div class="tp-segmented" role="group" aria-label="Preview as display mode" data-tapestry-preview-modes>
-				{previewModes.map((mode) => (
-					<button
-						key={mode.key}
-						type="button"
-						class="tp-segmented__item"
-						aria-pressed={store.previewMode.value === mode.key}
-						title={mode.key ? `Preview as ${mode.name}: only what this display mode shows` : 'Show every component'}
-						data-tapestry-preview-mode={mode.key}
-						onClick={() => {
-							store.previewMode.value = mode.key;
-							announce(mode.key ? `Previewing ${mode.name}.` : 'Showing all components.');
-						}}
-					>
-						{mode.name}
-					</button>
-				))}
-			</div>
-		) : (
-			<label class="tp-preview-mode" data-tapestry-preview-modes>
-				<span>Preview as</span>
-				<select
-					class="tp-input"
-					value={store.previewMode.value}
-					onChange={(e) => {
-						store.previewMode.value = e.currentTarget.value;
-					}}
-				>
-					{previewModes.map((mode) => (
-						<option key={mode.key} value={mode.key}>
-							{mode.name}
-						</option>
-					))}
-				</select>
-			</label>
+		previewModes.length === 0 ? null : (
+			<Popover
+				id="tp-preview-mode"
+				label="Show the canvas as a display mode shows this template"
+				title="Display mode"
+				text={<span data-tapestry-current-preview-mode>Display mode: {currentPreview?.name}</span>}
+			>
+				{(close) => (
+					<ul class="tp-templates__list" data-tapestry-preview-modes>
+						{previewModes.map((mode) => (
+							<li key={mode.key}>
+								<button
+									type="button"
+									class="tp-templates__item"
+									aria-pressed={store.previewMode.value === mode.key}
+									data-tapestry-preview-mode={mode.key}
+									onClick={() => {
+										store.previewMode.value = mode.key;
+										announce(mode.key ? `Previewing ${mode.name}.` : 'Showing all components.');
+										close();
+									}}
+								>
+									<span class="tp-templates__name">{mode.name}</span>
+									<span class="tp-muted">
+										{mode.key ? `Only what ${mode.name} shows` : 'Every component, whatever its display modes'}
+									</span>
+								</button>
+							</li>
+						))}
+					</ul>
+				)}
+			</Popover>
 		);
 
 	const fullscreenButton = (

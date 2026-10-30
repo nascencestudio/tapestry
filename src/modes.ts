@@ -36,6 +36,20 @@ export function cleanModeName(value: unknown): string {
 	return text.replace(/\s+/g, ' ').trim().slice(0, MODE_NAME_MAX).trim();
 }
 
+/**
+ * A mode's CSS class suffix, from its current **name** (`Big card` → `big-card`), so renaming a mode renames
+ * its classes (lists' `fabric-list--big-card`). Its key never changes (it's stored in templates and pages).
+ * Names whose classes would be the same are refused (`addMode`, `renameMode`).
+ */
+export function modeClassName(name: string): string {
+	return cleanModeName(name)
+		.normalize('NFKD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
+}
+
 /** A key for a new mode from its name (`Search result` → `search-result`), unique among `taken`. */
 export function modeKeyFor(name: string, taken: ReadonlySet<string>): string | null {
 	const slug = cleanModeName(name)

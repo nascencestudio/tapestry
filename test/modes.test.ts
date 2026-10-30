@@ -322,3 +322,22 @@ describe('select props with multiple choices', () => {
 		expect(bad({ multiple: 'yes' })).toThrow(/multiple/);
 	});
 });
+
+describe('components that get their node id', () => {
+	const def =
+		(extra: object, props: object = {}) =>
+		() =>
+			toManifest([
+				defineComponent({ type: 'lister', label: 'Lister', component: './L.astro', props, ...extra } as never),
+			]);
+
+	it('ask for it with withNodeId, kept in the manifest', () => {
+		expect(def({ withNodeId: true })().lister?.withNodeId).toBe(true);
+	});
+
+	it('can’t also have a prop called nodeId, and the flag is a boolean', () => {
+		expect(def({ withNodeId: true }, { nodeId: { type: 'text', label: 'X' } })).toThrow(/nodeId/);
+		expect(def({ withNodeId: 'yes' })).toThrow(/withNodeId/);
+		expect(def({}, { nodeId: { type: 'text', label: 'X' } })).not.toThrow();
+	});
+});

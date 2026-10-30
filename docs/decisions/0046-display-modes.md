@@ -94,4 +94,9 @@ As decided, with these details settled while building:
   the main entry.
 - **`select` with `multiple`:** chips with an autocompleting box (`ChipsField`, a native `<datalist>`); also
   used for "Shown in".
-- **Not built:** the "Preview as" switch in the template editor (later, if wanted).
+- **"Preview as"** (added 2026-10-30, the user's request): in the template editor's canvas bar, `All` (the
+  default: everything, as before) or a mode. Components not shown in the mode are hidden on the canvas (the
+  canvas script marks them; no re-render), except the selected one, which stays faded so a component just
+  added (Full by default) can still be edited. Buttons for up to four modes, a dropdown beyond.
+- **`withNodeId`** (added 2026-10-30, for the Page list's pager): a definition can ask for its node's id as a
+  `nodeId` prop, stable per placement, e.g. to name its own URL parameter.

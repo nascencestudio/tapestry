@@ -376,6 +376,49 @@ export function App({
 	);
 
 	/** Full screen, next to the preview widths. */
+	// The template editor's "Preview as" (ADR 0046): show the canvas as a display mode shows the template.
+	const previewModes =
+		store.editing === 'template' && store.modes.length > 1 ? [{ key: '', name: 'All' }, ...store.modes] : [];
+	const previewSwitch =
+		previewModes.length === 0 ? null : previewModes.length <= 5 ? (
+			// biome-ignore lint/a11y/useSemanticElements: a button group, not form fields (a fieldset inside the StudioCMS form would mislead)
+			<div class="tp-segmented" role="group" aria-label="Preview as display mode" data-tapestry-preview-modes>
+				{previewModes.map((mode) => (
+					<button
+						key={mode.key}
+						type="button"
+						class="tp-segmented__item"
+						aria-pressed={store.previewMode.value === mode.key}
+						title={mode.key ? `Preview as ${mode.name}: only what this display mode shows` : 'Show every component'}
+						data-tapestry-preview-mode={mode.key}
+						onClick={() => {
+							store.previewMode.value = mode.key;
+							announce(mode.key ? `Previewing ${mode.name}.` : 'Showing all components.');
+						}}
+					>
+						{mode.name}
+					</button>
+				))}
+			</div>
+		) : (
+			<label class="tp-preview-mode" data-tapestry-preview-modes>
+				<span>Preview as</span>
+				<select
+					class="tp-input"
+					value={store.previewMode.value}
+					onChange={(e) => {
+						store.previewMode.value = e.currentTarget.value;
+					}}
+				>
+					{previewModes.map((mode) => (
+						<option key={mode.key} value={mode.key}>
+							{mode.name}
+						</option>
+					))}
+				</select>
+			</label>
+		);
+
 	const fullscreenButton = (
 		<button
 			type="button"
@@ -592,7 +635,12 @@ export function App({
 						announce={announce}
 						onKeyDown={handleShortcut}
 						toolbar={editingTools}
-						afterViewports={fullscreenButton}
+						afterViewports={
+							<>
+								{fullscreenButton}
+								{previewSwitch}
+							</>
+						}
 						afterReload={viewPage}
 						footerEnd={saveActions || undefined}
 						params={canvasParams(store.doc.value, part)}

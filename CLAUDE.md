@@ -494,6 +494,8 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
   tabs on area labels and sends `tapestry-tabs` with renders; its render key (`renderKey()`) includes the tabs,
   and `scheduleRender()` must use the same key (a rename once stopped refreshing the chip). Lists' items
   (`<tapestry-foreign>`) lose their editor markers after every render (`neutralizeForeign()`).
+  The template editor's "Preview as" (`store.previewMode`, '' = All) only marks canvas nodes
+  (`data-tapestry-out-of-mode`, CSS hides them; the selected one is faded), no re-render.
 - Never put `\u2028`/`\u2029` escapes in files through the Write tool: it wrote the real characters, which
   end a regex literal (`modes.ts` once failed to parse). Write such lines with a script, escapes as text.
 - Pragmatic DnD 4.x import paths: `@atlaskit/pragmatic-drag-and-drop/adapter/element-adapter`,

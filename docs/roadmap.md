@@ -177,8 +177,8 @@ Decision: [ADR 0016](decisions/0016-media-library.md). Moved to its own reposito
   list component; its ADR 0001, 2026-10-23), on Tapestry 0.7.0's display modes: "Shown in" on template
   components, a tab per mode on content areas, rendering in a mode, `select` `multiple`, list helpers in
   `/page`, `/modes`, `Document.astro` ([ADR 0046](decisions/0046-display-modes.md))
-- [ ] Later for display modes: a "Preview as: Full | Teaser" switch in the template editor; pagination for
-  Page lists
+- [x] "Preview as: All | Full | Teaser" in the template editor, and page links for Page lists (Tapestry's
+  `withNodeId`, Fabric 0.1.0) (2026-10-30)
 
 ## Later / maybe
 

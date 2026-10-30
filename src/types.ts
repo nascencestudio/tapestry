@@ -259,6 +259,12 @@ export interface ComponentDefinition {
 	 */
 	client?: ClientDirective;
 	/**
+	 * Pass the component its node's id as a `nodeId` prop (a string, stable for this placement of the
+	 * component; ADR 0046): e.g. to name a URL parameter of its own, like a list's pager. A prop can't
+	 * also be called `nodeId` then.
+	 */
+	withNodeId?: boolean;
+	/**
 	 * Optional picture for the editor's component library: an image file
 	 * (`.png`, `.jpg`, `.webp`, `.avif`, `.gif` or `.svg`), relative to the Astro
 	 * project root like `component`. Without one, the library still shows a live

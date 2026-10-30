@@ -14,7 +14,7 @@
  */
 import { effect } from '@preact/signals';
 import { h, render } from 'preact';
-import { FULL, modeSlot, parseModeSlot, tabsParam } from '../../modes.js';
+import { FULL, modeSlot, nodeModes, parseModeSlot, tabsParam } from '../../modes.js';
 import {
 	AREA_ATTR,
 	EDITING_PART_ATTR,
@@ -28,6 +28,11 @@ import {
 	TEXT_ATTR,
 	TEXT_PROP_ATTR,
 } from '../../runtime/canvas-mode.js';
+
+/** Canvas nodes not shown in the template editor's "Preview as" mode (and the selected one among them). */
+const OUT_OF_MODE_ATTR = 'data-tapestry-out-of-mode';
+const OUT_OF_MODE_SELECTED_ATTR = 'data-tapestry-out-of-mode-selected';
+
 import { TEMPLATE_NODE_PREFIX } from '../../templates.js';
 import type { TapestryDocument, TapestryNode } from '../../types.js';
 import { activeDrag, applyDrop, type DragData } from '../dnd.js';
@@ -177,6 +182,9 @@ const CANVAS_CSS = `
 [${AREA_ATTR}] { outline: 2px dashed rgb(139 92 246 / 0.55); outline-offset: 2px; min-height: 3rem; pointer-events: auto; }
 tapestry-area-label { display: block; width: fit-content; margin: 0 0 0.25rem; padding: 0.15rem 0.5rem; border-radius: 4px;
 	background: #6d4ed6; color: #fff; font: 600 12px/1.4 system-ui, sans-serif; }
+/* The template editor's "Preview as" (ADR 0046): components not in the mode are hidden; the selected one is faded. */
+[${OUT_OF_MODE_ATTR}]:not([${OUT_OF_MODE_SELECTED_ATTR}]) > * { display: none !important; }
+[${OUT_OF_MODE_SELECTED_ATTR}] > * { opacity: 0.35; outline: 1px dashed rgb(139 92 246 / 0.8); outline-offset: -1px; }
 tapestry-area-label [data-tapestry-area-tabs] { display: inline-flex; gap: 2px; margin-left: 0.5rem; padding-left: 0.5rem;
 	border-left: 1px solid rgb(255 255 255 / 0.5); vertical-align: middle; }
 tapestry-area-label [data-tapestry-area-tab] { all: unset; padding: 0 0.45rem; border-radius: 3px; cursor: pointer;
@@ -310,10 +318,38 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		}
 	}
 
+	/**
+	 * The template editor's "Preview as" (ADR 0046): components not shown in the mode are hidden (CSS); the
+	 * selected one stays, faded, so a component just added (Full by default) can still be edited.
+	 */
+	function markPreviewMode() {
+		if (!root) return;
+		const mode = store.editing === 'template' ? store.previewMode.peek() : '';
+		const hidden = new Set<string>();
+		if (mode) {
+			const walk = (nodes: readonly TapestryNode[], within: readonly string[] | null) => {
+				for (const node of nodes) {
+					const modes = within ? nodeModes(node).filter((m) => within.includes(m)) : [...nodeModes(node)];
+					if (!modes.includes(mode)) hidden.add(node.id);
+					if (node.children) walk(node.children, modes);
+				}
+			};
+			walk(store.doc.peek().root, null);
+		}
+		const selected = store.selectedId.peek();
+		for (const el of root.querySelectorAll(`[${NODE_ATTR}]`)) {
+			const id = el.getAttribute(NODE_ATTR) ?? '';
+			el.toggleAttribute(OUT_OF_MODE_ATTR, hidden.has(id));
+			el.toggleAttribute(OUT_OF_MODE_SELECTED_ATTR, hidden.has(id) && id === selected);
+		}
+		root.toggleAttribute('data-tapestry-previewing', Boolean(mode));
+	}
+
 	/** Which rich text fields the canvas can edit in place (`nodeId.prop`), for the settings panel. */
 	function publishTextTargets() {
 		neutralizeForeign();
 		decorateAreaTabs();
+		markPreviewMode();
 		const keys = new Set<string>();
 		for (const el of root?.querySelectorAll('[data-tapestry-text]') ?? []) {
 			const id = el.getAttribute('data-tapestry-text');
@@ -1019,8 +1055,14 @@ export function createCanvasController(options: CanvasControllerOptions) {
 		store.tabs.value;
 		scheduleRender();
 	});
+	const stopPreviewEffect = effect(() => {
+		store.previewMode.value;
+		markPreviewMode();
+		redraw();
+	});
 	const stopSelectionEffect = effect(() => {
 		store.selectedId.value;
+		markPreviewMode();
 		editSelectedText();
 		if (root) plain.activate(root, editableSelection());
 		redraw();
@@ -1053,6 +1095,7 @@ export function createCanvasController(options: CanvasControllerOptions) {
 			inflight?.abort();
 			stopRenderEffect();
 			stopSelectionEffect();
+			stopPreviewEffect();
 			iframe.removeEventListener('load', setup);
 			for (const cleanup of cleanups.splice(0)) cleanup();
 			overlay?.remove();

@@ -178,6 +178,12 @@ export function defineComponent<const T extends ComponentDefinition>(definition:
 			);
 		}
 	}
+	if (definition.withNodeId !== undefined && typeof definition.withNodeId !== 'boolean') {
+		throw new TapestryDefinitionError(`Component "${type}": "withNodeId" must be true or false.`);
+	}
+	if (definition.withNodeId && Object.hasOwn(definition.props ?? {}, 'nodeId')) {
+		throw new TapestryDefinitionError(`Component "${type}": with "withNodeId", no prop may be called "nodeId".`);
+	}
 	if (definition.permission !== undefined && !['editor', 'admin', 'owner'].includes(definition.permission)) {
 		throw new TapestryDefinitionError(`Component "${type}": "permission" must be 'editor', 'admin' or 'owner'.`);
 	}

@@ -88,6 +88,8 @@ export function createEditorStore(
 		const template = editing === 'page' ? doc.value.template : undefined;
 		return template ? withRootAreas(baseManifest, areas.value, modes) : baseManifest;
 	});
+	/** The template editor's "Preview as" (ADR 0046): the mode the canvas shows; '' shows everything. Not saved. */
+	const previewMode = signal<string>('');
 	/** The display mode each content area shows on the canvas (its tab; absent: Full). Not saved. */
 	const tabs = signal<Readonly<Record<string, string>>>({});
 	/** Show an area's tab for `mode` (Full when the area doesn't have it). */
@@ -253,6 +255,8 @@ export function createEditorStore(
 		/** Each content area's tab on the canvas (area key → mode; Full is absent). */
 		tabs,
 		setTab,
+		/** The template editor's "Preview as" mode ('': All, everything shows). */
+		previewMode,
 		/** What's edited: a page, a header/footer part, or a template body. */
 		editing,
 		/** Component types the current user may not change. */

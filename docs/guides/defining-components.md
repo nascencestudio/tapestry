@@ -102,6 +102,7 @@ REST API would otherwise expose drafts; see [security](../security.md#unpublishe
 | `acceptsChildren` | boolean | | Children render into the component's default `<slot />` |
 | `slots` | `Record<name, { label, description? }>` | | Named areas for children (see "Children") |
 | `thumbnail` | string | | Image for the editor's library (`.png`, `.jpg`, `.webp`, `.avif`, `.gif`, `.svg`), relative to the project root. Without one, hovering the component shows a live preview. |
+| `withNodeId` | boolean | | Pass the component its node's id as a `nodeId` prop (stable for this placement), e.g. to name a URL parameter of its own; no prop may then be called `nodeId` |
 
 Throws `TapestryDefinitionError` at config load for invalid names, reserved
 prop names, a select `default` that isn't one of its options, `min > max`, an unknown or

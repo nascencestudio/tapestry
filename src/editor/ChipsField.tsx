@@ -71,40 +71,48 @@ export function ChipsField({
 					))}
 				</ul>
 			)}
-			{available.length > 0 && !disabled && (
-				<>
-					<input
-						id={id}
-						class="tp-input tp-chips__input"
-						type="text"
-						list={listId}
-						value={text}
-						placeholder={placeholder}
-						autocomplete="off"
-						aria-labelledby={labelledBy}
-						aria-describedby={describedBy}
-						onInput={(e) => {
-							const typed = e.currentTarget.value;
-							// Picking a suggestion puts its label in the box: add it at once.
-							if (!add(exact(typed))) setText(typed);
-						}}
-						onKeyDown={(e) => {
-							if (e.key === 'Enter') {
-								// Never submit StudioCMS's page form.
-								e.preventDefault();
-								add(exact(text) ?? (text.trim() ? startingWith(text) : undefined));
-							} else if (e.key === 'Escape' && text) {
-								e.stopPropagation();
-								setText('');
-							}
-						}}
-					/>
-					<datalist id={listId}>
-						{available.map((o) => (
-							<option key={o.value} value={o.label} />
-						))}
-					</datalist>
-				</>
+			{/* Always there (the field's label points at it), disabled when there's nothing to add. */}
+			<input
+				id={id}
+				class="tp-input tp-chips__input"
+				type="text"
+				list={available.length > 0 ? listId : undefined}
+				value={text}
+				disabled={disabled || available.length === 0}
+				placeholder={
+					disabled
+						? placeholder
+						: options.length === 0
+							? 'Nothing to choose yet'
+							: available.length === 0
+								? 'All chosen'
+								: placeholder
+				}
+				autocomplete="off"
+				aria-labelledby={labelledBy}
+				aria-describedby={describedBy}
+				onInput={(e) => {
+					const typed = e.currentTarget.value;
+					// Picking a suggestion puts its label in the box: add it at once.
+					if (!add(exact(typed))) setText(typed);
+				}}
+				onKeyDown={(e) => {
+					if (e.key === 'Enter') {
+						// Never submit StudioCMS's page form.
+						e.preventDefault();
+						add(exact(text) ?? (text.trim() ? startingWith(text) : undefined));
+					} else if (e.key === 'Escape' && text) {
+						e.stopPropagation();
+						setText('');
+					}
+				}}
+			/>
+			{available.length > 0 && (
+				<datalist id={listId}>
+					{available.map((o) => (
+						<option key={o.value} value={o.label} />
+					))}
+				</datalist>
 			)}
 		</div>
 	);

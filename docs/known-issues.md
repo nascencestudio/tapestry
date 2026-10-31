@@ -51,7 +51,10 @@ resolved, and note the resolution in the devlog.
   lockfile now resolves 4.3.0; the ignore entry is removed.
 - `GHSA-vfj7-8cjw-p6xm` (braces ≤ 3.0.3): needs attacker-controlled glob patterns;
   StudioCMS's middleware only expands developer-defined route patterns.
-- The remaining one is listed in `auditConfig.ignoreGhsas` in `pnpm-workspace.yaml` with these
+- `GHSA-g3hv-75wg-m249` (minimatch < 11.0.1, moderate, 2026-10-30; re-check 2026-11-15): needs attacker-controlled
+  glob patterns; StudioCMS's component registry (ts-morph, `^10.0.1`) only matches the project's own files. The
+  fix is minimatch 11, which adds a package first published 2026-10-26; not worth it for this.
+- The remaining ones are listed in `auditConfig.ignoreGhsas` in `pnpm-workspace.yaml` with these
   reasons. Remove each entry as soon as a patched version is available.
 
 ### 9. Editor lives on the "Page Content" tab, and the create screen has no editor

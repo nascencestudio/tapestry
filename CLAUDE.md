@@ -42,18 +42,16 @@ happens across sibling checkouts in `/Volumes/T7/www/`:
 | Deployment | Docker + Caddy for a Hetzner Cloud server; CI (GitHub Actions, ADR 0020) | ✅ Done (2026-10-06) |
 | 4. Rich content | Images, rich text, links, repeaters, named slots, patterns, library previews | ✅ Done (2026-10-07) |
 | 5. Production | Islands, migrations, i18n, permissions, a11y, perf budget, npm publish, docs site | ✅ Done (2026-10-08) except the actual npm publish: prepared (repos: nascencestudio/tapestry, nascencestudio/medialibrary); the user releases |
-| Companions | tapestry-seo (0.4.0 SEO button), templates (0.5.0), hooks for tapestry-menus (0.6.0, ADR 0042), display modes for tapestry-fabric (0.7.0, ADR 0046) | ✅ SEO released; 0.5.0, 0.6.0 and 0.7.0 built, not released (0.7.0: 2026-10-23) |
+| Companions | tapestry-seo (0.4.0 SEO button), templates (ADR 0041), hooks for tapestry-menus (ADR 0042), display modes for tapestry-fabric (ADR 0046) | ✅ Released as 0.7.0 (2026-10-31; 0.5.0 and 0.6.0 never published), 0.7.1 the same day; menus, Fabric, IP Guard, webforms 0.1.0 and seo 0.2.1 released |
 
 Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in tapestry-playground (`../tapestry-playground/docs/devlog.md`).
 
 **Immediate next steps**
-1. **Releasing (2026-10-30, the user's order):** Tapestry ships **one release, 0.7.0**, from branch
-   `display-modes` (it contains 0.5.0's templates, 0.6.0's companion hooks and 0.7.0's display modes; 0.5.0 and
-   0.6.0 are never published). PR → merge (merge commit) → release `v0.7.0` → approve on npm. `main` is
-   protected: always work on a branch. In parallel: media library 0.2.1, IP Guard 0.1.0 (new). After Tapestry
-   0.7.0: tapestry-seo 0.2.1, tapestry-menus 0.1.0 and tapestry-fabric 0.1.0 (new), then webforms 0.1.0 (new;
-   needs IP Guard). New packages: GitHub repo, a one-time `NPM_TOKEN`, then trusted publishing. Then the
-   playground switches to npm versions, runs every suite, the budget and the Docker build, and commits.
+1. **Released (2026-10-31):** Tapestry 0.7.1 (0.7.0 first; 0.5.0 and 0.6.0 never published), media library
+   0.2.1, tapestry-seo 0.2.1, and the first releases of tapestry-menus, tapestry-fabric, IP Guard and webforms
+   (0.1.0, trusted publishing set up, tokens deleted). The playground runs on all of them from npm. Releases:
+   branch → PR → merge (merge commit) → GitHub release `v<version>` → approve on npm. `main` is protected.
+   Re-check the minimatch audit exception on 2026-11-15 (known issue #8).
    Still open: the StudioCMS issue in tapestry-playground/docs/upstream/ (only when the user asks).
 2. Report upstream (only when the user asks): `bySlug` drafts (#10), ignored config keys (#5),
    dev-toolbar DB viewer errors (#12), empty page type (#15), edit-screen crash/no delete (#16),

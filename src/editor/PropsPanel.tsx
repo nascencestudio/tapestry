@@ -310,7 +310,7 @@ function SelectField({
 					onChange={(next) => onChange(next.length > 0 ? next : undefined)}
 					labelledBy={`${id}-label`}
 					{...(typeof a11y['aria-describedby'] === 'string' ? { describedBy: a11y['aria-describedby'] } : {})}
-					placeholder={remote === null ? 'Loading…' : options.length === 0 ? 'Nothing to choose' : 'Type to add…'}
+					placeholder={remote === null ? 'Loading…' : 'Type to add…'}
 					disabled={remote === null}
 				/>
 			</div>

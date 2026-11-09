@@ -66,27 +66,27 @@
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "4.0.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "3.0.0",
-    "@preact/signals": "^2.11.2",
+    "@preact/signals": "^2.11.4",
     "preact": "^10.29.8",
     "prosemirror-commands": "1.7.2",
     "prosemirror-history": "1.5.1",
     "prosemirror-keymap": "1.2.3",
     "prosemirror-model": "1.25.12",
-    "prosemirror-schema-list": "1.5.1",
+    "prosemirror-schema-list": "1.6.0",
     "prosemirror-state": "1.4.4",
-    "prosemirror-transform": "1.12.2",
-    "prosemirror-view": "1.42.6"
+    "prosemirror-transform": "1.12.5",
+    "prosemirror-view": "1.42.9"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
+    "@biomejs/biome": "2.6.5",
     "@libsql/client": "0.18.0",
-    "@nascencestudio/medialibrary": "0.2.0",
+    "@nascencestudio/medialibrary": "0.2.1",
     "@types/node": "22.20.4",
-    "astro": "7.4.1",
+    "astro": "7.4.7",
     "studiocms": "0.7.0",
     "typescript": "6.0.3",
     "ultrahtml": "1.7.0",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   },
   "engines": {
     "node": ">=22.12.0"

@@ -215,16 +215,16 @@ importers:
         version: 0.18.0
       '@nascencestudio/medialibrary':
         specifier: 0.2.0
-        version: 0.2.0(@types/node@22.20.4)(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(preact-render-to-string@6.8.0)(studiocms@0.7.0(ea9654f678936f1cf93e6c014c6b7962))
+        version: 0.2.0(@types/node@26.6.5)(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(preact-render-to-string@6.8.0)(studiocms@0.7.0(91fbb803e3dadc8b427d2e4677983fdb))
       '@types/node':
-        specifier: 22.20.4
-        version: 22.20.4
+        specifier: 26.6.5
+        version: 26.6.5
       astro:
         specifier: 7.4.1
-        version: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+        version: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       studiocms:
         specifier: 0.7.0
-        version: 0.7.0(ea9654f678936f1cf93e6c014c6b7962)
+        version: 0.7.0(91fbb803e3dadc8b427d2e4677983fdb)
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -233,16 +233,16 @@ importers:
         version: 1.7.0
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@22.20.4)(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
+        version: 5.0.5(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
 
   website:
     dependencies:
       '@astrojs/starlight':
         specifier: 0.42.6
-        version: 0.42.6(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(typescript@6.0.3)
+        version: 0.42.6(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(typescript@6.0.3)
       astro:
         specifier: 7.4.1
-        version: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+        version: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
 
 packages:
 
@@ -1466,6 +1466,9 @@ packages:
 
   '@types/node@24.19.1':
     resolution: {integrity: sha512-aS3/DG0oM05K0RIXXP+hKjinGG5IgSSVGzswZxW3O0sS3pH4/fycXundUC9XsszgKCk4gHXylTEK6hyFxVxnoQ==}
+
+  '@types/node@26.6.5':
+    resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
 
   '@types/sax@1.2.7':
     resolution: {integrity: sha512-rO73L89PJxeYM3s3pPPjiPgVVcymqU490g0YO5n5By0k2Erzj6tay/4lr1CHAAU4JyOWd1rpQ8bCf6cZfHU96A==}
@@ -2737,6 +2740,9 @@ packages:
   undici-types@7.24.6:
     resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
+  undici-types@8.9.0:
+    resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
+
   undici@7.30.1:
     resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
     engines: {node: '>=20.18.1'}
@@ -3086,11 +3092,11 @@ snapshots:
       github-slugger: 2.0.0
       satteri: 0.10.5
 
-  '@astrojs/mdx@8.0.2(@astrojs/markdown-satteri@0.4.2)(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))':
+  '@astrojs/mdx@8.0.2(@astrojs/markdown-satteri@0.4.2)(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))':
     dependencies:
       '@astrojs/internal-helpers': 0.11.0
       '@astrojs/markdown-satteri': 0.4.2
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       es-module-lexer: 2.3.2
 
   '@astrojs/prism@4.0.2':
@@ -3106,17 +3112,17 @@ snapshots:
       sitemap: 9.0.1
       zod: 4.6.7
 
-  '@astrojs/starlight@0.42.6(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(typescript@6.0.3)':
+  '@astrojs/starlight@0.42.6(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(typescript@6.0.3)':
     dependencies:
       '@astrojs/markdown-satteri': 0.4.2
-      '@astrojs/mdx': 8.0.2(@astrojs/markdown-satteri@0.4.2)(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
+      '@astrojs/mdx': 8.0.2(@astrojs/markdown-satteri@0.4.2)(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
       '@astrojs/sitemap': 3.7.4
       '@pagefind/default-ui': 1.5.2
       '@types/hast': 3.0.5
       '@types/js-yaml': 4.0.9
       '@types/mdast': 4.0.4
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
-      astro-expressive-code: 0.44.2(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
+      astro-expressive-code: 0.44.2(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
       bcp-47: 2.1.1
       hast-util-format: 1.1.0
       hast-util-select: 6.0.4
@@ -3720,14 +3726,14 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@nascencestudio/medialibrary@0.2.0(@types/node@22.20.4)(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(preact-render-to-string@6.8.0)(studiocms@0.7.0(ea9654f678936f1cf93e6c014c6b7962))':
+  '@nascencestudio/medialibrary@0.2.0(@types/node@26.6.5)(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(preact-render-to-string@6.8.0)(studiocms@0.7.0(91fbb803e3dadc8b427d2e4677983fdb))':
     dependencies:
       '@preact/signals': 2.11.2(preact@10.29.8)
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       kysely: 0.29.6
       preact: 10.29.8(preact-render-to-string@6.8.0)
-      sharp: 0.35.5(@types/node@22.20.4)
-      studiocms: 0.7.0(ea9654f678936f1cf93e6c014c6b7962)
+      sharp: 0.35.5(@types/node@26.6.5)
+      studiocms: 0.7.0(91fbb803e3dadc8b427d2e4677983fdb)
       ultrahtml: 1.7.0
     transitivePeerDependencies:
       - '@types/node'
@@ -3958,13 +3964,13 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@studiocms/ui@1.2.2(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))':
+  '@studiocms/ui@1.2.2(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))':
     dependencies:
       '@iconify-json/heroicons': 1.2.3
       '@iconify/types': 2.0.0
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
-      astro-transition-event-polyfill: 1.2.2(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
-      vite: 8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
+      astro-transition-event-polyfill: 1.2.2(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
 
   '@traversable/json@0.0.52(@traversable/registry@0.0.49)(fast-check@3.23.2)':
     dependencies:
@@ -4041,6 +4047,10 @@ snapshots:
     dependencies:
       undici-types: 7.24.6
 
+  '@types/node@26.6.5':
+    dependencies:
+      undici-types: 8.9.0
+
   '@types/sax@1.2.7':
     dependencies:
       '@types/node': 22.20.4
@@ -4058,37 +4068,37 @@ snapshots:
 
   '@ungap/structured-clone@1.4.0': {}
 
-  '@vitest/mocker@5.0.5(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))':
+  '@vitest/mocker@5.0.5(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.5
       estree-walker: 3.0.3
       magic-string: 1.4.3
     optionalDependencies:
-      vite: 8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
 
   '@vitest/spy@5.0.5': {}
 
-  '@withstudiocms/api-spec@0.4.1(a1c40132f31fda42f99cdc8c20a8fe8c)':
+  '@withstudiocms/api-spec@0.4.1(31c3acdbcd6cc49c06bc675b4cff219d)':
     dependencies:
       '@effect/platform': 0.97.2(effect@3.22.2)
       '@effect/platform-node': 0.108.2(@effect/cluster@0.60.2(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/workflow@0.19.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(effect@3.22.2)
-      '@withstudiocms/sdk': 0.4.2(@withstudiocms/effect@0.5.3(b4f3e5e46ea36d717f62699565c9b529))(@withstudiocms/kysely@0.3.1(@libsql/client@0.18.0)(effect@3.22.2))(effect@3.22.2)(effectify@0.3.2(b81c23c4fa763afd6f57493cf1605a05))(kysely@0.29.6)(zod@4.6.7)
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      '@withstudiocms/sdk': 0.4.2(@withstudiocms/effect@0.5.3(174df989b2d39fe5e11aaffac78a1a4f))(@withstudiocms/kysely@0.3.1(@libsql/client@0.18.0)(effect@3.22.2))(effect@3.22.2)(effectify@0.3.2(b7a6952900f17aeda1968e5b0bc570d0))(kysely@0.29.6)(zod@4.6.7)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       effect: 3.22.2
-      effectify: 0.3.2(b81c23c4fa763afd6f57493cf1605a05)
+      effectify: 0.3.2(b7a6952900f17aeda1968e5b0bc570d0)
     transitivePeerDependencies:
       - fast-check
       - zod
 
-  '@withstudiocms/auth-kit@0.2.2(bf02b45bd0da51a211400db7e504a158)':
+  '@withstudiocms/auth-kit@0.2.2(ce52f75451eac60d575da290b4d6996d)':
     dependencies:
       '@effect/platform': 0.97.2(effect@3.22.2)
-      '@withstudiocms/effect': 0.5.3(b4f3e5e46ea36d717f62699565c9b529)
-      '@withstudiocms/internal_helpers': 0.5.0(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      '@withstudiocms/effect': 0.5.3(174df989b2d39fe5e11aaffac78a1a4f)
+      '@withstudiocms/internal_helpers': 0.5.0(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       effect: 3.22.2
-      effectify: 0.3.2(b81c23c4fa763afd6f57493cf1605a05)
+      effectify: 0.3.2(b7a6952900f17aeda1968e5b0bc570d0)
     transitivePeerDependencies:
       - '@effect/cli'
       - '@effect/platform-node'
@@ -4107,11 +4117,11 @@ snapshots:
       tinyexec: 1.3.1
       wrap-ansi: 10.0.2
 
-  '@withstudiocms/component-registry@0.2.2(08e767b5332d0ccf8376456337a4c182)':
+  '@withstudiocms/component-registry@0.2.2(528c23eaa7564f2a2ee86f4128bdb808)':
     dependencies:
-      '@withstudiocms/effect': 0.5.3(b4f3e5e46ea36d717f62699565c9b529)
-      '@withstudiocms/internal_helpers': 0.5.0(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      '@withstudiocms/effect': 0.5.3(174df989b2d39fe5e11aaffac78a1a4f)
+      '@withstudiocms/internal_helpers': 0.5.0(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       effect: 3.22.2
       ts-morph: 28.0.0
       ultrahtml: 1.7.0
@@ -4123,22 +4133,22 @@ snapshots:
       - vite
       - zod
 
-  '@withstudiocms/config-utils@0.3.1(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))':
+  '@withstudiocms/config-utils@0.3.1(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))':
     dependencies:
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       effect: 3.22.2
-      vite: 8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
 
-  '@withstudiocms/effect@0.5.3(b4f3e5e46ea36d717f62699565c9b529)':
+  '@withstudiocms/effect@0.5.3(174df989b2d39fe5e11aaffac78a1a4f)':
     dependencies:
       '@clack/prompts': 1.8.1
       '@effect/cli': 0.77.2(@effect/platform@0.97.2(effect@3.22.2))(@effect/printer-ansi@0.51.0(@effect/typeclass@0.41.0(effect@3.22.2))(effect@3.22.2))(@effect/printer@0.51.0(@effect/typeclass@0.41.0(effect@3.22.2))(effect@3.22.2))(effect@3.22.2)
       '@effect/platform': 0.97.2(effect@3.22.2)
       '@effect/platform-node': 0.108.2(@effect/cluster@0.60.2(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/workflow@0.19.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(effect@3.22.2)
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       deepmerge-ts: 8.0.2
       effect: 3.22.2
-      effectify: 0.3.2(b81c23c4fa763afd6f57493cf1605a05)
+      effectify: 0.3.2(b7a6952900f17aeda1968e5b0bc570d0)
       micromatch: 4.0.8
       nodemailer: 10.1.7
       socks: 2.8.10
@@ -4146,15 +4156,15 @@ snapshots:
       - fast-check
       - zod
 
-  '@withstudiocms/internal_helpers@0.5.0(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))':
+  '@withstudiocms/internal_helpers@0.5.0(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))':
     dependencies:
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       effect: 3.22.2
       mdast-util-to-string: 4.0.0
       satteri: 0.10.5
       tinyexec: 1.3.1
       unist-util-visit: 5.1.0
-      vite: 8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
 
   '@withstudiocms/kysely@0.3.1(@libsql/client@0.18.0)(effect@3.22.2)':
     dependencies:
@@ -4163,14 +4173,14 @@ snapshots:
     optionalDependencies:
       '@libsql/client': 0.18.0
 
-  '@withstudiocms/sdk@0.4.2(@withstudiocms/effect@0.5.3(b4f3e5e46ea36d717f62699565c9b529))(@withstudiocms/kysely@0.3.1(@libsql/client@0.18.0)(effect@3.22.2))(effect@3.22.2)(effectify@0.3.2(b81c23c4fa763afd6f57493cf1605a05))(kysely@0.29.6)(zod@4.6.7)':
+  '@withstudiocms/sdk@0.4.2(@withstudiocms/effect@0.5.3(174df989b2d39fe5e11aaffac78a1a4f))(@withstudiocms/kysely@0.3.1(@libsql/client@0.18.0)(effect@3.22.2))(effect@3.22.2)(effectify@0.3.2(b7a6952900f17aeda1968e5b0bc570d0))(kysely@0.29.6)(zod@4.6.7)':
     dependencies:
-      '@withstudiocms/effect': 0.5.3(b4f3e5e46ea36d717f62699565c9b529)
+      '@withstudiocms/effect': 0.5.3(174df989b2d39fe5e11aaffac78a1a4f)
       '@withstudiocms/kysely': 0.3.1(@libsql/client@0.18.0)(effect@3.22.2)
       diff: 8.0.4
       diff2html: 3.4.56
       effect: 3.22.2
-      effectify: 0.3.2(b81c23c4fa763afd6f57493cf1605a05)
+      effectify: 0.3.2(b7a6952900f17aeda1968e5b0bc570d0)
       kysely: 0.29.6
       zod: 4.6.7
 
@@ -4205,18 +4215,18 @@ snapshots:
 
   assertion-error@2.0.1: {}
 
-  astro-expressive-code@0.44.2(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)):
+  astro-expressive-code@0.44.2(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)):
     dependencies:
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       rehype-expressive-code: 0.44.2
       url-extras: 0.1.0
 
-  astro-transition-event-polyfill@1.2.2(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)):
+  astro-transition-event-polyfill@1.2.2(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)):
     dependencies:
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       pathe: 2.0.3
 
-  astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1):
+  astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1):
     dependencies:
       '@astrojs/compiler-rs': 0.5.1
       '@astrojs/internal-helpers': 0.13.0
@@ -4265,13 +4275,13 @@ snapshots:
       unifont: 1.0.3
       unstorage: 1.17.5
       verkit: 0.5.0
-      vite: 8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
-      vitefu: 1.1.3(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
+      vitefu: 1.1.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
       xxhash-wasm: 1.1.0
       yargs-parser: 22.0.0
       zod: 4.6.7
     optionalDependencies:
-      sharp: 0.35.5(@types/node@22.20.4)
+      sharp: 0.35.5(@types/node@26.6.5)
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -4483,14 +4493,14 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  effectify@0.3.2(b81c23c4fa763afd6f57493cf1605a05):
+  effectify@0.3.2(b7a6952900f17aeda1968e5b0bc570d0):
     dependencies:
       '@effect/platform': 0.97.2(effect@3.22.2)
       '@effect/platform-node': 0.108.2(@effect/cluster@0.60.2(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/workflow@0.19.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(effect@3.22.2)
       '@traversable/zod': 0.0.57(fast-check@3.23.2)(zod@4.6.7)
       effect: 3.22.2
     optionalDependencies:
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       zod: 4.6.7
     transitivePeerDependencies:
       - fast-check
@@ -5403,7 +5413,7 @@ snapshots:
 
   semver@7.8.5: {}
 
-  sharp@0.35.5(@types/node@22.20.4):
+  sharp@0.35.5(@types/node@26.6.5):
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
@@ -5434,7 +5444,7 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.5
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
-      '@types/node': 22.20.4
+      '@types/node': 26.6.5
 
   shiki@4.4.3:
     dependencies:
@@ -5505,7 +5515,7 @@ snapshots:
     dependencies:
       ansi-regex: 6.4.0
 
-  studiocms@0.7.0(ea9654f678936f1cf93e6c014c6b7962):
+  studiocms@0.7.0(91fbb803e3dadc8b427d2e4677983fdb):
     dependencies:
       '@effect/platform': 0.97.2(effect@3.22.2)
       '@effect/platform-node': 0.108.2(@effect/cluster@0.60.2(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/workflow@0.19.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(@effect/rpc@0.76.2(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/sql@0.52.1(@effect/experimental@0.61.1(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(@effect/platform@0.97.2(effect@3.22.2))(effect@3.22.2))(effect@3.22.2)
@@ -5515,25 +5525,25 @@ snapshots:
       '@nanostores/i18n': 1.3.3(nanostores@1.5.5)
       '@nanostores/persistent': 1.3.5(nanostores@1.5.5)
       '@outerbase/sdk-transform': 1.0.8
-      '@studiocms/ui': 1.2.2(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
-      '@withstudiocms/api-spec': 0.4.1(a1c40132f31fda42f99cdc8c20a8fe8c)
-      '@withstudiocms/auth-kit': 0.2.2(bf02b45bd0da51a211400db7e504a158)
+      '@studiocms/ui': 1.2.2(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
+      '@withstudiocms/api-spec': 0.4.1(31c3acdbcd6cc49c06bc675b4cff219d)
+      '@withstudiocms/auth-kit': 0.2.2(ce52f75451eac60d575da290b4d6996d)
       '@withstudiocms/cli-kit': 0.3.2
-      '@withstudiocms/component-registry': 0.2.2(08e767b5332d0ccf8376456337a4c182)
-      '@withstudiocms/config-utils': 0.3.1(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
-      '@withstudiocms/effect': 0.5.3(b4f3e5e46ea36d717f62699565c9b529)
-      '@withstudiocms/internal_helpers': 0.5.0(astro@7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
+      '@withstudiocms/component-registry': 0.2.2(528c23eaa7564f2a2ee86f4128bdb808)
+      '@withstudiocms/config-utils': 0.3.1(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
+      '@withstudiocms/effect': 0.5.3(174df989b2d39fe5e11aaffac78a1a4f)
+      '@withstudiocms/internal_helpers': 0.5.0(astro@7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(effect@3.22.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
       '@withstudiocms/kysely': 0.3.1(@libsql/client@0.18.0)(effect@3.22.2)
-      '@withstudiocms/sdk': 0.4.2(@withstudiocms/effect@0.5.3(b4f3e5e46ea36d717f62699565c9b529))(@withstudiocms/kysely@0.3.1(@libsql/client@0.18.0)(effect@3.22.2))(effect@3.22.2)(effectify@0.3.2(b81c23c4fa763afd6f57493cf1605a05))(kysely@0.29.6)(zod@4.6.7)
+      '@withstudiocms/sdk': 0.4.2(@withstudiocms/effect@0.5.3(174df989b2d39fe5e11aaffac78a1a4f))(@withstudiocms/kysely@0.3.1(@libsql/client@0.18.0)(effect@3.22.2))(effect@3.22.2)(effectify@0.3.2(b7a6952900f17aeda1968e5b0bc570d0))(kysely@0.29.6)(zod@4.6.7)
       '@withstudiocms/template-lang': 0.2.1
       ace-builds: 1.44.0
-      astro: 7.4.1(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      astro: 7.4.1(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       boxen: 9.0.0
       diff: 8.0.4
       dompurify: 3.4.17
       dotenv: 18.0.8
       effect: 3.22.2
-      effectify: 0.3.2(b81c23c4fa763afd6f57493cf1605a05)
+      effectify: 0.3.2(b7a6952900f17aeda1968e5b0bc570d0)
       fuse.js: 7.5.0
       jose: 6.2.12
       magicast: 0.5.5
@@ -5619,6 +5629,8 @@ snapshots:
 
   undici-types@7.24.6: {}
 
+  undici-types@8.9.0: {}
+
   undici@7.30.1: {}
 
   undici@8.12.3: {}
@@ -5697,7 +5709,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1):
+  vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -5705,19 +5717,19 @@ snapshots:
       rolldown: 1.2.14
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 22.20.4
+      '@types/node': 26.6.5
       esbuild: 0.28.2
       fsevents: 2.3.3
       yaml: 2.9.1
 
-  vitefu@1.1.3(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)):
+  vitefu@1.1.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)):
     optionalDependencies:
-      vite: 8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
 
-  vitest@5.0.5(@types/node@22.20.4)(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)):
+  vitest@5.0.5(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.5(vite@8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1))
+      '@vitest/mocker': 5.0.5(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -5728,10 +5740,10 @@ snapshots:
       tinybench: 6.2.2
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.3.4(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
       why-is-node-running: 3.2.1
     optionalDependencies:
-      '@types/node': 22.20.4
+      '@types/node': 26.6.5
     transitivePeerDependencies:
       - msw
 

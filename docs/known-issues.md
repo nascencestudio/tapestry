@@ -46,14 +46,14 @@ resolved, and note the resolution in the devlog.
   which updates the cache. After `pnpm seed`, restart the dev server if needed.
 
 ### 8. Audit advisories without patches (reviewed, ignored)
-- **Found:** 2026-10-02 · **Re-check:** 2026-11-01
+- **Found:** 2026-10-02 · **Re-check:** 2026-12-23
 - ~~`GHSA-ch52-4w7c-c8xp` (http-cache-semantics ≤ 4.2.0)~~: **resolved** 2026-10-08, the
   lockfile now resolves 4.3.0; the ignore entry is removed.
 - `GHSA-vfj7-8cjw-p6xm` (braces ≤ 3.0.3): needs attacker-controlled glob patterns;
-  StudioCMS's middleware only expands developer-defined route patterns.
-- `GHSA-g3hv-75wg-m249` (minimatch < 11.0.1, moderate, 2026-10-30; re-check 2026-11-15): needs attacker-controlled
-  glob patterns; StudioCMS's component registry (ts-morph, `^10.0.1`) only matches the project's own files. The
-  fix is minimatch 11, which adds a package first published 2026-10-26; not worth it for this.
+  StudioCMS's middleware only expands developer-defined route patterns. Still unpatched on 2026-11-23.
+- ~~`GHSA-g3hv-75wg-m249` (minimatch < 11.0.1)~~: **resolved** 2026-11-23, `@ts-morph/common` 0.29.1
+  asks for minimatch `^11.0.1`; the lockfile resolves 11.0.9 (with provenance) plus
+  `@isaacs/nonrecursive-glob-match` 1.1.0. The ignore entry is removed.
 - The remaining ones are listed in `auditConfig.ignoreGhsas` in `pnpm-workspace.yaml` with these
   reasons. Remove each entry as soon as a patched version is available.
 

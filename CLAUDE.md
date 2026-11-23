@@ -51,7 +51,6 @@ Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in ta
    0.2.1, tapestry-seo 0.2.1, and the first releases of tapestry-menus, tapestry-fabric, IP Guard and webforms
    (0.1.0, trusted publishing set up, tokens deleted). The playground runs on all of them from npm. Releases:
    branch → PR → merge (merge commit) → GitHub release `v<version>` → approve on npm. `main` is protected.
-   Re-check the minimatch audit exception on 2026-11-15 (known issue #8).
    Still open: the StudioCMS issue in tapestry-playground/docs/upstream/ (only when the user asks).
 2. Report upstream (only when the user asks): `bySlug` drafts (#10), ignored config keys (#5),
    dev-toolbar DB viewer errors (#12), empty page type (#15), edit-screen crash/no delete (#16),
@@ -61,7 +60,7 @@ Full plan: [docs/roadmap.md](docs/roadmap.md). Session history: the devlog in ta
    @studiocms/md global CSS (#33), unauthenticated dev SQL endpoint + external DB iframe (#12),
    404 page is the dashboard layout (#34), rendered output re-sanitized so component scripts are
    dropped (#37); Astro: dev CSS collector crosses the manifest (#32).
-3. Re-check the ignored braces advisory on 2026-11-01 (known issue #8).
+3. Re-check the ignored braces advisory on 2026-12-23 (known issue #8).
 
 ## Non-negotiable rules
 

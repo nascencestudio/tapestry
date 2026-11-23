@@ -412,7 +412,7 @@ None of these load on public pages.
 ### Audit status
 
 `pnpm audit` is clean except for one reviewed advisory (braces, `auditConfig.ignoreGhsas`,
-re-check 2026-11-01). `source-map-js` is forced to 1.2.2 with an `overrides` entry
+re-check 2026-12-23). `source-map-js` is forced to 1.2.2 with an `overrides` entry
 (GHSA-68fv-2mgg-jv7q, build-time only) until its parents pick up the fix. The `@studiocms/wysiwyg` plugin was tried and **removed** on
 2026-10-05 because it brought 21 advisories (fabric@4 chain). Tapestry and the
 Markdown plugin add none. The `@studiocms/html` plugin and its local patch were removed

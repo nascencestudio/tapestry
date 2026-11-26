@@ -30,6 +30,29 @@ changes, write a new ADR that supersedes the old one and update the old one's st
 | [0022](0022-publish-permission.md) | A publish permission separate from edit | Accepted | 2026-10-07 |
 | [0023](0023-scheduled-publishing-and-version-comparison.md) | Scheduled publishing and version comparison | Accepted | 2026-10-07 |
 | [0024](0024-inline-editing-plain-text.md) | Inline editing of plain text props on the canvas | Accepted | 2026-10-07 |
+| [0025](0025-link-prop.md) | Link prop: a page on this site or a web address | Accepted | 2026-10-07 |
+| [0026](0026-list-and-object-props.md) | List (repeater) and object props | Accepted | 2026-10-07 |
+| [0027](0027-named-slots.md) | Named slots | Accepted | 2026-10-07 |
+| [0028](0028-patterns.md) | Patterns (saved sections) | Accepted | 2026-10-07 |
+| [0029](0029-library-previews.md) | Component thumbnails and live previews in the library | Accepted | 2026-10-07 |
+| [0030](0030-islands.md) | Interactive components (Astro islands) | Accepted | 2026-10-07 |
+| [0031](0031-migrations.md) | Document and component migrations | Accepted | 2026-10-07 |
+| [0032](0032-translations.md) | Translations: one page per language, linked in a group | Accepted | 2026-10-07 |
+| [0033](0033-component-permissions.md) | Component permissions | Accepted | 2026-10-08 |
+| [0034](0034-accessibility-and-performance.md) | Accessibility audit and performance budget | Accepted | 2026-10-08 |
+| [0035](0035-npm-release.md) | Releasing to npm with provenance | Accepted | 2026-10-08 |
+| [0036](0036-documentation-site.md) | Documentation site (Starlight on GitHub Pages) | Accepted | 2026-10-08 |
+| [0037](0037-media-library-repository.md) | The media library moves to its own repository | Accepted | 2026-10-08 |
+| [0038](0038-plugin-only-repository.md) | The Tapestry repository holds only the plugin | Accepted | 2026-10-09 |
+| [0039](0039-public-pages-and-tapestry-seo.md) | Listing public pages; the tapestry-seo plugin | Accepted | 2026-10-11 |
+| [0040](0040-seo-button.md) | The SEO button: Tapestry's hook for tapestry-seo | Accepted | 2026-10-12 |
+| [0041](0041-templates.md) | Templates: shared headers, footers and page layouts | Accepted | 2026-10-15 |
+| [0042](0042-companion-hooks.md) | Hooks for companion plugins: server choices, link resolution, editor buttons | Accepted | 2026-10-16 |
+| [0043](0043-studiocms-0.7.md) | StudioCMS 0.7.0: supported alongside 0.6, after the release-age gate | Accepted | 2026-10-19 |
+| [0044](0044-shared-preact-runtime.md) | One Preact runtime: ranges for preact and @preact/signals | Accepted | 2026-10-22 |
+| [0045](0045-shipped-studiocms-fixes.md) | Shipped patches cover StudioCMS bugs sites hit, including the SDK | Accepted | 2026-10-22 |
+| [0046](0046-display-modes.md) | Display modes: templates that show a page in more than one way | Accepted | 2026-10-23 |
+| [0047](0047-prosemirror-ranges.md) | One ProseMirror: ranges for the prosemirror-* packages | Accepted | 2026-11-25 |
 
 ## Template
 

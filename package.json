@@ -80,7 +80,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
     "@libsql/client": "0.18.0",
-    "@nascencestudio/medialibrary": "0.2.2",
+    "@nascencestudio/medialibrary": "0.2.3",
     "@types/node": "22.20.5",
     "astro": "7.4.13",
     "studiocms": "0.7.0",

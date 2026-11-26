@@ -6,7 +6,6 @@ import {
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/utils/combine';
 import { attachInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/list-item/attach-instruction';
 import { extractInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/list-item/extract-instruction';
-import type { JSX } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { areaLabel, childAreas, hasChildAreas, ROOT_ENTRY } from '../slots.js';
 import type { TapestryNode } from '../types.js';
@@ -242,7 +241,7 @@ function Row({
 				class="tp-row"
 				data-tp-row={node.id}
 				data-indicator={indicator ?? undefined}
-				style={{ '--tp-level': level - 1 } as JSX.CSSProperties}
+				style={`--tp-level: ${level - 1}`}
 				onClick={() => store.select(node.id)}
 				onFocus={() => {
 					if (!selected) store.select(node.id);
@@ -325,7 +324,7 @@ function Row({
 			</div>
 			{container && !collapsed && (
 				// biome-ignore lint/a11y/useSemanticElements: ARIA tree pattern; <fieldset> is not appropriate
-				<ul role="group" class="tp-tree__group" style={{ '--tp-level': level } as JSX.CSSProperties}>
+				<ul role="group" class="tp-tree__group" style={`--tp-level: ${level}`}>
 					{entry?.slots ? (
 						// Components with named slots: one labelled group per area.
 						childAreas(entry).map((slot) => {

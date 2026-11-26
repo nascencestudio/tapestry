@@ -178,10 +178,10 @@ importers:
         version: 3.0.0
       '@preact/signals':
         specifier: ^2.11.4
-        version: 2.11.4(preact@10.29.8)
+        version: 2.11.4(preact@11.2.0)
       preact:
-        specifier: ^10.29.8
-        version: 10.29.8(preact-render-to-string@6.8.0)
+        specifier: 11.2.0
+        version: 11.2.0(preact-render-to-string@6.8.0)
       prosemirror-commands:
         specifier: ^1.7.2
         version: 1.7.2
@@ -214,8 +214,8 @@ importers:
         specifier: 0.18.0
         version: 0.18.0
       '@nascencestudio/medialibrary':
-        specifier: 0.2.2
-        version: 0.2.2(@types/node@22.20.5)(astro@7.4.13(@types/node@22.20.5)(esbuild@0.28.2)(yaml@2.9.1))(preact-render-to-string@6.8.0)(studiocms@0.7.0(f8523edfdeaed3e4d637104ec9aba3c6))
+        specifier: 0.2.3
+        version: 0.2.3(@types/node@22.20.5)(astro@7.4.13(@types/node@22.20.5)(esbuild@0.28.2)(yaml@2.9.1))(preact-render-to-string@6.8.0)(studiocms@0.7.0(f8523edfdeaed3e4d637104ec9aba3c6))
       '@types/node':
         specifier: 22.20.5
         version: 22.20.5
@@ -1179,8 +1179,8 @@ packages:
       '@emnapi/core': ^1.7.1 || 2.0.0-beta.2 || 2.0.0-beta.3
       '@emnapi/runtime': ^1.7.1 || 2.0.0-beta.2 || 2.0.0-beta.3
 
-  '@nascencestudio/medialibrary@0.2.2':
-    resolution: {integrity: sha512-lAr7OhKUnVEQOimgyRff/XNT+xSxsdfyUuCYbpOo8ireCc3cAUnSNA1w7MleYAWVng1exqFk5Ynvw/V40VUEog==}
+  '@nascencestudio/medialibrary@0.2.3':
+    resolution: {integrity: sha512-HOheBJJ/vgPcBEW1PCyjW9wlm5/QGJiAxy1N+Y0gE5zZj/e/1CYNdv8ATsgSJIJZUkAIrvilCLYjJ+42ZtCFkg==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       astro: ^7.0.0
@@ -2620,10 +2620,10 @@ packages:
     peerDependencies:
       preact: '>=10 || >= 11.0.0-0'
 
-  preact@10.29.8:
-    resolution: {integrity: sha512-ej2aVZ+vZ8WO7tvlQWRM9N63A0KzF9q4mWJfDUHgYaIofWY9hu74QdnQrjoPMmZi2/nZ5gN0bJCQF49xQqx09Q==}
+  preact@11.2.0:
+    resolution: {integrity: sha512-/HfHI/7N84e6GrWBJ3J280z3mLaRJiDcSvj/A+y/4AbLnND/1UlGHe1sR6oYuTGwId0nP7dqDU9OnLxMPZ7xBg==}
     peerDependencies:
-      preact-render-to-string: '>=5'
+      preact-render-to-string: '>=6.7.0'
     peerDependenciesMeta:
       preact-render-to-string:
         optional: true
@@ -3952,12 +3952,12 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@nascencestudio/medialibrary@0.2.2(@types/node@22.20.5)(astro@7.4.13(@types/node@22.20.5)(esbuild@0.28.2)(yaml@2.9.1))(preact-render-to-string@6.8.0)(studiocms@0.7.0(f8523edfdeaed3e4d637104ec9aba3c6))':
+  '@nascencestudio/medialibrary@0.2.3(@types/node@22.20.5)(astro@7.4.13(@types/node@22.20.5)(esbuild@0.28.2)(yaml@2.9.1))(preact-render-to-string@6.8.0)(studiocms@0.7.0(f8523edfdeaed3e4d637104ec9aba3c6))':
     dependencies:
-      '@preact/signals': 2.11.4(preact@10.29.8)
+      '@preact/signals': 2.11.4(preact@11.2.0)
       astro: 7.4.13(@types/node@22.20.5)(esbuild@0.28.2)(yaml@2.9.1)
       kysely: 0.29.9
-      preact: 10.29.8(preact-render-to-string@6.8.0)
+      preact: 11.2.0(preact-render-to-string@6.8.0)
       sharp: 0.35.5(@types/node@22.20.5)
       studiocms: 0.7.0(f8523edfdeaed3e4d637104ec9aba3c6)
       ultrahtml: 1.7.0
@@ -4056,10 +4056,10 @@ snapshots:
 
   '@preact/signals-core@1.14.5': {}
 
-  '@preact/signals@2.11.4(preact@10.29.8)':
+  '@preact/signals@2.11.4(preact@11.2.0)':
     dependencies:
       '@preact/signals-core': 1.14.5
-      preact: 10.29.8(preact-render-to-string@6.8.0)
+      preact: 11.2.0(preact-render-to-string@6.8.0)
 
   '@profoundlogic/hogan@3.0.4':
     dependencies:
@@ -5473,14 +5473,14 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.2
 
-  preact-render-to-string@6.8.0(preact@10.29.8):
+  preact-render-to-string@6.8.0(preact@11.2.0):
     dependencies:
-      preact: 10.29.8(preact-render-to-string@6.8.0)
+      preact: 11.2.0(preact-render-to-string@6.8.0)
     optional: true
 
-  preact@10.29.8(preact-render-to-string@6.8.0):
+  preact@11.2.0(preact-render-to-string@6.8.0):
     optionalDependencies:
-      preact-render-to-string: 6.8.0(preact@10.29.8)
+      preact-render-to-string: 6.8.0(preact@11.2.0)
 
   prismjs@1.30.0: {}
 

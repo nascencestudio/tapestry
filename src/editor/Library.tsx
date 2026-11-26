@@ -168,7 +168,7 @@ export function Library({ store, announce }: Props) {
 
 	// The live preview of the hovered/focused item, shown after a short delay.
 	const [preview, setPreview] = useState<{ type: string; anchor: DOMRect } | null>(null);
-	const previewTimer = useRef<ReturnType<typeof setTimeout>>();
+	const previewTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 	const previewFor = useMemo(() => {
 		const handlers = new Map<string, (element: HTMLElement | null) => void>();
 		return (type: string) => {

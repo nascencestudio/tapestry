@@ -270,7 +270,7 @@ checkout there: its `@nascencestudio/tapestry` dependency = `file:../tapestry`, 
 | vitest | 5.1.1 | pins `why-is-node-running@3.2.1` itself |
 | @astrojs/starlight | 0.43.1 | docs site only (ADR 0036); `postcss-nested` override for an audit fix |
 | @biomejs/biome | 2.6.8 | Markdown/YAML formatting off (on by default since 2.6) |
-| preact | ^10.29.8 (10.29.8 locked) | not 11: `@astrojs/preact@6` peer is `^10.6.5` (we don't use the integration, but stay compatible) |
+| preact | ^10.29.8 \|\| ^11.2.0 (11.2.0 locked) | 10 or 11 (ADR 0048); code must compile on both while 10 is in the range |
 | @preact/signals | ^2.11.4 (2.11.4 locked) | a range, like `preact` (ADR 0044): two copies on a site break the media picker |
 | @atlaskit/pragmatic-drag-and-drop | 4.0.0 | + `-hitbox` 3.0.0; no provenance (ADR 0007) |
 | prosemirror-* | ranges from the oldest tested (0.7.1's): model ^1.25.12, state ^1.4.4, view ^1.42.6, transform ^1.12.2, commands ^1.7.2, keymap ^1.2.3, history ^1.5.1, schema-list ^1.5.1; locked: model 1.25.13, view 1.43.0, transform 1.12.7, history 1.5.2, schema-list 1.6.1 | rich text editor; no provenance; no Meta libraries (user preference) (ADR 0012); ranges so a site loads one copy (ADR 0047) |

@@ -1,6 +1,6 @@
 {
   "name": "@nascencestudio/tapestry",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "Drag-and-drop component page building for Astro + StudioCMS",
   "license": "MIT",
   "author": "Nascence Studio",
@@ -67,7 +67,7 @@
     "@atlaskit/pragmatic-drag-and-drop": "4.0.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "3.0.0",
     "@preact/signals": "^2.11.4",
-    "preact": "^10.29.8",
+    "preact": "11.2.0",
     "prosemirror-commands": "^1.7.2",
     "prosemirror-history": "^1.5.1",
     "prosemirror-keymap": "^1.2.3",
@@ -80,7 +80,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
     "@libsql/client": "0.18.0",
-    "@nascencestudio/medialibrary": "0.2.2",
+    "@nascencestudio/medialibrary": "0.2.3",
     "@types/node": "22.20.5",
     "astro": "7.4.13",
     "studiocms": "0.7.0",

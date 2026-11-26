@@ -52,4 +52,4 @@ announcements), touch support, iframe support, maintenance and provenance.
 
 - Editor bundle stays small; fewer dependencies to audit.
 - Some React-only libraries won't be usable without `compat`; we accept that.
-- Upgrade to Preact 11 when `@astrojs/preact` supports it.
+- Upgrade to Preact 11 when `@astrojs/preact` supports it. (Done: ADR 0048, 2026-11-26.)

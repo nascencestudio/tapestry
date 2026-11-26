@@ -178,10 +178,10 @@ importers:
         version: 3.0.0
       '@preact/signals':
         specifier: ^2.11.4
-        version: 2.11.4(preact@10.29.8)
+        version: 2.11.4(preact@11.2.0)
       preact:
-        specifier: ^10.29.8
-        version: 10.29.8(preact-render-to-string@6.8.0)
+        specifier: 11.2.0
+        version: 11.2.0(preact-render-to-string@6.8.0)
       prosemirror-commands:
         specifier: ^1.7.2
         version: 1.7.2
@@ -2628,6 +2628,14 @@ packages:
       preact-render-to-string:
         optional: true
 
+  preact@11.2.0:
+    resolution: {integrity: sha512-/HfHI/7N84e6GrWBJ3J280z3mLaRJiDcSvj/A+y/4AbLnND/1UlGHe1sR6oYuTGwId0nP7dqDU9OnLxMPZ7xBg==}
+    peerDependencies:
+      preact-render-to-string: '>=6.7.0'
+    peerDependenciesMeta:
+      preact-render-to-string:
+        optional: true
+
   prismjs@1.30.0:
     resolution: {integrity: sha512-DEvV2ZF2r2/63V+tK8hQvrR2ZGn10srHbXviTlcv7Kpzw8jWiNTqbVgjO3IY8RxrrOUF8VPMQQFysYYYv0YZxw==}
     engines: {node: '>=6'}
@@ -4061,6 +4069,11 @@ snapshots:
       '@preact/signals-core': 1.14.5
       preact: 10.29.8(preact-render-to-string@6.8.0)
 
+  '@preact/signals@2.11.4(preact@11.2.0)':
+    dependencies:
+      '@preact/signals-core': 1.14.5
+      preact: 11.2.0(preact-render-to-string@6.8.0)
+
   '@profoundlogic/hogan@3.0.4':
     dependencies:
       nopt: 1.0.10
@@ -5473,14 +5486,18 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.2
 
-  preact-render-to-string@6.8.0(preact@10.29.8):
+  preact-render-to-string@6.8.0(preact@11.2.0):
     dependencies:
-      preact: 10.29.8(preact-render-to-string@6.8.0)
+      preact: 11.2.0(preact-render-to-string@6.8.0)
     optional: true
 
   preact@10.29.8(preact-render-to-string@6.8.0):
     optionalDependencies:
-      preact-render-to-string: 6.8.0(preact@10.29.8)
+      preact-render-to-string: 6.8.0(preact@11.2.0)
+
+  preact@11.2.0(preact-render-to-string@6.8.0):
+    optionalDependencies:
+      preact-render-to-string: 6.8.0(preact@11.2.0)
 
   prismjs@1.30.0: {}
 

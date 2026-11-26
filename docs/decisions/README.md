@@ -53,6 +53,7 @@ changes, write a new ADR that supersedes the old one and update the old one's st
 | [0045](0045-shipped-studiocms-fixes.md) | Shipped patches cover StudioCMS bugs sites hit, including the SDK | Accepted | 2026-10-22 |
 | [0046](0046-display-modes.md) | Display modes: templates that show a page in more than one way | Accepted | 2026-10-23 |
 | [0047](0047-prosemirror-ranges.md) | One ProseMirror: ranges for the prosemirror-* packages | Accepted | 2026-11-25 |
+| [0048](0048-preact-11.md) | Preact 11 alongside Preact 10 | Accepted | 2026-11-26 |
 
 ## Template
 

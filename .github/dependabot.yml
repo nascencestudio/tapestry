@@ -4,7 +4,7 @@
 #   tag stays in the comment).
 # - npm ecosystem (pnpm, detected from pnpm-lock.yaml): one PR per week with minor and
 #   patch updates grouped; majors separately, since they need reading (e.g. TypeScript 7
-#   and Preact 11 are held back on purpose; see CLAUDE.md "Pinned stack").
+#   is held back on purpose; see CLAUDE.md "Pinned stack").
 # - Cooldown matches pnpm-workspace.yaml's minimumReleaseAge (3 days): brand-new releases
 #   are where hijacked packages show up. CI then installs with the frozen lockfile, so
 #   pnpm's trust and build-script policies apply to every Dependabot PR as well.

@@ -183,28 +183,28 @@ importers:
         specifier: ^10.29.8
         version: 10.29.8(preact-render-to-string@6.8.0)
       prosemirror-commands:
-        specifier: 1.7.2
+        specifier: ^1.7.2
         version: 1.7.2
       prosemirror-history:
-        specifier: 1.5.2
+        specifier: ^1.5.1
         version: 1.5.2
       prosemirror-keymap:
-        specifier: 1.2.3
+        specifier: ^1.2.3
         version: 1.2.3
       prosemirror-model:
-        specifier: 1.25.13
+        specifier: ^1.25.12
         version: 1.25.13
       prosemirror-schema-list:
-        specifier: 1.6.1
+        specifier: ^1.5.1
         version: 1.6.1
       prosemirror-state:
-        specifier: 1.4.4
+        specifier: ^1.4.4
         version: 1.4.4
       prosemirror-transform:
-        specifier: 1.12.7
+        specifier: ^1.12.2
         version: 1.12.7
       prosemirror-view:
-        specifier: 1.43.0
+        specifier: ^1.42.6
         version: 1.43.0
     devDependencies:
       '@biomejs/biome':
